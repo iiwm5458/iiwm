@@ -1,0 +1,55 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Python/OCR runtimes and offline package caches
+runtime_cpu/
+runtime_gpu/
+wheelhouse_gpu/
+.venv/
+venv/
+env/
+
+# Generated screenshots, OCR output, logs, and temp work files
+screenshots/
+ocr_output*/
+manual_annotations/
+work/
+*.log
+gpu_runtime_setup_*.log
+
+# Debug and preview images generated during development
+preview_regions.png
+debug_*/
+*_debug*/
+dataanalysis/1920_*_crops/
+dataanalysis/1920_remaining_name_errors/
+dataanalysis/ocr_region_annotations.disabled_*/
+dataanalysis/arena_ocr_tool/data/alias_review/
+dataanalysis/arena_ocr_tool/data/collection_cv_templates/**/evaluation/
+dataanalysis/arena_ocr_tool/data/collection_cv_templates/**/contact_sheets/
+*.bak_*
+*.backup.*
+*.corrupted_*
+*.disabled_*
+
+# Local custom user assets; keep these user-specific folders out of source control
+custom_backgrounds/
+support_custom_backgrounds/
+group_custom_backgrounds/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Build/package outputs
+dist/
+build/
+*.spec
+*.zip
+*.7z
+*.rar

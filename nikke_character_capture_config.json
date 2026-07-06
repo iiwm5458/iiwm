@@ -1,0 +1,187 @@
+{
+  "reference_size": [3440, 1440],
+  "coordinate_mode": "height_anchored",
+  "gap_px": 0,
+  "background": "#f7f8fa",
+  "align_y": "top",
+  "save_parts": true,
+  "layout": {
+    "output_size": [2842, 342],
+    "top_padding": 12,
+    "bottom_padding": 8,
+    "section_gap": 10,
+    "equipment_item_gap": 4,
+    "equipment_column_gap": 10,
+    "equipment_row_gap": 8,
+    "primary_height": 320,
+    "character_card_size": [186, 320],
+    "collectibles_size": [112, 135],
+    "battle_attributes_size": [501, 320],
+    "skills_size": [473, 320],
+    "equipment_row_height": 148,
+    "equipment_icon_width": 190,
+    "equipment_entry_width": 549,
+    "equipment_cell_width": 743,
+    "side_padding": 16,
+    "border_px": 1,
+    "border_color": "#dde1e6"
+  },
+  "timing": {
+    "countdown_seconds": 3,
+    "after_filter_click_seconds": 0.75,
+    "after_card_click_seconds": 1.0,
+    "after_profile_load_seconds": 1.5,
+    "after_equipment_click_seconds": 0.7,
+    "after_equipment_close_seconds": 0.55,
+    "after_skill_click_seconds": 0.75,
+    "after_back_seconds": 0.8,
+    "after_scroll_seconds": 0.9
+  },
+  "color_checks": {
+    "burst_filter_active": {
+      "rect": [1426, 258, 88, 73],
+      "anchor": "center",
+      "blue_pixel_ratio": 0.35
+    }
+  },
+  "clicks": {
+    "burst_filter": {
+      "point": [1466, 292],
+      "anchor": "center"
+    },
+    "first_character": {
+      "point": [140, 586],
+      "anchor": "left"
+    },
+    "equipment_slots": [
+      {
+        "name": "head",
+        "point": [3058, 1038],
+        "anchor": "right",
+        "rect": [2998, 978, 140, 120]
+      },
+      {
+        "name": "body",
+        "point": [3258, 1038],
+        "anchor": "right",
+        "rect": [3188, 978, 140, 120]
+      },
+      {
+        "name": "arms",
+        "point": [3058, 1190],
+        "anchor": "right",
+        "rect": [2998, 1128, 140, 120]
+      },
+      {
+        "name": "legs",
+        "point": [3258, 1188],
+        "anchor": "right",
+        "rect": [3188, 1128, 140, 120]
+      }
+    ],
+    "skill_tab": {
+      "point": [2928, 1080],
+      "anchor": "right"
+    },
+    "skill_tab_retry": [
+      {
+        "point": [2928, 1080],
+        "anchor": "right"
+      },
+      {
+        "point": [2928, 1062],
+        "anchor": "right"
+      },
+      {
+        "point": [2912, 1080],
+        "anchor": "right"
+      }
+    ],
+    "list_back": {
+      "point": [82, 1360],
+      "anchor": "left"
+    },
+    "equipment_close": {
+      "point": [2005, 154],
+      "anchor": "center"
+    }
+  },
+  "batch": {
+    "enabled_rows": 2,
+    "columns": 17,
+    "card_rect": [47, 424, 186, 320],
+    "card_pitch": [197, 344],
+    "scroll_point": {
+      "point": [1720, 810],
+      "anchor": "center"
+    },
+    "scroll_wheel_clicks": -5,
+    "max_scrolls": 40,
+    "stop_after_no_new_pages": 2,
+    "max_characters": 0,
+    "duplicate_hamming_threshold": 24,
+    "min_card_color_ratio": 0.03
+  },
+  "equipment_detection": {
+    "slot_color_ratio_threshold": 0.025,
+    "popup_side_probe_rect": [300, 300, 600, 600],
+    "popup_right_probe_rect": [2540, 300, 600, 600],
+    "popup_panel_probe_rect": [1380, 100, 680, 1100],
+    "popup_contrast_threshold": 80,
+    "popup_bounds_search_rect": [1250, 40, 940, 1310],
+    "popup_close_offset": [74, 43],
+    "popup_max_retries": 3,
+    "popup_click_offsets": [[0, 0], [-20, 0], [20, 0]],
+    "popup_close_retries": 4,
+    "type_label_search_rect": [1358, 78, 300, 145],
+    "type_templates": {
+      "fire": "assets/equipment_type_fire.png",
+      "defense": "assets/equipment_type_defense.png",
+      "support": "assets/equipment_type_support.png"
+    },
+    "entry_lock_search_rect": [1930, 890, 105, 300],
+    "entry_crop_x": 1400,
+    "entry_crop_width": 620,
+    "entry_y_padding": 16,
+    "icon_search_rect": [1540, 120, 310, 400],
+    "icon_padding": [45, 15]
+  },
+  "skill_detection": {
+    "equipment_color_ratio_threshold": 0.08,
+    "max_retries": 3
+  },
+  "crops": {
+    "character_card": {
+      "rect": [47, 424, 186, 320],
+      "anchor": "left"
+    },
+    "collectibles": {
+      "rect": [20, 205, 112, 135],
+      "anchor": "left"
+    },
+    "battle_attributes": {
+      "rect": [2960, 430, 415, 265],
+      "anchor": "right"
+    },
+    "equipment_image": {
+      "rect": [1580, 170, 245, 215],
+      "anchor": "center"
+    },
+    "equipment_image_yellow_fire": {
+      "rect": [1580, 300, 245, 195],
+      "anchor": "center"
+    },
+    "equipment_image_yellow_default": {
+      "rect": [1580, 220, 245, 195],
+      "anchor": "center"
+    },
+    "equipment_entries": {
+      "rect": [1400, 954, 616, 148],
+      "anchor": "center"
+    },
+    "skills": {
+      "rect": [2988, 990, 365, 247],
+      "anchor": "right"
+    }
+  }
+}

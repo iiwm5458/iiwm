@@ -1,0 +1,567 @@
+{
+    "reference_size":  [
+                           3440,
+                           1440
+                       ],
+    "coordinate_mode":  "centered_height",
+    "output_width":  720,
+    "gap_px":  0,
+    "background":  "#20242a",
+    "research_row_padding":  24,
+    "research_row_gap":  0,
+    "research_row_background":  "#f7f8fa",
+    "research_card_align":  "top",
+    "team_summary_output_width":  672,
+    "team_summary_x_offset":  -8,
+    "team_summary_background":  "#f7f8fa",
+    "duo_column_gap":  18,
+    "group_grid_gap":  18,
+    "group_data_gap":  18,
+    "group_data_column_gap":  42,
+    "all_groups_grid_gap":  56,
+    "top8_pyramid_layer_gap":  72,
+    "support_status_background":  "#f7f8fa",
+    "framed_output":  false,
+    "framed_background":  "assets/pixiewall-xlesjh-5120x2880.jpg",
+    "framed_margin_x":  80,
+    "framed_margin_y":  0,
+    "framed_opacity":  0.86,
+    "framed_edge_blur":  0,
+    "framed_bg_center":  [
+                             0.5,
+                             0.52
+                         ],
+    "save_parts":  false,
+    "close_profile_after_capture":  true,
+    "launcher_settings":  {
+                              "ocr_performance_mode":  "gpu",
+                              "ocr_thermal_mode":  "performance"
+                          },
+    "timing":  {
+                   "countdown_seconds":  0,
+                   "after_round_click_seconds":  0.8,
+                   "after_avatar_click_seconds":  0.8,
+                   "after_support_avatar_click_seconds":  0.8,
+                   "after_group_avatar_click_seconds":  0.8,
+                   "after_group_tab_click_seconds":  0.8,
+                   "after_group_result_click_seconds":  0.8,
+                   "after_group_detail_click_seconds":  3.5,
+                   "after_season_back_to_arena_seconds":  1.0,
+                   "after_season_top8_entry_click_seconds":  1.2,
+                   "after_outpost_click_seconds":  0.8,
+                   "after_profile_close_seconds":  0.4,
+                   "after_escape_seconds":  0.45
+               },
+    "clicks":  {
+                   "avatar":  [
+                                  1477,
+                                  579
+                              ],
+                   "profile_close":  [
+                                         2049,
+                                         138
+                                     ],
+                   "outpost_tab":  [
+                                       1899,
+                                       1333
+                                   ],
+                   "support_left_avatar":  [
+                                               1548,
+                                               430
+                                           ],
+                   "support_right_avatar":  [
+                                                1875,
+                                                430
+                                            ],
+                   "group_64_avatars":  [
+                                            [
+                                                1390,
+                                                500
+                                            ],
+                                            [
+                                                1390,
+                                                675
+                                            ],
+                                            [
+                                                2050,
+                                                500
+                                            ],
+                                            [
+                                                2050,
+                                                675
+                                            ],
+                                            [
+                                                1390,
+                                                1040
+                                            ],
+                                            [
+                                                1390,
+                                                1220
+                                            ],
+                                            [
+                                                2050,
+                                                1040
+                                            ],
+                                            [
+                                                2050,
+                                                1220
+                                            ]
+                                        ],
+                   "group_32_avatars":  [
+                                            [
+                                                1490,
+                                                595
+                                            ],
+                                            [
+                                                1945,
+                                                595
+                                            ],
+                                            [
+                                                1490,
+                                                1122
+                                            ],
+                                            [
+                                                1945,
+                                                1122
+                                            ]
+                                        ],
+                   "group_16_avatars":  [
+                                            [
+                                                1627,
+                                                761
+                                            ],
+                                            [
+                                                1808,
+                                                937
+                                            ]
+                                        ],
+                   "top8_avatars":  [
+                                        [
+                                            1393,
+                                            459
+                                        ],
+                                        [
+                                            1389,
+                                            637
+                                        ],
+                                        [
+                                            2047,
+                                            461
+                                        ],
+                                        [
+                                            2042,
+                                            640
+                                        ],
+                                        [
+                                            1395,
+                                            987
+                                        ],
+                                        [
+                                            1387,
+                                            1164
+                                        ],
+                                        [
+                                            2046,
+                                            989
+                                        ],
+                                        [
+                                            2047,
+                                            1170
+                                        ]
+                                    ],
+                   "top8_4_avatars":  [
+                                          [
+                                              1507,
+                                              542
+                                          ],
+                                          [
+                                              1928,
+                                              548
+                                          ],
+                                          [
+                                              1507,
+                                              1073
+                                          ],
+                                          [
+                                              1928,
+                                              1074
+                                          ]
+                                      ],
+                   "top8_final_avatars":  [
+                                              [
+                                                  1626,
+                                                  714
+                                              ],
+                                              [
+                                                  1808,
+                                                  886
+                                              ]
+                                          ],
+                   "group_tabs":  [
+                                      [
+                                          175,
+                                          276
+                                      ],
+                                      [
+                                          490,
+                                          276
+                                      ],
+                                      [
+                                          808,
+                                          276
+                                      ],
+                                      [
+                                          1121,
+                                          276
+                                      ],
+                                      [
+                                          1442,
+                                          276
+                                      ],
+                                      [
+                                          1760,
+                                          276
+                                      ],
+                                      [
+                                          2070,
+                                          276
+                                      ],
+                                      [
+                                          2395,
+                                          276
+                                      ]
+                                  ],
+                   "group_tab_ratios":  [
+                                            [
+                                                0.0691,
+                                                0.2542
+                                            ],
+                                            [
+                                                0.1918,
+                                                0.2549
+                                            ],
+                                            [
+                                                0.3141,
+                                                0.2549
+                                            ],
+                                            [
+                                                0.4375,
+                                                0.2542
+                                            ],
+                                            [
+                                                0.5605,
+                                                0.2556
+                                            ],
+                                            [
+                                                0.6824,
+                                                0.2542
+                                            ],
+                                            [
+                                                0.8055,
+                                                0.2556
+                                            ],
+                                            [
+                                                0.9277,
+                                                0.2549
+                                            ]
+                                        ],
+                   "group_result_buttons":  [
+                                                [
+                                                    1629,
+                                                    596
+                                                ],
+                                                [
+                                                    1796,
+                                                    596
+                                                ],
+                                                [
+                                                    1636,
+                                                    1126
+                                                ],
+                                                [
+                                                    1812,
+                                                    1129
+                                                ]
+                                            ],
+                   "group_32_result_buttons":  [
+                                                   [
+                                                       1736,
+                                                       764
+                                                   ],
+                                                   [
+                                                       1668,
+                                                       947
+                                                   ]
+                                               ],
+                   "group_16_result_buttons":  [
+                                                   [
+                                                       1717,
+                                                       852
+                                                   ]
+                                               ],
+                   "top8_result_buttons":  [
+                                               [
+                                                   1635,
+                                                   554
+                                               ],
+                                               [
+                                                   1794,
+                                                   554
+                                               ],
+                                               [
+                                                   1632,
+                                                   1081
+                                               ],
+                                               [
+                                                   1805,
+                                                   1085
+                                               ]
+                                           ],
+                   "top8_4_result_buttons":  [
+                                                 [
+                                                     1778,
+                                                     724
+                                                 ],
+                                                 [
+                                                     1650,
+                                                     898
+                                                 ]
+                                             ],
+                   "top8_final_result_buttons":  [
+                                                     [
+                                                         1768,
+                                                         722
+                                                     ],
+                                                     [
+                                                         1664,
+                                                         892
+                                                     ]
+                                                 ],
+                   "season_top8_entry":  [
+                                             1995,
+                                             882
+                                         ],
+                   "season_top8_entry_ratio":  [
+                                                   0.58,
+                                                   0.61
+                                               ],
+                   "group_16_winner_result_buttons":  [
+                                                          [
+                                                              1736,
+                                                              764
+                                                          ],
+                                                          [
+                                                              1668,
+                                                              947
+                                                          ]
+                                                      ],
+                   "group_16_result_stage_tab":  [
+                                                     1533,
+                                                     1158
+                                                 ],
+                   "group_32_result_stage_tab":  [
+                                                     1903,
+                                                     1158
+                                                 ],
+                   "group_detail_buttons":  [
+                                                [
+                                                    1891,
+                                                    826
+                                                ],
+                                                [
+                                                    1891,
+                                                    887
+                                                ],
+                                                [
+                                                    1891,
+                                                    948
+                                                ],
+                                                [
+                                                    1891,
+                                                    1008
+                                                ],
+                                                [
+                                                    1891,
+                                                    1070
+                                                ]
+                                            ],
+                   "group_32_detail_buttons":  [
+                                                   [
+                                                       1891,
+                                                       826
+                                                   ],
+                                                   [
+                                                       1891,
+                                                       887
+                                                   ],
+                                                   [
+                                                       1891,
+                                                       948
+                                                   ],
+                                                   [
+                                                       1891,
+                                                       1008
+                                                   ],
+                                                   [
+                                                       1891,
+                                                       1070
+                                                   ]
+                                               ],
+                   "round_tabs":  {
+                                      "1":  [
+                                                1462,
+                                                707
+                                            ],
+                                      "2":  [
+                                                1604,
+                                                707
+                                            ],
+                                      "3":  [
+                                                1754,
+                                                707
+                                            ],
+                                      "4":  [
+                                                1900,
+                                                707
+                                            ],
+                                      "5":  [
+                                                2001,
+                                                707
+                                            ]
+                                  }
+               },
+    "crops":  {
+                  "round_lineup":  [
+                                       1393,
+                                       756,
+                                       660,
+                                       274
+                                   ],
+                  "profile_basic":  [
+                                        1378,
+                                        0,
+                                        684,
+                                        514
+                                    ],
+                  "team_summary":  [
+                                       1380,
+                                       908,
+                                       656,
+                                       122
+                                   ],
+                  "sync_level":  [
+                                     1402,
+                                     1174,
+                                     638,
+                                     64
+                                 ],
+                  "research_cards":  [
+                                         [
+                                             1500,
+                                             724,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1650,
+                                             724,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1800,
+                                             724,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1578,
+                                             850,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1728,
+                                             850,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1460,
+                                             1040,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1650,
+                                             1040,
+                                             132,
+                                             112
+                                         ],
+                                         [
+                                             1838,
+                                             1040,
+                                             132,
+                                             112
+                                         ]
+                                     ],
+                  "outpost_research":  [
+                                           1403,
+                                           976,
+                                           634,
+                                           255
+                                       ],
+                  "support_status":  [
+                                         1396,
+                                         636,
+                                         676,
+                                         58
+                                     ],
+                  "group_simple_result":  [
+                                              1555,
+                                              793,
+                                              243,
+                                              301
+                                          ],
+                  "group_detailed_result":  [
+                                                1380,
+                                                289,
+                                                681,
+                                                873
+                                            ],
+                  "group_result_stage_tabs_probe":  [
+                                                        1450,
+                                                        1110,
+                                                        650,
+                                                        120
+                                                    ],
+                  "group_16_winner_result_button_probes":  [
+                                                               [
+                                                                   1668,
+                                                                   718,
+                                                                   224,
+                                                                   92
+                                                               ],
+                                                               [
+                                                                   1544,
+                                                                   900,
+                                                                   224,
+                                                                   92
+                                                               ]
+                                                           ],
+                  "top8_final_result_button_probes":  [
+                                                          [
+                                                              1705,
+                                                              700,
+                                                              127,
+                                                              50
+                                                          ],
+                                                          [
+                                                              1595,
+                                                              874,
+                                                              140,
+                                                              38
+                                                          ]
+                                                      ]
+              }
+}
