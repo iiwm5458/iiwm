@@ -20,6 +20,9 @@ class OCRItem:
 class ArenaOCRRecognizer:
     """Small wrapper around PaddleOCR/EasyOCR with a no-engine fallback."""
 
+    _DEFAULT_MODEL_ROOT = Path(__file__).resolve().parent.parent / "models" / "paddle_default"
+    _MODEL_REQUIRED_FILES = ("inference.pdmodel", "inference.pdiparams")
+
     def __init__(self, use_gpu: bool = False, cpu_threads: int = 0) -> None:
         self.use_gpu = use_gpu
         # NIKKE_DISABLED_OCR_CPU_THREAD_LIMIT_20260701:
@@ -44,11 +47,15 @@ class ArenaOCRRecognizer:
                 self._add_gpu_dll_directories()
             from paddleocr import PaddleOCR  # type: ignore
 
-            options = {
+            model_dirs = self._default_model_dirs("ch")
+            options: dict[str, Any] = {
                 "use_angle_cls": True,
                 "lang": "ch",
                 "use_gpu": self.use_gpu,
                 "show_log": False,
+                "det_model_dir": str(model_dirs["det"]),
+                "rec_model_dir": str(model_dirs["rec"]),
+                "cls_model_dir": str(model_dirs["cls"]),
             }
             # NIKKE_DISABLED_OCR_CPU_THREAD_LIMIT_20260701:
             # if self.cpu_threads > 0:
@@ -69,6 +76,35 @@ class ArenaOCRRecognizer:
             return
         except Exception as exc:
             self.error = f"{self.error}; EasyOCR unavailable: {exc}" if self.error else f"EasyOCR unavailable: {exc}"
+
+    @classmethod
+    def _require_model_dir(cls, label: str, path: Path) -> Path:
+        missing = [name for name in cls._MODEL_REQUIRED_FILES if not (path / name).exists()]
+        if missing:
+            names = ", ".join(missing)
+            raise FileNotFoundError(f"Bundled PaddleOCR {label} model is incomplete: {path} ({names})")
+        return path
+
+    @classmethod
+    def _default_model_dirs(cls, detector_language: str) -> dict[str, Path]:
+        if detector_language == "ch":
+            detector_dir = cls._DEFAULT_MODEL_ROOT / "whl" / "det" / "ch" / "ch_PP-OCRv4_det_infer"
+        elif detector_language == "ml":
+            detector_dir = cls._DEFAULT_MODEL_ROOT / "whl" / "det" / "ml" / "Multilingual_PP-OCRv3_det_infer"
+        else:
+            raise ValueError(f"Unsupported PaddleOCR detector language: {detector_language}")
+
+        return {
+            "det": cls._require_model_dir("detector", detector_dir),
+            "rec": cls._require_model_dir(
+                "Chinese recognizer",
+                cls._DEFAULT_MODEL_ROOT / "whl" / "rec" / "ch" / "ch_PP-OCRv4_rec_infer",
+            ),
+            "cls": cls._require_model_dir(
+                "angle classifier",
+                cls._DEFAULT_MODEL_ROOT / "whl" / "cls" / "ch_ppocr_mobile_v2.0_cls_infer",
+            ),
+        }
 
     def _add_gpu_dll_directories(self) -> None:
         runtime_root = Path(sys.executable).resolve().parent.parent
@@ -131,6 +167,95 @@ class ArenaOCRRecognizer:
             return []
         return []
 
+    def recognize_text_line(self, image: Image.Image, region_name: str = "") -> list[OCRItem]:
+        """Recognize one pre-cropped horizontal text line without detection."""
+        if self.reader is None:
+            return []
+
+        import numpy as np
+
+        rgb = image.convert("RGB")
+        arr = np.array(rgb)
+        width, height = rgb.size
+        bbox = [(0.0, 0.0), (float(width), 0.0), (float(width), float(height)), (0.0, float(height))]
+        try:
+            if self.engine_name == "paddleocr":
+                raw = self.reader.ocr(arr, det=False, cls=False)
+                items: list[OCRItem] = []
+                for page in raw or []:
+                    for entry in page or []:
+                        if not entry or len(entry) < 2 or not isinstance(entry[0], str):
+                            continue
+                        items.append(OCRItem(str(entry[0]), bbox, float(entry[1]), region_name))
+                return items
+
+            if self.engine_name == "easyocr":
+                raw = self.reader.readtext(arr, detail=1, paragraph=False)
+                return [
+                    OCRItem(str(text), [(float(x), float(y)) for x, y in item_bbox], float(conf), region_name)
+                    for item_bbox, text, conf in raw
+                ]
+        except Exception as exc:
+            if (
+                os.environ.get("NIKKE_OCR_VERBOSE_RUNTIME_ERRORS", "").strip() in {"1", "true", "yes", "on"}
+                and not self._runtime_error_reported
+            ):
+                self.error = f"OCR runtime failed during line recognition: {exc}"
+                print(f"[ocr-warning] {self.error}", flush=True)
+                self._runtime_error_reported = True
+            return []
+        return []
+
+    def recognize_text_lines(
+        self,
+        images: list[Image.Image],
+        region_names: list[str] | None = None,
+        batch_size: int = 32,
+    ) -> list[list[OCRItem]]:
+        """Recognize pre-cropped text lines in one Paddle recognition batch."""
+        if not images:
+            return []
+        names = region_names or [""] * len(images)
+        if len(names) != len(images):
+            raise ValueError("region_names must match images")
+        if self.reader is None or self.engine_name != "paddleocr":
+            return [self.recognize_text_line(image, name) for image, name in zip(images, names)]
+
+        import numpy as np
+
+        arrays = [np.array(image.convert("RGB")) for image in images]
+        recognizer = getattr(self.reader, "text_recognizer", None)
+        if recognizer is None:
+            return [self.recognize_text_line(image, name) for image, name in zip(images, names)]
+        previous_batch_size = getattr(recognizer, "rec_batch_num", None)
+        try:
+            if previous_batch_size is not None:
+                recognizer.rec_batch_num = max(1, int(batch_size))
+            raw, _elapsed = recognizer(arrays)
+            if len(raw) != len(images):
+                raise RuntimeError("PaddleOCR batch result count mismatch")
+            results: list[list[OCRItem]] = []
+            for image, name, entry in zip(images, names, raw):
+                if not entry or len(entry) < 2:
+                    results.append([])
+                    continue
+                width, height = image.size
+                bbox = [(0.0, 0.0), (float(width), 0.0), (float(width), float(height)), (0.0, float(height))]
+                results.append([OCRItem(str(entry[0]), bbox, float(entry[1]), name)])
+            return results
+        except Exception as exc:
+            if (
+                os.environ.get("NIKKE_OCR_VERBOSE_RUNTIME_ERRORS", "").strip() in {"1", "true", "yes", "on"}
+                and not self._runtime_error_reported
+            ):
+                self.error = f"OCR runtime failed during batch line recognition: {exc}"
+                print(f"[ocr-warning] {self.error}", flush=True)
+                self._runtime_error_reported = True
+            return [self.recognize_text_line(image, name) for image, name in zip(images, names)]
+        finally:
+            if previous_batch_size is not None:
+                recognizer.rec_batch_num = previous_batch_size
+
     def _get_nickname_reader(self, language: str) -> Any | None:
         if language == "ch":
             return self.reader if self.engine_name == "paddleocr" else None
@@ -145,13 +270,16 @@ class ArenaOCRRecognizer:
         try:
             from paddleocr import PaddleOCR  # type: ignore
 
+            model_dirs = self._default_model_dirs("ml")
             options: dict[str, Any] = {
                 "use_angle_cls": False,
                 "lang": language,
                 "use_gpu": self.use_gpu,
                 "show_log": False,
                 "ocr_version": "PP-OCRv3",
+                "det_model_dir": str(model_dirs["det"]),
                 "rec_model_dir": str(model_dir),
+                "cls_model_dir": str(model_dirs["cls"]),
             }
             # NIKKE_DISABLED_OCR_CPU_THREAD_LIMIT_20260701:
             # if self.cpu_threads > 0:

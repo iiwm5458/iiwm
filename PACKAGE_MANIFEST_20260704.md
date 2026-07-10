@@ -32,6 +32,7 @@ NIKKE_Arena_Tool/
   vendor/
     LibreHardwareMonitorLib/
 
+  runtime_core/
   runtime_cpu/
 
   screenshots/                  空目录，运行后自动输出
@@ -89,6 +90,7 @@ dataanalysis/arena_ocr_tool/recognizer/
 dataanalysis/arena_ocr_tool/data/
 dataanalysis/arena_ocr_tool/models/
 dataanalysis/arena_ocr_tool/requirements-ocr.txt
+dataanalysis/arena_ocr_tool/requirements-ocr-cpu.lock.txt
 dataanalysis/arena_ocr_tool/requirements-ocr-gpu.txt
 dataanalysis/arena_ocr_tool/install_ocr_dependencies.ps1
 ```
@@ -110,22 +112,27 @@ vendor/LibreHardwareMonitorLib/LibreHardwareMonitorLib.dll
 
 ### 内置 runtime
 
-正式包需要内置：
+正式包需要内置两个互不依赖的可搬运 Python runtime：
 
 ```text
+runtime_core/
+  python.exe
+
 runtime_cpu/
-  Scripts/python.exe
+  python.exe
 ```
 
 用途：
 
-- 自动截图 fallback Python。
-- CPU OCR。
-- Pillow / PaddleOCR / OpenCV / openpyxl 等基础依赖。
+- `runtime_core`：自动截图与拼图，包含 Python 3.10.8 和 Pillow。
+- `runtime_cpu`：CPU OCR，包含 Python 3.10.8、PaddleOCR、Paddle、OpenCV、openpyxl 等依赖。
+- 两个 runtime 都是 CPython embeddable 目录，不是 `venv`，不会指向开发机 Python。
 
 当前状态：
 
-- `runtime_cpu/Scripts/python.exe` 已创建，CPU OCR 依赖已安装并验证。
+- `runtime_core/python.exe` 已创建，约 31 MB，截图 worker 已验证。
+- `runtime_cpu/python.exe` 已创建，约 974 MB，CPU OCR 依赖已验证。
+- 默认 PaddleOCR 模型已放入 `dataanalysis/arena_ocr_tool/models/paddle_default/`，约 21 MB。
 
 当前已有但普通正式包建议不内置：
 
@@ -245,26 +252,29 @@ run_all_characters.bat
 已改为相对路径优先：
 
 ```text
-runtime_cpu\Scripts\python.exe
+runtime_core\python.exe
 ```
 
 建议解析顺序：
 
 ```text
-1. runtime_cpu\Scripts\python.exe
-2. runtime_gpu\Scripts\python.exe（仅 OCR GPU 或必要 fallback）
-3. %LOCALAPPDATA%\Programs\Python\Python312\python.exe
-4. PATH 中的 python.exe
+1. runtime_core\python.exe（截图/拼图）
+2. runtime_cpu\python.exe（CPU OCR；截图 fallback）
+3. runtime_gpu\Scripts\python.exe（仅 OCR GPU）
+4. %LOCALAPPDATA%\Programs\Python\Python312\python.exe
+5. PATH 中的 python.exe
 ```
 
-### 2. CPU runtime 已创建
+### 2. 可搬运 runtime 已创建
 
 当前检查：
 
 ```text
-runtime_cpu\Scripts\python.exe: 存在
+runtime_core\python.exe: 存在，sys.prefix == sys.base_prefix
+runtime_cpu\python.exe: 存在，sys.prefix == sys.base_prefix
 Python: 3.10.8
 Paddle: 2.6.2
+默认模型：项目内显式路径加载，空用户 HOME 下不会创建 .paddleocr
 ```
 
 已安装并验证：
@@ -291,7 +301,7 @@ nikke_round_stitcher_worker.exe: 不存在
 nikke_character_capture_worker.exe: 不存在
 ```
 
-如果内置 Python runtime，可以不打 worker exe；但 `run_stitcher.bat` / `run_character_capture.bat` 的 fallback 必须改成随包 `runtime_cpu`。
+如果内置 Python runtime，可以不打 worker exe；`run_stitcher.bat` / `run_character_capture.bat` 现已优先使用随包 `runtime_core`，并在其缺失时回退到 `runtime_cpu`。
 
 如果要减少用户侧 Python 可见性，也可以后续再打 worker exe。
 
@@ -315,7 +325,7 @@ NIKKE_Arena_Tool/
 
 2. 复制必须包含文件和目录。
 
-3. 创建并安装 `runtime_cpu`。
+3. 使用 `tools/build_portable_runtimes.ps1 -ReplaceExisting` 构建 `runtime_core`、`runtime_cpu` 与默认 PaddleOCR 模型。
 
 4. 普通正式包不保留 `runtime_gpu`：
 
@@ -356,6 +366,7 @@ CPU/GPU 模式切换
 包含：
 
 ```text
+runtime_core
 runtime_cpu
 assets
 dataanalysis/arena_ocr_tool
@@ -410,6 +421,8 @@ dataanalysis/arena_ocr_tool/main.py 语法编译
 assets：关键资源存在，约 53MB
 dataanalysis/arena_ocr_tool：约 94MB
 runtime_gpu：存在，约 4.3GB
-runtime_cpu：存在，CPU OCR 依赖已验证
+runtime_core：约 31 MB，可离线运行截图 worker
+runtime_cpu：约 974 MB，可离线导入 CPU OCR；不依赖开发机 Python
+默认 PaddleOCR 模型：约 21 MB，空 HOME 初始化主 reader 与日/韩昵称 reader 已验证
 vendor/LibreHardwareMonitorLib：存在
 ```

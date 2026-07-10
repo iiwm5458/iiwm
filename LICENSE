@@ -1,0 +1,35 @@
+NIKKE C ARENA Tool Source License
+=================================
+
+Copyright (c) 2026 夙辛 and contributors.
+
+Project contributors include Codex (GPT-5) as an AI engineering collaborator.
+This credit does not transfer ownership to the AI service or its provider.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of the original source code in this repository (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice, this permission notice, and the third-party notice
+below shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Third-Party and Game Material Notice
+------------------------------------
+
+This license applies only to original project source code and original project
+documentation. It does not grant rights to redistribute or sublicense any
+third-party dependency, PaddleOCR model, NVIDIA component, website icon,
+artist-created asset, or NIKKE game-related material bundled with or referenced
+by the project. Users redistributing those materials must independently comply
+with their respective licenses, terms of service, and applicable law.

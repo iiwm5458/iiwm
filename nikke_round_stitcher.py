@@ -15,7 +15,7 @@ try:
 except ModuleNotFoundError:
     print("Missing Pillow; the current Python runtime cannot capture or stitch images.")
     print("Run: python -m pip install pillow")
-    print("Or run run_stitcher.bat in this folder; it prefers the bundled Codex Python.")
+    print("Or run run_stitcher.bat in this folder; it prefers the bundled Python runtime.")
     sys.exit(1)
 
 
@@ -299,7 +299,7 @@ def set_dpi_aware():
 def load_config(path):
     if not path.exists():
         return DEFAULT_CONFIG.copy()
-    with path.open("r", encoding="utf-8") as f:
+    with path.open("r", encoding="utf-8-sig") as f:
         config = json.load(f)
     merged = DEFAULT_CONFIG.copy()
     for key, value in config.items():

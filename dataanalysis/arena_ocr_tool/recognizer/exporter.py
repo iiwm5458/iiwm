@@ -40,21 +40,21 @@ HEADERS = [
 ROSTER_HEADERS = [
     "\u53c2\u8d5b\u9009\u624b",
     "\u9009\u624bID",
-    "P1",
-    "P1\u6218\u529b",
-    "P1\u6536\u85cf",
-    "P2",
-    "P2\u6218\u529b",
-    "P2\u6536\u85cf",
-    "P3",
-    "P3\u6218\u529b",
-    "P3\u6536\u85cf",
-    "P4",
-    "P4\u6218\u529b",
-    "P4\u6536\u85cf",
-    "P5",
-    "P5\u6218\u529b",
-    "P5\u6536\u85cf",
+    "\u9635\u5bb91",
+    "\u9635\u5bb91\u6218\u529b",
+    "\u9635\u5bb91\u6536\u85cf",
+    "\u9635\u5bb92",
+    "\u9635\u5bb92\u6218\u529b",
+    "\u9635\u5bb92\u6536\u85cf",
+    "\u9635\u5bb93",
+    "\u9635\u5bb93\u6218\u529b",
+    "\u9635\u5bb93\u6536\u85cf",
+    "\u9635\u5bb94",
+    "\u9635\u5bb94\u6218\u529b",
+    "\u9635\u5bb94\u6536\u85cf",
+    "\u9635\u5bb95",
+    "\u9635\u5bb95\u6218\u529b",
+    "\u9635\u5bb95\u6536\u85cf",
 ]
 
 ROSTER_STAT_HEADERS = [
@@ -170,11 +170,11 @@ def build_roster_headers(
 ) -> list[str]:
     headers = ["\u53c2\u8d5b\u9009\u624b", "\u9009\u624bID"]
     for index in range(1, 6):
-        headers.append(f"P{index}")
+        headers.append(f"\u9635\u5bb9{index}")
         if include_power:
-            headers.append(f"P{index}\u6218\u529b")
+            headers.append(f"\u9635\u5bb9{index}\u6218\u529b")
         if include_collection:
-            headers.append(f"P{index}\u6536\u85cf")
+            headers.append(f"\u9635\u5bb9{index}\u6536\u85cf")
     if include_stat_levels:
         headers.extend(ROSTER_STAT_HEADERS)
     return headers
@@ -204,6 +204,60 @@ def _lineup(
     return lineup
 
 
+def _roster_json_entry(
+    entry: dict,
+    include_power: bool = True,
+    include_collection: bool = True,
+    include_stat_levels: bool = True,
+) -> dict:
+    teams = entry.get("teams") or {}
+    powers = entry.get("powers") or {}
+    collections = entry.get("collections") or {}
+    item = {
+        "\u53c2\u8d5b\u9009\u624b": entry.get("nickname", ""),
+        "\u9009\u624bID": str(entry.get("player_id", "") or ""),
+    }
+    for index in range(1, 6):
+        team = list(teams.get(index) or teams.get(str(index)) or [])[:5]
+        power = list(powers.get(index) or powers.get(str(index)) or [])[:5]
+        collection = list(collections.get(index) or collections.get(str(index)) or [])[:5]
+        item[f"\u9635\u5bb9{index}"] = team
+        if include_power:
+            item[f"\u9635\u5bb9{index}\u6218\u529b"] = power
+        if include_collection:
+            item[f"\u9635\u5bb9{index}\u6536\u85cf"] = collection
+    if include_stat_levels:
+        stat_levels = list(entry.get("stat_levels") or [])[: len(ROSTER_STAT_HEADERS)]
+        stat_levels += [None] * (len(ROSTER_STAT_HEADERS) - len(stat_levels))
+        item.update(dict(zip(ROSTER_STAT_HEADERS, stat_levels)))
+    return item
+
+
+def _export_roster_json(
+    roster,
+    output_dir: Path,
+    stem: str,
+    include_power: bool = True,
+    include_collection: bool = True,
+    include_stat_levels: bool = True,
+) -> Path | None:
+    entries = _roster_entries(roster)
+    if not entries:
+        return None
+    path = output_dir / f"{stem}_roster.json"
+    payload = [
+        _roster_json_entry(
+            entry,
+            include_power=include_power,
+            include_collection=include_collection,
+            include_stat_levels=include_stat_levels,
+        )
+        for entry in entries
+    ]
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
 def export_json(
     records: list[dict],
     output_dir: Path,
@@ -211,6 +265,7 @@ def export_json(
     include_power: bool = True,
     include_collection: bool = True,
     include_stat_levels: bool = True,
+    roster=None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"{stem}_result.json"
@@ -245,6 +300,14 @@ def export_json(
             item["\u5b88\u65b9\u5faa\u73af\u7b49\u7ea7"] = record.get("defender_stat_levels", [])
         payload.append(item)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    _export_roster_json(
+        roster,
+        output_dir,
+        stem,
+        include_power=include_power,
+        include_collection=include_collection,
+        include_stat_levels=include_stat_levels,
+    )
     return path
 
 
@@ -430,7 +493,7 @@ def export_excel(
                 width = 16
             elif header in ROSTER_STAT_HEADERS:
                 width = 12
-            elif re.match(r"^P\d+$", header):
+            elif re.match(r"^\u9635\u5bb9\d+$", header):
                 width = 40
             elif header.endswith("\u6218\u529b"):
                 width = 28

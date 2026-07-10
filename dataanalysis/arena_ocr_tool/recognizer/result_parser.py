@@ -24,12 +24,61 @@ DEFENDER_CARD_SLOT_CENTERS = (0.215, 0.385, 0.555, 0.725, 0.895)
 ATTACKER_POWER_SLOT_CENTERS = (0.082, 0.266, 0.449, 0.633, 0.816)
 DEFENDER_POWER_SLOT_CENTERS = (0.172, 0.356, 0.539, 0.722, 0.906)
 DETAIL_SLOT_CENTERS = (0.109, 0.291, 0.473, 0.655, 0.837)
+DETAILED_RESULT_PANEL_X = (0.4019, 0.5992)
 DETAILED_RESULT_LEFT_PORTRAIT_X = (0.015, 0.205)
 DETAILED_RESULT_RIGHT_PORTRAIT_X = (0.785, 0.985)
 DETAILED_DEFEAT_VISUAL_DARK_THRESHOLD = 0.43
 DETAILED_DEFEAT_VISUAL_CENTER_DARK_THRESHOLD = 0.50
 DETAILED_DEFEAT_STRICT_COUNT = 5
 DETAILED_DEFEAT_SOFT_COUNT = 4
+DETAILED_DEFEAT_TEMPLATE_THRESHOLD = 0.78
+DETAILED_DEFEAT_STICKER_X = {
+    "attacker": (0.026, 0.216),
+    "defender": (0.773, 0.974),
+}
+DETAILED_DEFEAT_STICKER_Y = (
+    (0.087, 0.241),
+    (0.269, 0.426),
+    (0.449, 0.610),
+    (0.635, 0.787),
+    (0.812, 0.968),
+)
+DETAILED_DEFEAT_STICKER_Y_BY_ROUND = (
+    ((0.0161, 0.0543), (0.0518, 0.0901), (0.0882, 0.1272), (0.1249, 0.1623), (0.1610, 0.1995)),
+    ((0.2148, 0.2531), (0.2509, 0.2907), (0.2873, 0.3265), (0.3240, 0.3614), (0.3597, 0.3990)),
+    ((0.4144, 0.4520), (0.4500, 0.4883), (0.4860, 0.5258), (0.5231, 0.5612), (0.5592, 0.5978)),
+    ((0.6135, 0.6518), (0.6492, 0.6880), (0.6856, 0.7242), (0.7223, 0.7597), (0.7579, 0.7964)),
+    ((0.8122, 0.8501), (0.8483, 0.8869), (0.8847, 0.9233), (0.9210, 0.9584), (0.9570, 0.9937)),
+)
+DETAILED_DEFEAT_TEXT_TEMPLATE_HEX_ROWS = (
+    "000000000000000000",
+    "000000000000000000",
+    "000000000000000000",
+    "000000000000000000",
+    "0007c0ff83df3e0000",
+    "000fc0ffc7fffffc00",
+    "000fc0ffcffffffe00",
+    "000ffcffeffffffe00",
+    "000ffe7fe7fffffe00",
+    "000fffffefcffffe00",
+    "000fffffeffffffc00",
+    "000fc7ffeffffc7c00",
+    "000fc3ffeffffc7c00",
+    "007fffffcffffe7c00",
+    "007ffe3f0ffffe7c00",
+    "007ffe1f6ffffefc00",
+    "007ffe1feffffffc00",
+    "007efe1feffffff800",
+    "007c7e1feffffff800",
+    "007e7c7fe7ff9ff000",
+    "007e7e7fc7ff1ff000",
+    "007c7fffc1ff1ff000",
+    "007e7fffc3ff1ff000",
+    "007effffe3ffbff800",
+    "007fffe7e7fffffc00",
+    "007fff87e7fffefc00",
+    "007ffe03e7e7fc7c00",
+)
 RESULT_MODE_DETAILED = "detailed"
 RESULT_MODE_SIMPLE = "simple"
 RESULT_MODE_AUTO = "auto"
@@ -41,6 +90,10 @@ MAX_CARD_POWER = 400_000
 STRONG_POWER_RECHECK_SUPPORT = 12.0
 POWER_TIGHT_RECHECK_SUPPORT = 20.0
 POWER_ANCHORED_CONFIDENCE_FLOOR = 0.88
+POWER_STRIP_CROP_TOP = 0.64
+POWER_STRIP_CROP_BOTTOM = 0.985
+POWER_STRIP_CROP_HALF_WIDTH = 0.125
+POWER_STRIP_BATCH_SIZE = 32
 COLLECTION_ICON_BOX = (0.07, 0.41, 0.23, 0.515)
 COLLECTION_NONE = "\u65e0"
 COLLECTION_DIRECT_LABELS = ("R", "R15", "SR", "SR15", "SSR", "SSR3")
@@ -99,6 +152,7 @@ COLLECTION_DIRECT_SR_SCORE_DELTA_GUARD = -0.04
 COLLECTION_DIRECT_R_TO_SR_MARGIN = 0.015
 COLLECTION_DIRECT_R_TO_SR_DARK_MAX = 0.03
 COLLECTION_DIRECT_NONE_VETO_MARGIN = -0.18
+COLLECTION_DIRECT_TREASURE_NONE_MARGIN = 0.0
 COLLECTION_DIRECT_R_BRIGHT_NONE_MARGIN = -0.04
 COLLECTION_DIRECT_R_BRIGHT_ACTIVE_MAX = 0.20
 COLLECTION_DIRECT_R_BRIGHT_WHITE_MIN = 0.60
@@ -135,6 +189,12 @@ STAT_LEVEL_RECHECK_BELOW = 50
 STAT_LEVEL_AREA = (0.0, 0.948, 1.0, 0.998)
 STAT_LEVEL_SLOT_Y0 = 0.980
 STAT_LEVEL_SLOT_Y1 = 0.998
+STAT_LEVEL_RECHECK_SLOT_BOXES = (
+    (0.960, STAT_LEVEL_SLOT_Y1, 0.90),
+    (0.970, STAT_LEVEL_SLOT_Y1, 1.00),
+    (STAT_LEVEL_SLOT_Y0, STAT_LEVEL_SLOT_Y1, 1.00),
+    (0.985, STAT_LEVEL_SLOT_Y1, 1.35),
+)
 
 
 @dataclass
@@ -476,8 +536,45 @@ def _best_positioned_character_match(
     return best_name, best_score, best_text
 
 
+def _name_compact(text: str, matcher: NikkeNameMatcher, name_profile: str = NAME_PROFILE_DEFAULT) -> str:
+    value = _apply_name_profile_aliases(_clean_text(text), name_profile)
+    return matcher.normalize_name(value).replace(CANONICAL_COLON, "")
+
+
+def _local_names(matcher: NikkeNameMatcher) -> set[str]:
+    return {str(name).strip() for name in getattr(matcher, "names", []) if str(name).strip()}
+
+
+def _compact_len(name: str, matcher: NikkeNameMatcher) -> int:
+    return len(matcher.normalize_name(name).replace(CANONICAL_COLON, ""))
+
+
+def _is_precise_slot_name_target(name: str, matcher: NikkeNameMatcher) -> bool:
+    norm = matcher.normalize_name(name)
+    return CANONICAL_COLON in norm or _compact_len(name, matcher) >= 5
+
+
+def _is_short_slot_name_target(name: str, matcher: NikkeNameMatcher) -> bool:
+    norm = matcher.normalize_name(name)
+    if not norm or CANONICAL_COLON in norm:
+        return False
+    compact = norm.replace(CANONICAL_COLON, "")
+    if re.fullmatch(r"[\u4e00-\u9fff]{1,2}", compact):
+        return True
+    # Avoid accepting single Latin letters such as UI markers; multi-character
+    # short codes like 2B/A2/N102 remain exact-match eligible.
+    return bool(re.fullmatch(r"[A-Za-z0-9.\-]{2,4}", compact))
+
+
 def _base_name_norm(name: str, matcher: NikkeNameMatcher) -> str:
     return matcher.normalize_name(name).split(CANONICAL_COLON, 1)[0]
+
+
+def _special_suffix_compact(name: str, matcher: NikkeNameMatcher) -> str:
+    norm = matcher.normalize_name(name)
+    if CANONICAL_COLON not in norm:
+        return ""
+    return norm.split(CANONICAL_COLON, 1)[1].replace(CANONICAL_COLON, "")
 
 
 def _has_special_variants(name: str, matcher: NikkeNameMatcher) -> bool:
@@ -485,6 +582,179 @@ def _has_special_variants(name: str, matcher: NikkeNameMatcher) -> bool:
     if not base:
         return False
     return any(_base_name_norm(special, matcher) == base for special in getattr(matcher, "special_names", []))
+
+
+def _special_variant_candidates(current_name: str, matcher: NikkeNameMatcher) -> list[str]:
+    base = _base_name_norm(current_name, matcher)
+    if not base:
+        return []
+    return [
+        special
+        for special in getattr(matcher, "special_names", [])
+        if _base_name_norm(special, matcher) == base
+    ]
+
+
+def _has_special_slot_evidence(
+    text: str,
+    special_name: str,
+    matcher: NikkeNameMatcher,
+    *,
+    base_known: bool,
+    name_profile: str = NAME_PROFILE_DEFAULT,
+) -> bool:
+    text_value = _apply_name_profile_aliases(_clean_text(text), name_profile)
+    text_norm = matcher.normalize_name(text_value)
+    text_compact = text_norm.replace(CANONICAL_COLON, "")
+    special_norm = matcher.normalize_name(special_name)
+    if CANONICAL_COLON not in special_norm or not text_compact:
+        return False
+    base_norm, suffix_norm = special_norm.split(CANONICAL_COLON, 1)
+    base_compact = base_norm.replace(CANONICAL_COLON, "")
+    suffix_compact = suffix_norm.replace(CANONICAL_COLON, "")
+    full_compact = special_norm.replace(CANONICAL_COLON, "")
+    if not suffix_compact:
+        return False
+
+    if CANONICAL_COLON in text_norm:
+        text_suffix = text_norm.split(CANONICAL_COLON, 1)[1].replace(CANONICAL_COLON, "")
+        if text_suffix and suffix_compact.startswith(text_suffix[: min(2, len(text_suffix))]):
+            return True
+        if text_suffix and text_suffix in suffix_compact and len(text_suffix) >= 2:
+            return True
+
+    if base_known:
+        if suffix_compact[:2] and suffix_compact[:2] in text_compact:
+            return True
+        for length in range(3, min(len(suffix_compact), 6) + 1):
+            for start in range(0, len(suffix_compact) - length + 1):
+                if suffix_compact[start : start + length] in text_compact:
+                    return True
+        return False
+
+    if text_compact.startswith(base_compact + suffix_compact[:2]):
+        return True
+    if base_compact and text_compact.startswith(base_compact[-1:] + suffix_compact[:2]):
+        return True
+    if len(text_compact) >= 3 and suffix_compact.startswith(text_compact):
+        return True
+    if len(text_compact) >= 4 and text_compact in full_compact and not text_compact.endswith(suffix_compact[-3:]):
+        return True
+    return False
+
+
+def _slot_precise_name_from_texts(
+    texts: list[str],
+    matcher: NikkeNameMatcher,
+    current_name: str = "",
+    name_profile: str = NAME_PROFILE_DEFAULT,
+) -> tuple[str, float]:
+    local_names = _local_names(matcher)
+    if not local_names:
+        return "", -1.0
+
+    current_base = _base_name_norm(current_name, matcher) if current_name else ""
+    if current_base:
+        candidates = [
+            name
+            for name in local_names
+            if _is_precise_slot_name_target(name, matcher)
+            and (
+                _base_name_norm(name, matcher) == current_base
+                or matcher.normalize_name(name).replace(CANONICAL_COLON, "").startswith(
+                    matcher.normalize_name(current_name).replace(CANONICAL_COLON, "")
+                )
+            )
+        ]
+    else:
+        candidates = [name for name in local_names if _is_precise_slot_name_target(name, matcher)]
+    if not candidates:
+        return "", -1.0
+
+    scores: dict[str, float] = {}
+    for raw_text in texts:
+        text = _apply_name_profile_aliases(_clean_text(raw_text), name_profile)
+        if not text or _is_noise_token(text):
+            continue
+        text_compact = _name_compact(text, matcher, name_profile=name_profile)
+        if not text_compact:
+            continue
+
+        matched = matcher.match_name(text)
+        matched_name = str(matched.get("matched_name") or "").strip()
+        matched_score = float(matched.get("score") or 0.0)
+        if matched_name in candidates and matched_score >= 92.0:
+            if CANONICAL_COLON in matcher.normalize_name(matched_name):
+                if _has_special_slot_evidence(
+                    text,
+                    matched_name,
+                    matcher,
+                    base_known=bool(current_base and _base_name_norm(matched_name, matcher) == current_base),
+                    name_profile=name_profile,
+                ):
+                    scores[matched_name] = max(scores.get(matched_name, -1.0), matched_score)
+            elif len(text_compact) >= 3:
+                scores[matched_name] = max(scores.get(matched_name, -1.0), matched_score)
+
+        for candidate in candidates:
+            candidate_norm = matcher.normalize_name(candidate)
+            candidate_compact = candidate_norm.replace(CANONICAL_COLON, "")
+            if not candidate_compact:
+                continue
+            if CANONICAL_COLON in candidate_norm:
+                base_known = bool(current_base and _base_name_norm(candidate, matcher) == current_base)
+                if _has_special_slot_evidence(text, candidate, matcher, base_known=base_known, name_profile=name_profile):
+                    evidence_score = 98.0 if base_known else 94.0
+                    scores[candidate] = max(scores.get(candidate, -1.0), evidence_score)
+            elif len(text_compact) >= 3 and (text_compact in candidate_compact or candidate_compact in text_compact):
+                scores[candidate] = max(scores.get(candidate, -1.0), 90.0 + min(len(text_compact), 8))
+
+    if not scores:
+        return "", -1.0
+    ordered = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    if len(ordered) > 1 and ordered[0][1] - ordered[1][1] < 4.0:
+        return "", -1.0
+    return ordered[0]
+
+
+def _slot_short_name_from_texts(
+    texts: list[str],
+    matcher: NikkeNameMatcher,
+    name_profile: str = NAME_PROFILE_DEFAULT,
+) -> tuple[str, float]:
+    local_names = _local_names(matcher)
+    if not local_names:
+        return "", -1.0
+    compact_to_names: dict[str, list[str]] = {}
+    for name in local_names:
+        if not _is_short_slot_name_target(name, matcher):
+            continue
+        compact_to_names.setdefault(_name_compact(name, matcher), []).append(name)
+
+    scores: dict[str, float] = {}
+    for raw_text in texts:
+        text = _apply_name_profile_aliases(_clean_text(raw_text), name_profile)
+        if not text or _is_noise_token(text):
+            continue
+        compact = _name_compact(text, matcher, name_profile=name_profile)
+        names = compact_to_names.get(compact, [])
+        if len(names) == 1:
+            scores[names[0]] = max(scores.get(names[0], -1.0), 100.0)
+
+    if not scores:
+        return "", -1.0
+    ordered = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    if len(ordered) > 1 and ordered[0][1] == ordered[1][1]:
+        return "", -1.0
+    return ordered[0]
+
+
+def _slot_texts(items: list[OCRItem]) -> list[str]:
+    texts = [_clean_text(item.text) for item in items if _clean_text(item.text)]
+    joined = _items_to_text(items)
+    if joined:
+        texts.append(joined)
+    return texts
 
 
 def _special_upgrade_from_texts(texts: list[str], current_name: str, matcher: NikkeNameMatcher) -> str:
@@ -553,6 +823,14 @@ def _promote_fhd_special_from_label(
         prepared,
         name_profile=NAME_PROFILE_FHD,
     )
+    precise_name, _ = _slot_precise_name_from_texts(
+        [text, *_slot_texts(items)],
+        matcher,
+        current_name=current_name,
+        name_profile=NAME_PROFILE_FHD,
+    )
+    if precise_name and precise_name != current_name:
+        return precise_name
     if (
         name
         and name != current_name
@@ -572,7 +850,10 @@ def _promote_special_card_name(
     name_profile: str = NAME_PROFILE_DEFAULT,
     label_image: Image.Image | None = None,
 ) -> str:
-    if not current_name or not _has_special_variants(current_name, matcher):
+    if not current_name:
+        return current_name
+    current_is_precise = _is_precise_slot_name_target(current_name, matcher)
+    if not _has_special_variants(current_name, matcher) and not current_is_precise:
         return current_name
 
     if name_profile == NAME_PROFILE_FHD:
@@ -587,6 +868,14 @@ def _promote_special_card_name(
         items = ocr.recognize_region(prepare_for_ocr(label_image), f"{region_name}_special_{index}")
         texts.extend(item.text for item in items)
         texts.append(_items_to_text(items))
+        precise_name, _ = _slot_precise_name_from_texts(
+            texts,
+            matcher,
+            current_name=current_name,
+            name_profile=name_profile,
+        )
+        if precise_name and precise_name != current_name:
+            return precise_name
         upgraded = _special_upgrade_from_texts(texts, current_name, matcher)
         if upgraded != current_name:
             return upgraded
@@ -952,6 +1241,12 @@ def _classify_collection_icon_by_direct_template(icon_image: Image.Image) -> str
                 return COLLECTION_NONE
         label = _postprocess_collection_direct_label(best_label, scores, stats)
         if (
+            label in COLLECTION_TREASURE_LABELS
+            and none_score is not None
+            and best_score - none_score <= COLLECTION_DIRECT_TREASURE_NONE_MARGIN
+        ):
+            return COLLECTION_NONE
+        if (
             label == "R"
             and none_score is not None
             and best_score - none_score <= COLLECTION_DIRECT_R_BRIGHT_NONE_MARGIN
@@ -1187,6 +1482,18 @@ def _stat_level_observations_from_text(
     if observations:
         return observations
 
+    compact = re.sub(r"\s+", "", normalized)
+    malformed_repairs = (
+        (r"(?:[Zz2])?6\^7", 97),
+        (r"86\^7", 98),
+    )
+    for pattern, value in malformed_repairs:
+        if re.fullmatch(pattern, compact):
+            observations.append(
+                _StatLevelObservation(value, max(0.0, min(1.0, float(confidence or 0.0))), False, raw_text, weight)
+            )
+            return observations
+
     digit_groups = re.findall(r"(?<!\d)(\d{1,3})(?!\d)", normalized)
     if len(digit_groups) != 1 or re.search(r"[\^/\\]", normalized):
         return []
@@ -1212,7 +1519,12 @@ def _choose_stat_level(observations: list[_StatLevelObservation]) -> int | None:
         weight_sum = sum(item.weight for item in items)
         return (weight_sum + confidence_sum * 0.75 + from_lv_count * 4.0, from_lv_count, max(item.confidence for item in items))
 
-    return max(grouped, key=score)
+    chosen = max(grouped, key=score)
+    if chosen in {26, 86} and not any(item.from_lv for item in grouped[chosen]):
+        repaired_candidates = [value for value in grouped if 90 <= value <= 99]
+        if repaired_candidates:
+            return max(repaired_candidates, key=score)
+    return chosen
 
 
 def _stat_level_preprocess_variants(image: Image.Image) -> list[tuple[Image.Image, float]]:
@@ -1233,17 +1545,45 @@ def _stat_level_preprocess_variants(image: Image.Image) -> list[tuple[Image.Imag
     ]
 
 
+def _recognize_stat_level_crop_observations(
+    image: Image.Image,
+    ocr: ArenaOCRRecognizer,
+    region_name: str,
+    weight_scale: float = 1.0,
+) -> list[_StatLevelObservation]:
+    observations: list[_StatLevelObservation] = []
+    for index, (variant, weight) in enumerate(_stat_level_preprocess_variants(image), start=1):
+        items = ocr.recognize_region(prepare_for_ocr(variant), f"{region_name}_v{index}")
+        for item in items:
+            observations.extend(
+                _stat_level_observations_from_text(item.text, item.confidence, weight=weight * weight_scale)
+            )
+    return observations
+
+
 def _recognize_stat_level_crop(
     image: Image.Image,
     ocr: ArenaOCRRecognizer,
     region_name: str,
 ) -> int | None:
-    observations: list[_StatLevelObservation] = []
-    for index, (variant, weight) in enumerate(_stat_level_preprocess_variants(image), start=1):
-        items = ocr.recognize_region(prepare_for_ocr(variant), f"{region_name}_v{index}")
-        for item in items:
-            observations.extend(_stat_level_observations_from_text(item.text, item.confidence, weight=weight))
+    observations = _recognize_stat_level_crop_observations(image, ocr, region_name)
     return _choose_stat_level(observations)
+
+
+def _recognize_stat_level_slot_observations(
+    side_image: Image.Image,
+    left: float,
+    right: float,
+    ocr: ArenaOCRRecognizer,
+    region_name: str,
+) -> list[_StatLevelObservation]:
+    observations: list[_StatLevelObservation] = []
+    for index, (top, bottom, weight) in enumerate(STAT_LEVEL_RECHECK_SLOT_BOXES, start=1):
+        slot_image = _crop_rel(side_image, (left, top, right, bottom))
+        observations.extend(
+            _recognize_stat_level_crop_observations(slot_image, ocr, f"{region_name}_box{index}", weight_scale=weight)
+        )
+    return observations
 
 
 def _stat_level_slot_bounds(centers: tuple[float, ...], index: int) -> tuple[float, float]:
@@ -1283,9 +1623,14 @@ def recognize_stat_levels(
         if value is not None and has_lv_source and value >= STAT_LEVEL_RECHECK_BELOW:
             continue
         left, right = _stat_level_slot_bounds(centers, index)
-        slot_box = (left, STAT_LEVEL_SLOT_Y0, right, STAT_LEVEL_SLOT_Y1)
-        slot_image = _crop_rel(side_image, slot_box)
-        slot_value = _recognize_stat_level_crop(slot_image, ocr, f"{side}_stat_level_{index + 1}")
+        slot_recheck_observations = _recognize_stat_level_slot_observations(
+            side_image,
+            left,
+            right,
+            ocr,
+            f"{side}_stat_level_{index + 1}",
+        )
+        slot_value = _choose_stat_level(slot_observations[index] + slot_recheck_observations)
         if slot_value is not None:
             levels[index] = slot_value
     return levels
@@ -1456,6 +1801,105 @@ def _power_ocr_mode() -> str:
 def _power_verify_existing() -> bool:
     value = os.environ.get("NIKKE_POWER_VERIFY_EXISTING", "0").strip().lower()
     return value not in {"0", "false", "no", "off", "fast"}
+
+
+def _power_strip_verify_enabled(ocr: ArenaOCRRecognizer) -> bool:
+    mode = os.environ.get("NIKKE_POWER_STRIP_VERIFY", "auto").strip().lower()
+    if mode in {"0", "false", "no", "off", "fast"}:
+        return False
+    if mode in {"1", "true", "yes", "on", "always"}:
+        return ocr.engine_name == "paddleocr"
+    return ocr.engine_name == "paddleocr"
+
+
+def _isolate_power_strip(image: Image.Image) -> Image.Image:
+    gray = np.asarray(image.convert("L"), dtype=np.uint8)
+    if gray.size == 0:
+        return image
+    height, width = gray.shape[:2]
+    mask = ((gray < 185) & (gray > 35)).astype(np.uint8)
+    mask[: int(height * 0.35), :] = 0
+    mask[int(height * 0.80) :, :] = 0
+    row_projection = mask.sum(axis=1)
+    active_rows = np.where(row_projection > max(4, int(round(width * 0.025))))[0]
+    if active_rows.size == 0:
+        return image.crop((0, int(height * 0.38), width, int(height * 0.78)))
+
+    groups: list[tuple[int, int]] = []
+    start = previous = int(active_rows[0])
+    for row in active_rows[1:]:
+        row = int(row)
+        if row <= previous + 1:
+            previous = row
+            continue
+        groups.append((start, previous))
+        start = previous = row
+    groups.append((start, previous))
+    best_start, best_end = max(groups, key=lambda item: int(row_projection[item[0] : item[1] + 1].sum()))
+    y0 = max(0, best_start - 8)
+    y1 = min(height, best_end + 9)
+    band_mask = ((gray[y0:y1] < 185) & (gray[y0:y1] > 35)).astype(np.uint8)
+    col_projection = band_mask.sum(axis=0)
+    active_cols = np.where(col_projection > 0)[0]
+    if active_cols.size:
+        x0 = max(0, int(active_cols[0]) - 8)
+        x1 = min(width, int(active_cols[-1]) + 9)
+    else:
+        x0, x1 = 0, width
+    return image.crop((x0, y0, x1, y1))
+
+
+def _power_strip_value(items: list[OCRItem]) -> int | None:
+    observations: list[_PowerObservation] = []
+    for item in items:
+        observations.extend(_extract_power_observations_clean(item.text, item.confidence))
+    value, _support = _choose_power_observation(observations)
+    return value
+
+
+def _recognize_power_strip_rows(
+    row_images: list[Image.Image],
+    centers: tuple[float, ...],
+    ocr: ArenaOCRRecognizer,
+    side: str,
+) -> list[list[int | None]]:
+    bands: list[Image.Image] = []
+    region_names: list[str] = []
+    for row_index, row_image in enumerate(row_images, start=1):
+        for slot_index, center in enumerate(centers, start=1):
+            crop = _crop_rel(
+                row_image,
+                (
+                    max(0.0, center - POWER_STRIP_CROP_HALF_WIDTH),
+                    POWER_STRIP_CROP_TOP,
+                    min(1.0, center + POWER_STRIP_CROP_HALF_WIDTH),
+                    POWER_STRIP_CROP_BOTTOM,
+                ),
+            )
+            bands.append(_isolate_power_strip(crop))
+            region_names.append(f"{side}_power_strip_{row_index}_{slot_index}")
+
+    if not bands:
+        return []
+    native_items = ocr.recognize_text_lines(bands, region_names, batch_size=POWER_STRIP_BATCH_SIZE)
+    prepared_bands = [prepare_for_ocr(band) for band in bands]
+    prepared_items = ocr.recognize_text_lines(prepared_bands, region_names, batch_size=POWER_STRIP_BATCH_SIZE)
+    values: list[int | None] = []
+    for native, prepared in zip(native_items, prepared_items):
+        native_value = _power_strip_value(native)
+        prepared_value = _power_strip_value(prepared)
+        values.append(native_value if native_value is not None and native_value == prepared_value else None)
+    return [values[index : index + len(centers)] for index in range(0, len(values), len(centers))]
+
+
+def _merge_power_strip_value(current: int | None, candidate: int | None) -> int | None:
+    if candidate is None:
+        return current
+    if current is None:
+        return candidate if len(str(candidate)) >= 6 else None
+    if len(str(candidate)) < len(str(current)):
+        return current
+    return candidate
 
 
 def _power_preprocess_variants(image: Image.Image, max_variants: int | None = None) -> list[Image.Image]:
@@ -1865,6 +2309,8 @@ def recognize_team_rows(
     power_centers = ATTACKER_POWER_SLOT_CENTERS if side == "attacker" else DEFENDER_POWER_SLOT_CENTERS
     power_mode = _power_ocr_mode()
     name_profile = _name_profile_from_block_height(block_height)
+    power_strip_enabled = include_power and _power_strip_verify_enabled(ocr)
+    power_strip_rows: list[Image.Image] = []
 
     # The first playable card row starts below the sync-level strip. The bottom
     # team stats row is intentionally excluded to avoid matching research names.
@@ -1876,6 +2322,8 @@ def recognize_team_rows(
         y1 = start + (row + 1) * row_h
         default_row_box = (0.01, y0, 0.99, y1)
         row_image = _crop_rel(area, default_row_box)
+        if power_strip_enabled:
+            power_strip_rows.append(row_image)
         name_slot_boxes: list[tuple[float, float, float, float] | None] = [None] * 5
         name_label_boxes: list[tuple[float, float, float, float] | None] = [None] * 5
         row_centers = centers
@@ -1922,6 +2370,20 @@ def recognize_team_rows(
                 prepared_card,
                 name_profile=name_profile,
             )
+            slot_has_power = power_slots[slot] is not None and MIN_CARD_POWER <= int(power_slots[slot]) <= MAX_CARD_POWER
+            if not card_name and slot_has_power:
+                card_name, _ = _slot_precise_name_from_texts(
+                    _slot_texts(card_items),
+                    matcher,
+                    current_name="",
+                    name_profile=name_profile,
+                )
+            if not card_name and slot_has_power:
+                card_name, _ = _slot_short_name_from_texts(
+                    _slot_texts(card_items),
+                    matcher,
+                    name_profile=name_profile,
+                )
             if not card_name and name_profile == NAME_PROFILE_FHD:
                 label_image = (
                     _crop_rel(row_image, name_label_boxes[slot])
@@ -1939,11 +2401,26 @@ def recognize_team_rows(
                     prepared_label,
                     name_profile=name_profile,
                 )
+                if not card_name and slot_has_power:
+                    card_name, _ = _slot_precise_name_from_texts(
+                        _slot_texts(label_items),
+                        matcher,
+                        current_name="",
+                        name_profile=name_profile,
+                    )
+                if not card_name and slot_has_power:
+                    card_name, _ = _slot_short_name_from_texts(
+                        _slot_texts(label_items),
+                        matcher,
+                        name_profile=name_profile,
+                    )
             if card_name:
                 slots[slot] = card_name
 
         for slot in range(5):
-            if not slots[slot] or not _has_special_variants(slots[slot], matcher):
+            if not slots[slot]:
+                continue
+            if not _has_special_variants(slots[slot], matcher) and not _is_precise_slot_name_target(slots[slot], matcher):
                 continue
             center = row_centers[slot]
             card_image = _crop_rel(
@@ -1960,9 +2437,6 @@ def recognize_team_rows(
                 name_profile=name_profile,
                 label_image=label_image,
             )
-
-        if include_collection:
-            collection_slots = _gate_collection_slots_by_character_names(slots, collection_slots, matcher)
 
         # Row-level OCR is the default path. Tight per-slot OCR is reserved for
         # missing/suspicious slots in adaptive mode; accurate mode keeps the old
@@ -2017,6 +2491,15 @@ def recognize_team_rows(
         teams.append(slots)
         powers.append(power_slots)
         collections.append(collection_slots)
+    if power_strip_enabled:
+        strip_rows = _recognize_power_strip_rows(power_strip_rows, power_centers, ocr, side)
+        for row_index, strip_slots in enumerate(strip_rows):
+            if row_index >= len(powers):
+                break
+            for slot_index, candidate in enumerate(strip_slots):
+                if slot_index >= len(powers[row_index]):
+                    break
+                powers[row_index][slot_index] = _merge_power_strip_value(powers[row_index][slot_index], candidate)
     return teams, powers, collections
 
 
@@ -2036,9 +2519,6 @@ def _match_detail_team_slots(
     for item in items:
         text = _clean_text(item.text)
         if _is_noise_token(text) or not re.search(r"[\u4e00-\u9fffA-Za-z]", text):
-            continue
-        name, match_score = _best_character_match(text, matcher, name_profile=name_profile)
-        if not name or name == "unknown" or match_score < matcher.threshold:
             continue
         xs = [point[0] for point in item.bbox]
         ys = [point[1] for point in item.bbox]
@@ -2071,6 +2551,28 @@ def _match_detail_team_slots(
             if abs(y_ratio - DETAIL_SLOT_CENTERS[slot]) > 0.055:
                 continue
             side = 0 if x_ratio < 0.5 else 1
+
+        name, match_score = _best_character_match(text, matcher, name_profile=name_profile)
+        if not name or name == "unknown" or match_score < matcher.threshold:
+            precise_name, precise_score = _slot_precise_name_from_texts(
+                [text],
+                matcher,
+                current_name="",
+                name_profile=name_profile,
+            )
+            if precise_name:
+                name = precise_name
+                match_score = precise_score
+            else:
+                short_name, short_score = _slot_short_name_from_texts(
+                    [text],
+                    matcher,
+                    name_profile=name_profile,
+                )
+                if not short_name:
+                    continue
+                name = short_name
+                match_score = short_score
         combined_score = match_score + max(0.0, min(1.0, item.confidence)) * 2.0
         if combined_score > scores[side][slot]:
             teams[side][slot] = name
@@ -2085,6 +2587,10 @@ def _detail_round_crop(
     center_size = tuple(float(value) for value in center_image.size)
     rel_box = (0.0, row / 5, 1.0, (row + 1) / 5)
     return _crop_rel(center_image, rel_box), _box_rel_to_abs((0.0, 0.0), center_size, rel_box)
+
+
+def _detailed_result_panel_image(match_image: Image.Image) -> Image.Image:
+    return _crop_rel(match_image, (DETAILED_RESULT_PANEL_X[0], 0.0, DETAILED_RESULT_PANEL_X[1], 1.0))
 
 
 def recognize_detail_team_rows(
@@ -2252,18 +2758,84 @@ def _detail_slot_from_y_ratio(y_ratio: float) -> int | None:
     return None
 
 
+@lru_cache(maxsize=1)
+def _defeat_text_template_image() -> Image.Image:
+    rows: list[list[int]] = []
+    for row in DETAILED_DEFEAT_TEXT_TEMPLATE_HEX_ROWS:
+        bits = bin(int(row, 16))[2:].zfill(72)
+        rows.append([255 if bit == "1" else 0 for bit in bits])
+    return Image.fromarray(np.asarray(rows, dtype=np.uint8), mode="L").convert("RGB")
+
+
+def _defeat_template_binary(image: Image.Image) -> np.ndarray:
+    rgb = np.asarray(image.convert("RGB"), dtype=np.uint8)
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    _threshold, binary = cv2.threshold(gray, 72, 255, cv2.THRESH_BINARY)
+    return binary
+
+
+def _defeat_template_score(crop: Image.Image) -> float:
+    if crop.width < 8 or crop.height < 8:
+        return 0.0
+    source = _defeat_template_binary(crop)
+    template = _defeat_template_binary(_defeat_text_template_image())
+    best_score = 0.0
+    for scale in np.linspace(0.32, 1.35, 42):
+        width = max(4, int(round(template.shape[1] * scale)))
+        height = max(4, int(round(template.shape[0] * scale)))
+        if width > source.shape[1] or height > source.shape[0]:
+            continue
+        scaled = cv2.resize(template, (width, height), interpolation=cv2.INTER_AREA)
+        if np.count_nonzero(scaled) < 5:
+            continue
+        score = float(cv2.minMaxLoc(cv2.matchTemplate(source, scaled, cv2.TM_CCOEFF_NORMED))[1])
+        best_score = max(best_score, score)
+    return best_score
+
+
 def _is_defeat_sticker_visual(crop: Image.Image) -> bool:
-    if crop.width < 4 or crop.height < 4:
+    return _defeat_template_score(crop) >= DETAILED_DEFEAT_TEMPLATE_THRESHOLD
+
+
+def _contains_defeat_sticker_visual(crop: Image.Image) -> bool:
+    if _is_defeat_sticker_visual(crop):
+        return True
+    if crop.width < 16 or crop.height < 20:
         return False
-    rgb = np.asarray(crop.convert("RGB").resize((96, 120), Image.Resampling.LANCZOS), dtype=np.uint8)
-    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
-    value = hsv[:, :, 2].astype(np.float32) / 255.0
-    dark = value < 0.30
-    dark_ratio = float(dark.mean())
-    center_dark_ratio = float(dark[int(120 * 0.20) : int(120 * 0.85), :].mean())
+    width = crop.width
+    height = crop.height
+    window_specs = (
+        (0.34, 0.62),
+        (0.46, 0.72),
+        (0.58, 0.84),
+    )
+    for width_ratio, height_ratio in window_specs:
+        win_w = max(12, min(width, int(round(width * width_ratio))))
+        win_h = max(18, min(height, int(round(height * height_ratio))))
+        if win_w >= width and win_h >= height:
+            continue
+        x_steps = 4 if width > win_w else 1
+        y_steps = 3 if height > win_h else 1
+        for xi in range(x_steps):
+            x0 = 0 if x_steps == 1 else int(round((width - win_w) * xi / (x_steps - 1)))
+            for yi in range(y_steps):
+                y0 = 0 if y_steps == 1 else int(round((height - win_h) * yi / (y_steps - 1)))
+                if _is_defeat_sticker_visual(crop.crop((x0, y0, x0 + win_w, y0 + win_h))):
+                    return True
+    return False
+
+
+def _detail_defeat_x_ranges(side: str) -> tuple[tuple[float, float], ...]:
+    if side == "attacker":
+        return (
+            DETAILED_RESULT_LEFT_PORTRAIT_X,
+            (0.00, 0.24),
+            (0.12, 0.36),
+        )
     return (
-        dark_ratio >= DETAILED_DEFEAT_VISUAL_DARK_THRESHOLD
-        or center_dark_ratio >= DETAILED_DEFEAT_VISUAL_CENTER_DARK_THRESHOLD
+        DETAILED_RESULT_RIGHT_PORTRAIT_X,
+        (0.64, 0.88),
+        (0.76, 1.00),
     )
 
 
@@ -2288,18 +2860,53 @@ def _detect_detail_visual_defeat_slots(
             flags.append(_is_defeat_sticker_visual(round_image.crop((x0, y0, x1, y1))))
         return flags
 
-    x0_ratio, x1_ratio = DETAILED_RESULT_LEFT_PORTRAIT_X if side == "attacker" else DETAILED_RESULT_RIGHT_PORTRAIT_X
+    x0_ratio, x1_ratio = DETAILED_DEFEAT_STICKER_X[side]
     flags: list[bool] = []
-    for index in range(len(DETAIL_SLOT_CENTERS)):
-        top, bottom = _detail_slot_bounds(index)
-        height = bottom - top
-        crop_top = top + height * 0.06
-        crop_bottom = bottom - height * 0.04
-        if index == 0:
-            crop_top = max(crop_top, 0.070)
+    for crop_top, crop_bottom in DETAILED_DEFEAT_STICKER_Y:
         crop = _crop_rel(round_image, (x0_ratio, crop_top, x1_ratio, crop_bottom))
         flags.append(_is_defeat_sticker_visual(crop))
     return flags
+
+
+def _detect_detail_visual_defeat_slots_from_panel(
+    panel_image: Image.Image,
+    row: int,
+    side: str,
+) -> list[bool]:
+    x0_ratio, x1_ratio = DETAILED_DEFEAT_STICKER_X[side]
+    flags: list[bool] = []
+    for crop_top, crop_bottom in DETAILED_DEFEAT_STICKER_Y_BY_ROUND[row]:
+        crop = _crop_rel(panel_image, (x0_ratio, crop_top, x1_ratio, crop_bottom))
+        flags.append(_is_defeat_sticker_visual(crop))
+    return flags
+
+
+def _winner_from_detail_defeat_flags(
+    attacker_flags: list[bool],
+    defender_flags: list[bool],
+) -> tuple[str, float]:
+    attacker_defeats = sum(attacker_flags)
+    defender_defeats = sum(defender_flags)
+    if attacker_defeats >= DETAILED_DEFEAT_STRICT_COUNT and defender_defeats >= DETAILED_DEFEAT_STRICT_COUNT:
+        return "unknown", 0.35
+    if defender_defeats >= DETAILED_DEFEAT_STRICT_COUNT and attacker_defeats < DETAILED_DEFEAT_STRICT_COUNT:
+        return "attacker", 0.96
+    if attacker_defeats >= DETAILED_DEFEAT_STRICT_COUNT and defender_defeats < DETAILED_DEFEAT_STRICT_COUNT:
+        return "defender", 0.96
+    if defender_defeats >= DETAILED_DEFEAT_SOFT_COUNT and attacker_defeats <= 2:
+        return "attacker", 0.78
+    if attacker_defeats >= DETAILED_DEFEAT_SOFT_COUNT and defender_defeats <= 2:
+        return "defender", 0.78
+    return "unknown", 0.35
+
+
+def _detect_round_winner_by_detailed_defeat_panel(
+    panel_image: Image.Image,
+    row: int,
+) -> tuple[str, float]:
+    attacker_flags = _detect_detail_visual_defeat_slots_from_panel(panel_image, row, "attacker")
+    defender_flags = _detect_detail_visual_defeat_slots_from_panel(panel_image, row, "defender")
+    return _winner_from_detail_defeat_flags(attacker_flags, defender_flags)
 
 
 def _detect_detail_text_defeat_slots(
@@ -2313,7 +2920,7 @@ def _detect_detail_text_defeat_slots(
         "defender": [False] * len(DETAIL_SLOT_CENTERS),
     }
     for item in items:
-        if "战败" not in item.text:
+        if not _is_defeat_result_text(item.text):
             continue
         x_ratio, y_ratio = _ocr_item_center_ratio(item, round_image, coord_size)
         if defeat_boxes:
@@ -2334,6 +2941,10 @@ def _detect_detail_text_defeat_slots(
     return flags
 
 
+def _is_defeat_result_text(text: str) -> bool:
+    return any(token in str(text or "") for token in ("\u6218\u8d25", "\u6230\u6557"))
+
+
 def _detect_round_winner_by_detailed_defeat(
     round_image: Image.Image,
     items: list[OCRItem] | None = None,
@@ -2344,19 +2955,22 @@ def _detect_round_winner_by_detailed_defeat(
     text_flags = _detect_detail_text_defeat_slots(round_image, items, defeat_boxes=defeat_boxes)
     attacker_defeat_boxes = defeat_boxes.get("attacker") if defeat_boxes else None
     defender_defeat_boxes = defeat_boxes.get("defender") if defeat_boxes else None
+    attacker_visual_flags = _detect_detail_visual_defeat_slots(
+        round_image, "attacker", defeat_boxes=attacker_defeat_boxes
+    )
+    defender_visual_flags = _detect_detail_visual_defeat_slots(
+        round_image, "defender", defeat_boxes=defender_defeat_boxes
+    )
+    if sum(attacker_visual_flags) >= DETAILED_DEFEAT_STRICT_COUNT and sum(defender_visual_flags) >= DETAILED_DEFEAT_STRICT_COUNT:
+        attacker_visual_flags = [False] * len(DETAIL_SLOT_CENTERS)
+        defender_visual_flags = [False] * len(DETAIL_SLOT_CENTERS)
     attacker_flags = [
         visual or text
-        for visual, text in zip(
-            _detect_detail_visual_defeat_slots(round_image, "attacker", defeat_boxes=attacker_defeat_boxes),
-            text_flags["attacker"],
-        )
+        for visual, text in zip(attacker_visual_flags, text_flags["attacker"])
     ]
     defender_flags = [
         visual or text
-        for visual, text in zip(
-            _detect_detail_visual_defeat_slots(round_image, "defender", defeat_boxes=defender_defeat_boxes),
-            text_flags["defender"],
-        )
+        for visual, text in zip(defender_visual_flags, text_flags["defender"])
     ]
     attacker_defeats = sum(attacker_flags)
     defender_defeats = sum(defender_flags)
@@ -2391,7 +3005,7 @@ def _detect_round_winner_by_text(
         text = item.text.upper()
         x_ratio, _y_ratio = _ocr_item_center_ratio(item, round_image, coord_size)
         is_left = x_ratio < 0.5
-        if "战败" in item.text or "LOSE" in text:
+        if _is_defeat_result_text(item.text) or "LOSE" in text:
             if is_left:
                 left_loses += 1
             else:
@@ -2452,16 +3066,13 @@ def detect_round_winner(
 ) -> tuple[str, float]:
     round_image, _round_abs = _detail_round_crop(center_image, row)
     if result_mode == RESULT_MODE_DETAILED:
-        detail_winner, detail_conf = _detect_round_winner_by_detailed_defeat(
-            round_image,
-            items=items,
-        )
+        detail_winner, detail_conf = _detect_round_winner_by_detailed_defeat_panel(center_image, row)
         if detail_winner != "unknown":
             return detail_winner, detail_conf
         text_winner, text_conf = _detect_round_winner_by_text(round_image, ocr, items=items)
         if text_winner != "unknown":
             return text_winner, text_conf
-        return _detect_round_winner_by_color(round_image)
+        return "unknown", max(detail_conf, text_conf, 0.35)
     if result_mode == RESULT_MODE_AUTO:
         detail_winner, detail_conf = _detect_round_winner_by_detailed_defeat(
             round_image,
@@ -2517,6 +3128,7 @@ def recognize_match_block(
         ocr,
     )
     result_mode = _infer_result_mode(source_name)
+    winner_center_image = _detailed_result_panel_image(block.image) if result_mode == RESULT_MODE_DETAILED else center_image
     if ocr.available and include_teams:
         attacker_stat_levels = (
             recognize_stat_levels(
@@ -2580,11 +3192,21 @@ def recognize_match_block(
         attacker_teams = _merge_team_sources(attacker_teams, detail_attacker, attacker_scores, matcher)
         defender_teams = _merge_team_sources(defender_teams, detail_defender, defender_scores, matcher)
 
+    if include_collection:
+        attacker_collections = [
+            _gate_collection_slots_by_character_names(team, collection, matcher)
+            for team, collection in zip(attacker_teams, attacker_collections)
+        ]
+        defender_collections = [
+            _gate_collection_slots_by_character_names(team, collection, matcher)
+            for team, collection in zip(defender_teams, defender_collections)
+        ]
+
     records: list[dict] = []
     for row in range(5):
-        winner_items = detail_items[row] if include_teams else None
+        winner_items = None if result_mode == RESULT_MODE_DETAILED else (detail_items[row] if include_teams else None)
         winner, winner_conf = detect_round_winner(
-            center_image,
+            winner_center_image,
             row,
             ocr,
             items=winner_items,

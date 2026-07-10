@@ -28,6 +28,7 @@ $SupportExamplePath = Join-Path $AssetsDir "support_info_example.png"
 $GroupExamplePath = Join-Path $AssetsDir "group_info_example.png"
 $Top8ExamplePath = Join-Path $AssetsDir "top8_info_example.png"
 $DoroPath = Join-Path $AssetsDir "doro_theme_button.png"
+$AppIconPath = Join-Path $AssetsDir "app_doro_commander.ico"
 $StitcherPath = Join-Path $ScriptDir "nikke_round_stitcher.py"
 $RoundConfigPath = Join-Path $ScriptDir "nikke_round_config.json"
 $DataAnalysisDir = Join-Path $ScriptDir "dataanalysis"
@@ -54,7 +55,8 @@ $OcrSeasonImageSlots = @{
     group64 = $null
 }
 $RoundWorkerExe = Join-Path $ScriptDir "nikke_round_stitcher_worker.exe"
-$BundledCpuPython = Join-Path $ScriptDir "runtime_cpu\Scripts\python.exe"
+$BundledCorePython = Join-Path $ScriptDir "runtime_core\python.exe"
+$BundledCpuPython = Join-Path $ScriptDir "runtime_cpu\python.exe"
 $BundledOcrGpuPython = Join-Path $ScriptDir "runtime_gpu\Scripts\python.exe"
 
 function Test-PythonWorkerRuntime($Path) {
@@ -71,6 +73,7 @@ function Test-PythonWorkerRuntime($Path) {
 
 function Resolve-PythonExe {
     $candidates = @()
+    $candidates += $BundledCorePython
     $candidates += $BundledCpuPython
     if ($env:LOCALAPPDATA) {
         $candidates += Join-Path $env:LOCALAPPDATA "Programs\Python\Python312\python.exe"
@@ -211,8 +214,6 @@ $OcrThermalPauseActive = $false
 $OcrThermalResumeStableSince = $null
 $OcrThermalEmergencyPromptShown = $false
 $OcrThermalCurrentCooldownSeconds = 0.0
-$HotkeyId = 2202
-$HotkeyWindowHandle = [IntPtr]::Zero
 $DelayMinSeconds = 0.45
 $DetailDelayMinSeconds = 0.7
 $DetailCaptureDelaySeconds = 3.5
@@ -264,7 +265,7 @@ $TextOcrDoneMessage = '"\u6218\u540e\u6570\u636e\u8bc6\u522b\u4efb\u52a1\u5df2\u
 $TextOcrNeedDetailed = '"\u9700\u540c\u65f6\u52fe\u9009\u8d5b\u540e\u6570\u636e\uff08\u8be6\u7ec6\uff09"' | ConvertFrom-Json
 $TextAutoOcrStartMessage = '"\u6218\u6597\u6570\u636e\u56fe\u50cf\u5df2\u622a\u53d6\u5b8c\u6210\uff0c\u6307\u6325\u5b98\uff0c\u6b63\u5728\u8bc6\u522b\u5e76\u5bfc\u51fa\u6570\u636e\uff0c\u8bf7\u6307\u6325\u5b98\u8010\u5fc3\u7b49\u5f85"' | ConvertFrom-Json
 $TextAutoOcrStartTitle = '"\u6b63\u5728\u8bc6\u522b\u6570\u636e"' | ConvertFrom-Json
-$TextSettingsHelp = '"\u622a\u56fe\u4e0e\u6570\u636e\u8bc6\u522b\u53c2\u6570\u8bbe\u7f6e"' | ConvertFrom-Json
+$TextSettingsHelp = '"\u622a\u56fe\u4e0e\u56fe\u50cf\u8bc6\u522b\u53c2\u6570\u8bbe\u7f6e"' | ConvertFrom-Json
 $TextSettingHint = '"\u8bbe\u7f6e\u63d0\u793a"' | ConvertFrom-Json
 $TextCustomSingleTip = '"\u8bf7\u5c06 5120x2880 \u6216 16:9 \u9ad8\u6e05 JPG/PNG \u5355\u4eba\u9635\u5bb9\u80cc\u666f\u5e95\u56fe\u653e\u5165 outputs\\\\custom_backgrounds\uff0c\u7a0b\u5e8f\u4f1a\u81ea\u52a8\u4f7f\u7528\u6700\u65b0\u7684\u4e00\u5f20\u3002"' | ConvertFrom-Json
 $TextCustomSupportTip = '"\u8bf7\u5c06 5120x2880 \u6216 16:9 \u9ad8\u6e05 JPG/PNG \u5e94\u63f4\u53cc\u65b9\u80cc\u666f\u5e95\u56fe\u653e\u5165 outputs\\\\support_custom_backgrounds\uff0c\u7a0b\u5e8f\u4f1a\u81ea\u52a8\u4f7f\u7528\u6700\u65b0\u7684\u4e00\u5f20\u3002"' | ConvertFrom-Json
@@ -306,8 +307,7 @@ public static class NativeWin {
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
-    [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-    [DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+[DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vKey);
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int nIndex);
     [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
@@ -725,6 +725,9 @@ public static class NativeWin {
               <CheckBox x:Name="OcrExtremeCheck" Content="&#26497;&#38480; CPU" Style="{StaticResource DarkOptionCheck}" Visibility="Collapsed"/>
               <CheckBox x:Name="OcrGpuCheck" Content="GPU" Style="{StaticResource DarkOptionCheck}" ToolTipService.ShowOnDisabled="True"/>
             </WrapPanel>
+            <TextBlock Margin="3,7,0,0" FontFamily="Microsoft YaHei UI" FontSize="11">
+              <Hyperlink x:Name="OcrGpuGuideLink" FontWeight="SemiBold" TextDecorations="Underline" ToolTip="&#25171;&#24320; GPU &#27169;&#24335;&#19968;&#38190;&#37197;&#32622;&#25945;&#31243;&#65288;PDF&#65289;">&#25171;&#24320; GPU &#27169;&#24335;&#19968;&#38190;&#37197;&#32622;&#25945;&#31243;&#65288;PDF&#65289;</Hyperlink>
+            </TextBlock>
             <TextBlock x:Name="OcrGpuRecommendationText" Text="如果指挥官是NVIDIA中高端显卡，强烈建议用GPU模式进行识图。CPU模式负载较高，且耗时是GPU模式的一倍以上。在CPU模式下长时间的识图任务可能会让您的设备遭到意想不到的意外，如果您坚持使用CPU模式识图，请务必开启过热保护模式。" TextWrapping="Wrap"
                        FontFamily="Microsoft YaHei UI" FontSize="11" FontWeight="Bold" Foreground="#FFD58A" Opacity="1" Margin="3,7,0,0"/>
             <TextBlock Text="GPU&#27169;&#24335;&#38656;&#35201;NVIDIA CUDA&#19982;Paddle GPU&#29615;&#22659;&#65292;&#22914;&#38656;&#20351;&#29992;GPU&#65292;&#35831;&#30830;&#20445;CUDA&#21644;PaddleOCR GPU&#29256;&#26412;&#21487;&#29992;&#12290;" TextWrapping="Wrap"
@@ -803,6 +806,7 @@ public static class NativeWin {
         </StackPanel>
         <StackPanel x:Name="OcrExecutePanel" Grid.Row="3" Margin="0,20,0,0" Visibility="Collapsed">
           <TextBlock Text="选择要识别的全部战斗数据图像，请务必选择带有详细战果页的图像" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" Margin="4,0,0,8" TextWrapping="Wrap"/>
+          <TextBlock x:Name="OcrParameterWarningText" Text="请指挥官在执行识别前务必确认已正确设置相关参数" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#FFE45C" Margin="4,0,0,12" TextWrapping="Wrap"/>
           <Border x:Name="OcrUploadPanel" CornerRadius="12" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="14" Margin="0,0,0,12">
             <StackPanel>
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,12">
@@ -997,7 +1001,7 @@ public static class NativeWin {
         <Grid Grid.Row="0">
           <StackPanel>
             <TextBlock Text="&#25130;&#22270;&#25511;&#21046;&#21488;" FontFamily="Microsoft YaHei UI" FontWeight="Bold" FontSize="30" Foreground="#FAFDFF"/>
-            <TextBlock Text="&#35831;&#25351;&#25381;&#23448;&#23558;NIKKE&#35774;&#32622;&#20026;&#20840;&#23631;&#27169;&#24335;&#21518;&#20877;&#25191;&#34892;&#25130;&#22270;" FontFamily="Microsoft YaHei UI" FontSize="12" Foreground="#A9C2D9" Margin="2,8,0,0"/>
+            <TextBlock x:Name="MainFullscreenHintText" Text="&#35831;&#25351;&#25381;&#23448;&#23558;NIKKE&#35774;&#32622;&#20026;&#20840;&#23631;&#27169;&#24335;&#21518;&#20877;&#25191;&#34892;&#25130;&#22270;" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#FFE45C" Margin="2,8,0,0"/>
           </StackPanel>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
             <Button x:Name="MoonThemeButton" Width="34" Height="34" Content="&#9790;" FontSize="19" Foreground="#DDF7FF" Background="#243750" BorderBrush="#80E8FF" Style="{StaticResource TinyThemeButton}" Margin="0,0,8,0"/>
@@ -1022,42 +1026,42 @@ public static class NativeWin {
           </Grid>
         </Border>
 
-        <Button x:Name="SeasonCaptureButton" Grid.Row="2" Height="64" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
+        <Button x:Name="SeasonCaptureButton" Grid.Row="3" Height="64" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
           <StackPanel>
             <TextBlock Text="C ARENA&#24403;&#21069;&#36187;&#23395;&#20840;&#37096;&#25112;&#26007;&#22270;&#20687;&#19968;&#38190;&#25130;&#22270;" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock x:Name="SeasonButtonHintText" Text="&#20165;&#22312;&#20896;&#20891;&#35806;&#29983;&#21518;&#20351;&#29992;" FontSize="10" FontWeight="SemiBold" Foreground="#FFD58A" HorizontalAlignment="Center" Margin="0,4,0,0"/>
           </StackPanel>
         </Button>
 
-        <Button x:Name="ArenaButton" Grid.Row="3" Height="68" Style="{StaticResource PrimaryButton}" Margin="0,0,0,18">
+        <Button x:Name="ArenaButton" Grid.Row="4" Height="68" Style="{StaticResource PrimaryButton}" Margin="0,0,0,18">
           <StackPanel>
             <TextBlock Text="C ARENA&#21333;&#20154;&#38453;&#23481;&#25130;&#22270;" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock Text="&#25171;&#24320;&#20108;&#32423;&#39029;&#38754;&#24182;&#30830;&#35748;&#25130;&#22270;&#21069;&#32622;&#29366;&#24577;" FontSize="10" FontWeight="Normal" Opacity="0.72" HorizontalAlignment="Center" Margin="0,4,0,0"/>
           </StackPanel>
         </Button>
 
-        <Button x:Name="SupportButton" Grid.Row="4" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
+        <Button x:Name="SupportButton" Grid.Row="5" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
           <StackPanel>
             <TextBlock Text="&#24212;&#25588;&#21452;&#26041;&#38453;&#23481;&#25130;&#22270;" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock Text="&#24038;&#21491;&#21452;&#26639;&#21512;&#25104;&#24212;&#25588;&#21452;&#26041;&#38271;&#22270;" FontSize="10" FontWeight="Normal" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
           </StackPanel>
         </Button>
 
-        <Button x:Name="GroupButton" Grid.Row="5" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
+        <Button x:Name="GroupButton" Grid.Row="6" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
           <StackPanel>
             <TextBlock Text="C ARENA &#26187;&#32423;&#36187;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock Text="&#25209;&#37327;&#37319;&#38598;&#26412;&#32452;&#36873;&#25163;&#24182;&#32593;&#26684;&#21512;&#25104;" FontSize="10" FontWeight="Normal" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
           </StackPanel>
         </Button>
 
-        <Button x:Name="Top8Button" Grid.Row="6" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
+        <Button x:Name="Top8Button" Grid.Row="7" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
           <StackPanel>
             <TextBlock Text="C ARENA TOP8&#20896;&#20891;&#20105;&#38712;&#36187;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock Text="TOP8/4&#24378;/&#20896;&#20122;&#20891;&#23545;&#38453;&#25130;&#22270;&#20837;&#21475;" FontSize="10" FontWeight="Normal" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
           </StackPanel>
         </Button>
 
-        <StackPanel Grid.Row="7">
+        <StackPanel Grid.Row="8">
           <Button x:Name="PostDataOcrButton" Height="58" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
             <StackPanel>
               <TextBlock Text="&#25112;&#26007;&#22270;&#20687;&#35782;&#21035;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -1066,15 +1070,15 @@ public static class NativeWin {
           </Button>
         </StackPanel>
 
-        <Button x:Name="FolderButton" Grid.Row="8" Height="52" Style="{StaticResource DarkButton}" Margin="0,0,0,28">
+        <Button x:Name="FolderButton" Grid.Row="9" Height="52" Style="{StaticResource DarkButton}" Margin="0,0,0,28">
           <StackPanel>
             <TextBlock Text="&#25171;&#24320;&#25130;&#22270;&#25991;&#20214;&#22841;" FontSize="14" HorizontalAlignment="Center"/>
             <TextBlock Text="&#26597;&#30475;&#29983;&#25104;&#30340; PNG &#38271;&#22270;" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
           </StackPanel>
         </Button>
 
-        <Button x:Name="SettingsButton" Grid.Row="9" Height="48" Style="{StaticResource DarkButton}" Margin="0,0,0,22">
-          <TextBlock Text="&#25130;&#22270;&#19982;&#25968;&#25454;&#35782;&#21035;&#21442;&#25968;&#35774;&#32622;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <Button x:Name="SettingsButton" Grid.Row="2" Height="48" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
+          <TextBlock Text="&#25130;&#22270;&#19982;&#22270;&#20687;&#35782;&#21035;&#21442;&#25968;&#35774;&#32622;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
         </Button>
 
         <StackPanel Grid.Row="10">
@@ -1123,6 +1127,7 @@ $Top8PyramidButton = $Window.FindName("Top8PyramidButton")
 $SeasonExecutePanel = $Window.FindName("SeasonExecutePanel")
 $SeasonExecuteButton = $Window.FindName("SeasonExecuteButton")
 $OcrExecutePanel = $Window.FindName("OcrExecutePanel")
+$OcrParameterWarningText = $Window.FindName("OcrParameterWarningText")
 $OcrSelectedPathText = $Window.FindName("OcrSelectedPathText")
 $OcrDebugCheck = $Window.FindName("OcrDebugCheck")
 $OcrSelectFileButton = $Window.FindName("OcrSelectFileButton")
@@ -1162,6 +1167,7 @@ $DoroThemeButton = $Window.FindName("DoroThemeButton")
 $SubPagePanel = $Window.FindName("SubPagePanel")
 $SubPageHelpText = $Window.FindName("SubPageHelpText")
 $BrandBlock = $Window.FindName("BrandBlock")
+$MainFullscreenHintText = $Window.FindName("MainFullscreenHintText")
 $StatusText = $Window.FindName("StatusText")
 $HotkeyHintText = $Window.FindName("HotkeyHintText")
 $ProcessStatusText = $Window.FindName("ProcessStatusText")
@@ -1201,6 +1207,7 @@ $OcrBalancedCheck = $Window.FindName("OcrBalancedCheck")
 $OcrFullCheck = $Window.FindName("OcrFullCheck")
 $OcrExtremeCheck = $Window.FindName("OcrExtremeCheck")
 $OcrGpuCheck = $Window.FindName("OcrGpuCheck")
+$OcrGpuGuideLink = $Window.FindName("OcrGpuGuideLink")
 $OcrGpuStatusText = $Window.FindName("OcrGpuStatusText")
 $OcrPerformanceWarningText = $Window.FindName("OcrPerformanceWarningText")
 $OcrGpuRecommendationText = $Window.FindName("OcrGpuRecommendationText")
@@ -1255,6 +1262,9 @@ Set-SiteIconSource $SiteMerlotJjcIcon $SiteMerlotJjcIconPath
 Set-SiteIconSource $SiteGamekeeNikkeIcon $SiteGamekeeNikkeIconPath
 Set-SiteIconSource $SiteBilibiliGuseIcon $SiteBilibiliGuseIconPath
 Set-SiteIconSource $SiteBilibiliDeen33Icon $SiteBilibiliDeen33IconPath
+if (Test-Path $AppIconPath) {
+    $Window.Icon = New-Bitmap $AppIconPath
+}
 
 function Set-Brush($Element, $Property, $Color) {
     if (-not $Element) { return }
@@ -2025,6 +2035,9 @@ function Apply-Theme($Theme) {
         $DetailDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
         Set-Brush $OcrPerformanceWarningText Foreground "#B83D6A"
         Set-Brush $OcrGpuRecommendationText Foreground "#D4144C"
+        Set-Brush $OcrGpuGuideLink Foreground "#B83D6A"
+        Set-Brush $OcrParameterWarningText Foreground "#D4144C"
+        Set-Brush $MainFullscreenHintText Foreground "#D4144C"
         Set-Brush $SeasonButtonHintText Foreground "#B83D6A"
         Set-Brush $HotkeyHintText Foreground "#B83D6A"
         $Window.Resources["ScrollThumbBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#FFFF9FC5")
@@ -2114,6 +2127,9 @@ function Apply-Theme($Theme) {
         $DetailDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
         Set-Brush $OcrPerformanceWarningText Foreground "#FFD58A"
         Set-Brush $OcrGpuRecommendationText Foreground "#FFE45C"
+        Set-Brush $OcrGpuGuideLink Foreground "#64E7FF"
+        Set-Brush $OcrParameterWarningText Foreground "#FFE45C"
+        Set-Brush $MainFullscreenHintText Foreground "#FFE45C"
         Set-Brush $SeasonButtonHintText Foreground "#FFD58A"
         Set-Brush $HotkeyHintText Foreground "#FFD38A"
         $Window.Resources["ScrollThumbBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#6BDFFF")
@@ -2135,6 +2151,28 @@ function Append-Log($Text) {
     $lines += $Text
     if ($lines.Count -gt 8) { $lines = $lines[($lines.Count - 8)..($lines.Count - 1)] }
     $LogText.Text = ($lines -join "`n")
+}
+
+function New-CaptureDiagnosticsLog([string]$Mode) {
+    try {
+        $logDirectory = Join-Path $OutputRoot "logs"
+        New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+        $stamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
+        $safeMode = if ($Mode) { $Mode -replace "[^A-Za-z0-9_-]", "_" } else { "capture" }
+        $path = Join-Path $logDirectory ("capture_{0}_{1}.log" -f $stamp, $safeMode)
+        [IO.File]::WriteAllText($path, ("[{0}] capture requested`r`n" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff")), [Text.UTF8Encoding]::new($false))
+        return $path
+    } catch {
+        return $null
+    }
+}
+
+function Add-CaptureDiagnosticsLog($Path, [string]$Text) {
+    if (-not $Path) { return }
+    try {
+        $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss.fff"), $Text
+        [IO.File]::AppendAllText($Path, ($line + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
+    } catch {}
 }
 
 function Set-Running($Running) {
@@ -2230,6 +2268,17 @@ function Open-SiteUrl([string]$Url) {
     if ($Url) {
         Start-Process $Url
     }
+}
+
+if ($OcrGpuGuideLink) {
+    $OcrGpuGuideLink.Add_Click({
+        $guidePath = Join-Path $ScriptDir "GPU_OCR_RUNTIME_SETUP_GUIDE.pdf"
+        if (Test-Path $guidePath) {
+            Start-Process -FilePath $guidePath
+        } else {
+            Append-Log "未找到 GPU 环境配置教程 PDF：$guidePath"
+        }
+    })
 }
 
 if ($SiteSkyxmoonButton) { $SiteSkyxmoonButton.Add_Click({ Open-SiteUrl $SiteSkyxmoonUrl }) }
@@ -4008,26 +4057,21 @@ function Stop-ActiveCapture {
     }
 }
 
-$Window.Add_SourceInitialized({
-    $helper = New-Object Windows.Interop.WindowInteropHelper($Window)
-    $script:HotkeyWindowHandle = $helper.Handle
-    [NativeWin]::RegisterHotKey($script:HotkeyWindowHandle, $HotkeyId, [NativeWin]::MOD_ALT, 0x32) | Out-Null
-    $source = [Windows.Interop.HwndSource]::FromHwnd($script:HotkeyWindowHandle)
-    $source.AddHook({
-        param($hwnd, $msg, $wParam, $lParam, [ref]$handled)
-        if ($msg -eq 0x0312 -and $wParam.ToInt32() -eq $HotkeyId) {
-            Stop-ActiveCapture
-            $handled.Value = $true
-        }
-        return [IntPtr]::Zero
-    })
-})
+$script:StopHotkeyWasDown = $false
+$script:StopHotkeyTimer = New-Object Windows.Threading.DispatcherTimer
+$script:StopHotkeyTimer.Interval = [TimeSpan]::FromMilliseconds(80)
+$script:StopHotkeyTimer.Add_Tick({
+    $altDown = (([int][NativeWin]::GetAsyncKeyState(0x12) -band 0x8000) -ne 0)
+    $twoDown = (([int][NativeWin]::GetAsyncKeyState(0x32) -band 0x8000) -ne 0)
+    $hotkeyDown = $altDown -and $twoDown
 
-$Window.Add_Closed({
-    if ($script:HotkeyWindowHandle -ne [IntPtr]::Zero) {
-        [NativeWin]::UnregisterHotKey($script:HotkeyWindowHandle, $HotkeyId) | Out-Null
+    if ($hotkeyDown -and -not $script:StopHotkeyWasDown) {
+        Stop-ActiveCapture
     }
+
+    $script:StopHotkeyWasDown = $hotkeyDown
 })
+$script:StopHotkeyTimer.Start()
 
 function Update-OcrSelectedPath {
     if (-not $OcrSelectedPathText) { return }
@@ -4617,7 +4661,12 @@ function Invoke-AutoOcrExport($ImagePath, $StageCode, $LayoutCode, $PercentStart
 }
 
 function Start-Capture($GroupSize, $Top8Pyramid = $false) {
-    if (-not (Test-GameReadyForCapture)) { return }
+    $captureLogPath = New-CaptureDiagnosticsLog $CurrentCaptureMode
+    Add-CaptureDiagnosticsLog $captureLogPath ("mode={0}; elevated={1}; script_dir={2}" -f $CurrentCaptureMode, ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator), $ScriptDir)
+    if (-not (Test-GameReadyForCapture)) {
+        Add-CaptureDiagnosticsLog $captureLogPath "NIKKE process was not detected before capture."
+        return
+    }
 
     $autoOcrRequested = Test-AutoOcrExportRequested
     if ($autoOcrRequested -and -not [bool]$GroupDetailedDataCheck.IsChecked) {
@@ -4654,15 +4703,18 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
     $selectedFrame = Get-SelectedFramePath
     $dateFolder = Join-Path $OutputRoot (Get-Date -Format "yyyy-MM-dd")
     New-Item -ItemType Directory -Force -Path $dateFolder | Out-Null
-    $Window.WindowState = "Minimized"
+    # The capture loop blocks the WPF dispatcher, so hiding is required instead of a deferred minimize.
+    $Window.Hide()
     Refresh-Ui
 
     try {
         Append-Log "Focusing game window..."
+        Add-CaptureDiagnosticsLog $captureLogPath "Focusing NIKKE game window."
         Start-Sleep -Milliseconds 250
 
         if (-not [NativeWin]::FocusGame()) {
             Append-Log "Game window was not found."
+            Add-CaptureDiagnosticsLog $captureLogPath "FocusGame failed: NIKKE process exists but no visible game window was found."
             return
         }
 
@@ -4752,6 +4804,7 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
         $psi.RedirectStandardError = $true
         $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
         $psi.StandardErrorEncoding = [Text.Encoding]::UTF8
+        Add-CaptureDiagnosticsLog $captureLogPath ("worker={0}`r`narguments={1}" -f $psi.FileName, $psi.Arguments)
 
         $proc = [System.Diagnostics.Process]::Start($psi)
         $script:ActiveCaptureProcess = $proc
@@ -4779,6 +4832,9 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
 
         $stdout = $proc.StandardOutput.ReadToEnd()
         $stderr = $proc.StandardError.ReadToEnd()
+        Add-CaptureDiagnosticsLog $captureLogPath ("worker_exit_code={0}" -f $proc.ExitCode)
+        if ($stdout) { Add-CaptureDiagnosticsLog $captureLogPath ("stdout:`r`n" + $stdout.Trim()) }
+        if ($stderr) { Add-CaptureDiagnosticsLog $captureLogPath ("stderr:`r`n" + $stderr.Trim()) }
 
         if ($script:StopRequested) {
             Append-Log "Stopped."
@@ -4841,9 +4897,12 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
         }
     } catch {
         Append-Log ("Failed: " + $_.Exception.Message)
+        Add-CaptureDiagnosticsLog $captureLogPath ("launcher_exception: " + $_.Exception.ToString())
     } finally {
+        Add-CaptureDiagnosticsLog $captureLogPath ("capture_finished; completed={0}; stopped={1}" -f $completed, $script:StopRequested)
         Set-Running $false
         $script:ActiveCaptureProcess = $null
+        $Window.Show()
         $Window.WindowState = "Normal"
         $Window.Activate() | Out-Null
         Update-Process-Status
@@ -4901,4 +4960,18 @@ if ($Check) {
     return
 }
 
-$Window.ShowDialog() | Out-Null
+$Window.Add_Closed({
+    if ($script:StopHotkeyTimer) {
+        $script:StopHotkeyTimer.Stop()
+    }
+})
+
+# Capture temporarily hides the main window to keep it off the game screen.
+# A modal ShowDialog loop exits when its owner is hidden, so use the application
+# message loop instead and keep the process alive until the user actually closes it.
+$application = [System.Windows.Application]::Current
+if (-not $application) {
+    $application = New-Object System.Windows.Application
+}
+$application.ShutdownMode = [System.Windows.ShutdownMode]::OnMainWindowClose
+$application.Run($Window) | Out-Null

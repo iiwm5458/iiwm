@@ -198,7 +198,7 @@ def set_dpi_aware():
 def load_config(path):
     if not path.exists():
         return json.loads(json.dumps(DEFAULT_CONFIG))
-    with path.open("r", encoding="utf-8") as f:
+    with path.open("r", encoding="utf-8-sig") as f:
         config = json.load(f)
     return deep_merge(DEFAULT_CONFIG, config)
 

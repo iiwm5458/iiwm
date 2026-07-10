@@ -4,8 +4,10 @@ __pycache__/
 *$py.class
 
 # Local Python/OCR runtimes and offline package caches
+runtime_core/
 runtime_cpu/
 runtime_gpu/
+runtime_python310_base/
 wheelhouse_gpu/
 .venv/
 venv/
@@ -38,6 +40,16 @@ dataanalysis/arena_ocr_tool/data/collection_cv_templates/**/contact_sheets/
 custom_backgrounds/
 support_custom_backgrounds/
 group_custom_backgrounds/
+# The packaged default GROUP background is a required project asset. Keep every
+# other user-provided GROUP background local.
+!group_custom_backgrounds/
+group_custom_backgrounds/*
+!group_custom_backgrounds/pixiewall-a1cg6q-3840x2160.jpg
+
+# Local OCR experiments and historical snapshots; released source keeps the
+# current recognizer and offline models only.
+dataanalysis/arena_ocr_tool/backups/
+dataanalysis/arena_ocr_tool/tmp/
 
 # Editor and OS files
 .DS_Store

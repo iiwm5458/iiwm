@@ -10,6 +10,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+TOOL_ROOT = Path(__file__).resolve().parent
+if str(TOOL_ROOT) not in sys.path:
+    sys.path.insert(0, str(TOOL_ROOT))
+
 from recognizer.arena_ocr import ArenaOCRRecognizer
 from recognizer.exporter import export_excel, export_json
 from recognizer.image_preprocess import load_image
@@ -688,6 +692,7 @@ def run_season_images(
         records,
         output_dir,
         stem,
+        roster=roster,
         include_power=not args.no_power,
         include_collection=not args.no_collection,
         include_stat_levels=not args.no_stat_levels,
@@ -822,6 +827,7 @@ def run_manifest(args: argparse.Namespace, manifest_path: Path, output_dir: Path
         records,
         output_dir,
         stem,
+        roster=roster,
         include_power=not args.no_power,
         include_collection=not args.no_collection,
         include_stat_levels=not args.no_stat_levels,
@@ -979,6 +985,7 @@ def main() -> int:
         records,
         output_dir,
         stem,
+        roster=roster,
         include_power=not args.no_power,
         include_collection=not args.no_collection,
         include_stat_levels=not args.no_stat_levels,
