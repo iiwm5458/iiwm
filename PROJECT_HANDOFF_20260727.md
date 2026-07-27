@@ -91,6 +91,16 @@ Never add the following to Git:
 - Removed historical wallpaper and site-icon assets. Their deletions are
   intentional and must not be reverted merely to make Git status cleaner.
 
+### GPU redistribution rule
+
+Do not package NVIDIA CUDA, cuDNN, Paddle GPU runtimes, or other NVIDIA
+redistributables into installers, patches, or GitHub Release assets. These
+third-party components have their own current license and redistribution terms;
+including them would require a separate legal review, substantially enlarge the
+release, and still cannot guarantee compatibility with each user's drivers and
+Windows environment. Keep only version-pinned user setup scripts and guides in
+the project. Users must obtain and configure their own GPU environment.
+
 The source repository contains the lightweight OCR templates and nickname
 model files that the full offline release needs. Keep their license/readme
 information alongside them.
