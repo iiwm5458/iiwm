@@ -50,6 +50,17 @@ group_custom_backgrounds/*
 # current recognizer and offline models only.
 dataanalysis/arena_ocr_tool/backups/
 dataanalysis/arena_ocr_tool/tmp/
+dataanalysis/arena_ocr_tool/outputs/
+dataanalysis/overseas_identity_diagnostics_*/
+dataanalysis/overseas_region_verification/
+
+# Local recovery copies, benchmarks, and annotation previews. The region-label
+# editor source remains versioned, but its user-provided reference captures do
+# not belong in the shared repository.
+backups/
+tmp/
+dataanalysis/detail_nikke_name_region_label_tool/assets/
+dataanalysis/detail_nikke_name_region_label_tool/previews/
 
 # Editor and OS files
 .DS_Store

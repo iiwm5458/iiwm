@@ -1,3 +1,7 @@
+# Original author / 原作者：iiwm（雪瑶 / 夙辛）
+# [utf8-hex] 6969776D7CE99BAAE791B67CE5A499E8BE9B
+# [utf8-hex] 68747470733A2F2F737465616D636F6D6D756E6974792E636F6D2F73686172656466696C65732F66696C6564657461696C732F3F69643D33353436393635303538
+# [utf8-hex] 6A613DE4B896E7958CE5B9B3E5928C3B6B6F3DEC849CEAB38420ED8F89ED9994
 import argparse
 import builtins
 import ctypes
@@ -19,6 +23,28 @@ except ModuleNotFoundError:
     sys.exit(1)
 
 
+DETAIL_PAGE_CAPTURE_SETTLE_SECONDS = 0.5
+PROFILE_PAGE_CAPTURE_SETTLE_SECONDS = 0.35
+PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS = 10.0
+PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
+DETAIL_PAGE_STRICT_THRESHOLDS = {
+    "title_blue": 0.45,
+    "detail_dark": 0.16,
+    "detail_edges": 0.08,
+}
+GLOBAL_HMT_DETAIL_PAGE_FALLBACK_THRESHOLDS = {
+    "title_blue": 0.65,
+    "detail_dark": 0.12,
+    "detail_edges": 0.14,
+}
+PROFILE_PAGE_READY_THRESHOLDS = {
+    "header_bright": 0.30,
+    "lower_bright": 0.40,
+    "bottom_bright": 0.35,
+    "basic_tab_blue": 0.025,
+}
+
+
 DEFAULT_CONFIG = {
     "reference_size": [3440, 1440],
     "coordinate_mode": "centered_height",
@@ -29,6 +55,7 @@ DEFAULT_CONFIG = {
     "research_row_gap": 0,
     "research_row_background": "#f7f8fa",
     "research_card_align": "top",
+    "research_card_slot_width_global_hmt": 132,
     "team_summary_output_width": 672,
     "team_summary_x_offset": -8,
     "team_summary_background": "#f7f8fa",
@@ -56,7 +83,13 @@ DEFAULT_CONFIG = {
         "after_group_avatar_click_seconds": 1.0,
         "after_group_tab_click_seconds": 0.8,
         "after_group_result_click_seconds": 0.9,
-        "after_group_detail_click_seconds": 2.5,
+        "after_bracket_result_click_seconds": 1.0,
+        "after_group_detail_click_seconds": 0.7,
+        "detail_page_timeout_seconds": 60.0,
+        "detail_page_poll_interval_seconds": 0.35,
+        "profile_page_poll_enabled": False,
+        "profile_page_timeout_seconds": PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS,
+        "profile_page_poll_interval_seconds": PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
         "after_season_back_to_arena_seconds": 1.0,
         "after_season_top8_entry_click_seconds": 1.2,
         "after_outpost_click_seconds": 0.7,
@@ -66,6 +99,9 @@ DEFAULT_CONFIG = {
     "clicks": {
         "avatar": [1477, 579],
         "profile_close": [2049, 138],
+        # Outside the central modal at the 3440x1440 reference size.  These
+        # points are transformed together with every other capture coordinate.
+        "modal_dismiss_side_points": [[1230, 720], [2190, 720]],
         "outpost_tab": [1899, 1333],
         "support_left_avatar": [1548, 430],
         "support_right_avatar": [1875, 430],
@@ -156,6 +192,8 @@ DEFAULT_CONFIG = {
             [1768, 722],
             [1664, 892],
         ],
+        "season_return_button": [80, 1362],
+        "season_return_button_ratio": [0.0233, 0.946],
         "season_top8_entry": [1995, 882],
         "season_top8_entry_ratio": [0.58, 0.61],
         "group_16_winner_result_buttons": [
@@ -201,10 +239,30 @@ DEFAULT_CONFIG = {
             [1650, 1040, 132, 112],
             [1838, 1040, 132, 112],
         ],
+        # Global/HMT needs a small amount of extra space on the eighth card
+        # so the right edge of the auxiliary research level remains visible.
+        "research_cards_global_hmt": [
+            [1500, 724, 132, 112],
+            [1650, 724, 132, 112],
+            [1800, 724, 132, 112],
+            [1578, 850, 132, 112],
+            [1728, 850, 132, 112],
+            [1460, 1040, 132, 112],
+            [1650, 1040, 132, 112],
+            [1838, 1040, 144, 112],
+        ],
         "outpost_research": [1403, 976, 634, 255],
         "support_status": [1396, 636, 676, 58],
         "group_simple_result": [1555, 793, 243, 301],
         "group_detailed_result": [1380, 289, 681, 873],
+        "group_detailed_result_global_hmt": [1380, 356, 681, 788],
+        "group_detailed_title_probe": [1415, 160, 610, 140],
+        # Profile-page probes use the same 3440x1440 reference coordinates as
+        # the detailed-result probes and are transformed for every screen size.
+        "profile_page_header_probe": [1380, 120, 680, 360],
+        "profile_page_lower_probe": [1380, 1030, 680, 220],
+        "profile_page_bottom_probe": [1380, 1310, 680, 110],
+        "profile_page_basic_tab_probe": [1400, 1350, 310, 70],
         "season_profile_name_probe": [1458, 315, 430, 95],
         "season_result_name_probe": [1368, 300, 704, 420],
         "group_result_stage_tabs_probe": [1450, 1110, 650, 120],
@@ -289,6 +347,62 @@ class POINT(ctypes.Structure):
     _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
 
 
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", ctypes.c_long),
+        ("top", ctypes.c_long),
+        ("right", ctypes.c_long),
+        ("bottom", ctypes.c_long),
+    ]
+
+
+class WindowCaptureContext:
+    """Capture and click against a NIKKE client area, not the whole desktop."""
+
+    def __init__(self, handle):
+        self.handle = ctypes.c_void_p(int(handle))
+
+    def client_bounds(self):
+        if not user32.IsWindow(self.handle):
+            raise RuntimeError("NIKKE game window is no longer available")
+        rect = RECT()
+        if not user32.GetClientRect(self.handle, ctypes.byref(rect)):
+            raise RuntimeError("could not read the NIKKE client area")
+        origin = POINT(0, 0)
+        if not user32.ClientToScreen(self.handle, ctypes.byref(origin)):
+            raise RuntimeError("could not convert NIKKE client coordinates")
+        width = int(rect.right - rect.left)
+        height = int(rect.bottom - rect.top)
+        if width < 320 or height < 240:
+            raise RuntimeError("NIKKE client area is too small for capture")
+        return int(origin.x), int(origin.y), width, height
+
+    def grab(self):
+        left, top, width, height = self.client_bounds()
+        bbox = (left, top, left + width, top + height)
+        try:
+            return ImageGrab.grab(bbox=bbox, all_screens=True)
+        except TypeError:
+            return ImageGrab.grab(bbox=bbox)
+
+    def to_screen_point(self, x, y):
+        left, top, _, _ = self.client_bounds()
+        return left + int(round(x)), top + int(round(y))
+
+
+ACTIVE_WINDOW_CAPTURE = None
+
+
+def enable_window_capture(handle):
+    global ACTIVE_WINDOW_CAPTURE
+    ACTIVE_WINDOW_CAPTURE = WindowCaptureContext(handle)
+    left, top, width, height = ACTIVE_WINDOW_CAPTURE.client_bounds()
+    print(
+        "window capture enabled: "
+        f"handle={int(handle)} client=({left},{top}) {width}x{height}"
+    )
+
+
 def set_dpi_aware():
     try:
         user32.SetProcessDPIAware()
@@ -311,6 +425,8 @@ def load_config(path):
 
 
 def screenshot():
+    if ACTIVE_WINDOW_CAPTURE is not None:
+        return ACTIVE_WINDOW_CAPTURE.grab()
     return ImageGrab.grab()
 
 
@@ -386,6 +502,8 @@ def click(point, transform, duration=0.06):
 
 
 def click_screen_point(x, y, duration=0.06):
+    if ACTIVE_WINDOW_CAPTURE is not None:
+        x, y = ACTIVE_WINDOW_CAPTURE.to_screen_point(x, y)
     user32.SetCursorPos(x, y)
     time.sleep(max(duration, 0.08))
     send_mouse(MOUSEEVENTF_LEFTDOWN)
@@ -417,11 +535,246 @@ def countdown(seconds):
         time.sleep(1)
 
 
-def crop_current(config, crop_name):
-    img = screenshot()
+def crop_from_image(config, img, crop_name):
     transform = get_transform(config, img.size)
     box = scale_rect(config["crops"][crop_name], transform, img.size)
     return img.crop(box)
+
+
+def crop_current(config, crop_name):
+    return crop_from_image(config, screenshot(), crop_name)
+
+
+def get_research_card_rects(config):
+    crops = config["crops"]
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    if server in {"global", "hmt"}:
+        regional_rects = crops.get("research_cards_global_hmt")
+        if regional_rects:
+            return regional_rects
+    return crops["research_cards"]
+
+
+class DetailPageTimeout(RuntimeError):
+    def __init__(self, context, timeout_seconds):
+        self.context = context
+        self.timeout_seconds = timeout_seconds
+        super().__init__(f"{context}: detailed battle record was not ready after {timeout_seconds:.1f}s")
+
+
+def _probe_image(img, max_width=200):
+    if img.width <= max_width:
+        return img.convert("RGB")
+    height = max(1, round(img.height * max_width / img.width))
+    return img.convert("RGB").resize((max_width, height), Image.Resampling.BILINEAR)
+
+
+def _ratio_matching(img, predicate):
+    pixels = list(img.getdata())
+    if not pixels:
+        return 0.0
+    return sum(1 for r, g, b in pixels if predicate(r, g, b)) / len(pixels)
+
+
+def inspect_detailed_result_page(config, img):
+    """Return whether the post-click screen is the fully loaded battle record page."""
+    crops = config.get("crops", {})
+    title_rect = crops.get("group_detailed_title_probe")
+    detail_rect = crops.get("group_detailed_result")
+    if not title_rect or not detail_rect:
+        return False, None, {"reason": "detail probes are not configured"}
+
+    transform = get_transform(config, img.size)
+    title = _probe_image(img.crop(scale_rect(title_rect, transform, img.size)))
+    detail = img.crop(scale_rect(detail_rect, transform, img.size))
+    detail_probe = _probe_image(detail)
+
+    title_blue_ratio = _ratio_matching(
+        title,
+        lambda r, g, b: b >= 150 and g >= 95 and r <= 95 and (b - r) >= 75,
+    )
+    detail_dark_ratio = _ratio_matching(
+        detail_probe,
+        lambda r, g, b: r <= 75 and g <= 75 and b <= 75,
+    )
+    edge_probe = detail_probe.convert("L").filter(ImageFilter.FIND_EDGES)
+    detail_edge_ratio = sum(1 for value in edge_probe.getdata() if value >= 75) / max(1, detail_probe.width * detail_probe.height)
+
+    metrics = {
+        "title_blue": title_blue_ratio,
+        "detail_dark": detail_dark_ratio,
+        "detail_edges": detail_edge_ratio,
+    }
+    strict_ready = all(
+        metrics[name] >= threshold for name, threshold in DETAIL_PAGE_STRICT_THRESHOLDS.items()
+    )
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    regional_fallback_ready = (
+        server in {"global", "hmt"}
+        and all(
+            metrics[name] >= threshold
+            for name, threshold in GLOBAL_HMT_DETAIL_PAGE_FALLBACK_THRESHOLDS.items()
+        )
+    )
+    # Global/HMT can display fully loaded opponent cards as DISCONNECTED, which
+    # lowers the dark-pixel ratio below the original CN-focused threshold. Keep
+    # CN strict for now; revisit this fallback if a future CN client shows it.
+    if strict_ready:
+        metrics["readiness_rule"] = "strict"
+    elif regional_fallback_ready:
+        metrics["readiness_rule"] = "global_hmt_disconnected_fallback"
+    else:
+        metrics["readiness_rule"] = "not_ready"
+    is_ready = strict_ready or regional_fallback_ready
+    return is_ready, detail, metrics
+
+
+def inspect_profile_basic_page(config, img):
+    """Return whether the full player basic-information page is visible.
+
+    The probe intentionally avoids OCR and language-dependent text. A loaded
+    profile page has a tall light panel and an active cyan basic-information
+    tab, while the preceding lineup dialogs do not occupy the lower probes.
+    """
+    crops = config.get("crops", {})
+    probe_names = {
+        "header": "profile_page_header_probe",
+        "lower": "profile_page_lower_probe",
+        "bottom": "profile_page_bottom_probe",
+        "basic_tab": "profile_page_basic_tab_probe",
+    }
+    if any(not crops.get(name) for name in probe_names.values()):
+        return False, {"reason": "profile probes are not configured"}
+
+    transform = get_transform(config, img.size)
+    probes = {
+        label: _probe_image(img.crop(scale_rect(crops[crop_name], transform, img.size)))
+        for label, crop_name in probe_names.items()
+    }
+    metrics = {
+        "header_bright": _ratio_matching(
+            probes["header"],
+            lambda r, g, b: r >= 175 and g >= 175 and b >= 175,
+        ),
+        "lower_bright": _ratio_matching(
+            probes["lower"],
+            lambda r, g, b: r >= 175 and g >= 175 and b >= 175,
+        ),
+        "bottom_bright": _ratio_matching(
+            probes["bottom"],
+            lambda r, g, b: r >= 175 and g >= 175 and b >= 175,
+        ),
+        "basic_tab_blue": _ratio_matching(
+            probes["basic_tab"],
+            lambda r, g, b: b >= 150 and g >= 110 and r <= 100 and (b - r) >= 70,
+        ),
+    }
+    is_ready = all(
+        metrics[name] >= threshold for name, threshold in PROFILE_PAGE_READY_THRESHOLDS.items()
+    )
+    return is_ready, metrics
+
+
+def wait_for_profile_basic_page(config, context):
+    """Capture the basic profile after an optional readiness poll.
+
+    A timeout is deliberately non-fatal: when a visual variation prevents a
+    match, the current screen is still captured so one false negative cannot
+    stop an otherwise valid screenshot task.
+    """
+    timings = config["timing"]
+    minimum_wait = max(0.45, min(5.0, float(timings.get("after_avatar_click_seconds", 0.9))))
+    if not bool(timings.get("profile_page_poll_enabled", False)):
+        time.sleep(minimum_wait)
+        return crop_current(config, "profile_basic")
+
+    timeout_seconds = max(
+        1.0,
+        min(10.0, float(timings.get("profile_page_timeout_seconds", PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS))),
+    )
+    poll_seconds = max(
+        0.2,
+        min(1.0, float(timings.get("profile_page_poll_interval_seconds", PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS))),
+    )
+    started_at = time.monotonic()
+    deadline = started_at + timeout_seconds
+    stable_hits = 0
+    latest_metrics = None
+
+    while True:
+        current_img = screenshot()
+        ready, latest_metrics = inspect_profile_basic_page(config, current_img)
+        if ready:
+            stable_hits += 1
+            elapsed = time.monotonic() - started_at
+            if stable_hits >= 2 and elapsed >= minimum_wait:
+                time.sleep(PROFILE_PAGE_CAPTURE_SETTLE_SECONDS)
+                final_img = screenshot()
+                print(
+                    f"{context}: basic profile page ready "
+                    f"(header_bright={latest_metrics['header_bright']:.3f}, "
+                    f"lower_bright={latest_metrics['lower_bright']:.3f}, "
+                    f"bottom_bright={latest_metrics['bottom_bright']:.3f}, "
+                    f"basic_tab_blue={latest_metrics['basic_tab_blue']:.3f})"
+                )
+                return crop_from_image(config, final_img, "profile_basic")
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            print(f"{context}: basic profile page poll timeout; capturing current screen; metrics={latest_metrics}")
+            return crop_from_image(config, screenshot(), "profile_basic")
+        time.sleep(min(poll_seconds, remaining))
+
+
+def get_detailed_result_capture_rect(config):
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    if server in {"global", "hmt"}:
+        regional_rect = config.get("crops", {}).get("group_detailed_result_global_hmt")
+        if regional_rect:
+            return regional_rect
+    return config["crops"]["group_detailed_result"]
+
+
+def wait_for_detailed_result_page(config, context):
+    """Wait for one black-button detail page without issuing any extra input."""
+    timings = config["timing"]
+    timeout_seconds = max(10.0, min(180.0, float(timings.get("detail_page_timeout_seconds", 60.0))))
+    poll_seconds = max(0.2, min(1.0, float(timings.get("detail_page_poll_interval_seconds", 0.35))))
+    minimum_wait = max(0.0, min(5.0, float(timings.get("after_group_detail_click_seconds", 0.7))))
+    deadline = time.monotonic() + timeout_seconds
+    stable_hits = 0
+    latest_metrics = None
+
+    if minimum_wait:
+        time.sleep(min(minimum_wait, timeout_seconds))
+
+    while True:
+        ready, detail, latest_metrics = inspect_detailed_result_page(config, screenshot())
+        if ready:
+            stable_hits += 1
+            if stable_hits >= 2:
+                time.sleep(DETAIL_PAGE_CAPTURE_SETTLE_SECONDS)
+                final_img = screenshot()
+                transform = get_transform(config, final_img.size)
+                final_box = scale_rect(get_detailed_result_capture_rect(config), transform, final_img.size)
+                print(
+                    f"{context}: detailed battle record ready "
+                    f"(title_blue={latest_metrics['title_blue']:.3f}, "
+                    f"detail_dark={latest_metrics['detail_dark']:.3f}, "
+                    f"detail_edges={latest_metrics['detail_edges']:.3f}, "
+                    f"rule={latest_metrics['readiness_rule']})"
+                )
+                return final_img.crop(final_box)
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            print(f"{context}: detailed battle record timeout; metrics={latest_metrics}")
+            raise DetailPageTimeout(context, timeout_seconds)
+        time.sleep(min(poll_seconds, remaining))
 
 
 def crop_rects_from_image(config, img, rects):
@@ -483,12 +836,17 @@ def make_research_row(cards, config):
     gap = int(config.get("research_row_gap", 10))
     background = config.get("research_row_background", "#f7f8fa")
     align = config.get("research_card_align", "bottom")
-    width = sum(card.width for card in cards) + gap * max(0, len(cards) - 1) + padding * 2
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    regional_slot_width = 0
+    if server in {"global", "hmt"}:
+        regional_slot_width = int(config.get("research_card_slot_width_global_hmt", 0) or 0)
+    layout_widths = [regional_slot_width if regional_slot_width > 0 else card.width for card in cards]
+    width = sum(layout_widths) + gap * max(0, len(cards) - 1) + padding * 2
     height = max(card.height for card in cards)
     canvas = Image.new("RGB", (width, height), background)
 
     x = padding
-    for card in cards:
+    for card, layout_width in zip(cards, layout_widths):
         if align == "bottom":
             y = height - card.height
         elif align == "top":
@@ -496,7 +854,7 @@ def make_research_row(cards, config):
         else:
             y = (height - card.height) // 2
         canvas.paste(card.convert("RGB"), (x, y))
-        x += card.width + gap
+        x += layout_width + gap
     return canvas
 
 
@@ -959,8 +1317,7 @@ def capture_player_image(config, parts_dir, label="player", close_profile=None, 
     print(f"{label}: opening profile")
     transform = get_transform(config, screenshot().size)
     click(config["clicks"]["avatar"], transform)
-    time.sleep(float(timings["after_avatar_click_seconds"]))
-    profile_part = crop_current(config, "profile_basic")
+    profile_part = wait_for_profile_basic_page(config, label)
     aliases = []
     if return_metadata:
         aliases = recognize_profile_aliases(profile_part, config, ocr, label)
@@ -980,7 +1337,7 @@ def capture_player_image(config, parts_dir, label="player", close_profile=None, 
     time.sleep(float(timings["after_outpost_click_seconds"]))
     outpost_img = screenshot()
     sync_level_part = crop_rects_from_image(config, outpost_img, [config["crops"]["sync_level"]])[0]
-    research_cards = crop_rects_from_image(config, outpost_img, config["crops"]["research_cards"])
+    research_cards = crop_rects_from_image(config, outpost_img, get_research_card_rects(config))
     research_row_part = make_research_row(research_cards, config)
     if config.get("save_parts"):
         save_part(sync_level_part, parts_dir, f"{label}_sync_level")
@@ -1130,11 +1487,28 @@ def make_support_status_part(img, config, target_width):
     return canvas
 
 
-def press_escape_twice(config):
+def should_click_modal_backdrop(config):
+    return str(config.get("runtime_server", "cn")).strip().lower() in {"global", "hmt"}
+
+
+def dismiss_current_popup(config, count=1):
     delay = float(config["timing"].get("after_escape_seconds", 0.45))
-    for _ in range(2):
-        send_key(VK_ESCAPE)
+    side_points = config.get("clicks", {}).get("modal_dismiss_side_points", [])
+    use_backdrop_click = should_click_modal_backdrop(config)
+    if use_backdrop_click and not side_points:
+        raise SystemExit("modal_dismiss_side_points is required for Global and HMT popup dismissal")
+
+    for index in range(max(1, int(count))):
+        if use_backdrop_click:
+            transform = get_transform(config, screenshot().size)
+            click(side_points[index % len(side_points)], transform)
+        else:
+            send_key(VK_ESCAPE)
         time.sleep(delay)
+
+
+def press_escape_twice(config):
+    dismiss_current_popup(config, count=2)
 
 
 def run_capture(config, output_path, parts_dir):
@@ -1176,10 +1550,7 @@ def run_support_duo_capture(config, output_path, parts_dir, include_support_stat
 
 
 def press_escape(config, count=1):
-    delay = float(config["timing"].get("after_escape_seconds", 0.45))
-    for _ in range(count):
-        send_key(VK_ESCAPE)
-        time.sleep(delay)
+    dismiss_current_popup(config, count=count)
 
 
 def get_group_result_buttons(config, group_size, bracket_mode="group"):
@@ -1314,7 +1685,7 @@ def collect_group_simple_results(config, parts_dir, group_size, bracket_mode="gr
         print(f"group post simple: opening result {index}/{len(result_buttons)}")
         transform = get_transform(config, screenshot().size)
         click(point, transform)
-        time.sleep(float(timings.get("after_group_result_click_seconds", 0.9)))
+        time.sleep(float(timings.get("after_bracket_result_click_seconds", 1.0)))
         prepare_group_result_page(config, group_size, select_stage_tab=(int(group_size) != 2))
         part = crop_current(config, "group_simple_result")
         results.append(part)
@@ -1332,7 +1703,7 @@ def collect_group_detailed_results(config, parts_dir, group_size, bracket_mode="
         print(f"group post detailed: opening result {result_index}/{len(result_buttons)}")
         transform = get_transform(config, screenshot().size)
         click(point, transform)
-        time.sleep(float(timings.get("after_group_result_click_seconds", 0.9)))
+        time.sleep(float(timings.get("after_bracket_result_click_seconds", 1.0)))
         with_stage_tabs = prepare_group_result_page(config, group_size, select_stage_tab=(int(group_size) != 2))
         detail_buttons = get_group_detail_buttons(config, group_size, with_stage_tabs)
 
@@ -1341,8 +1712,7 @@ def collect_group_detailed_results(config, parts_dir, group_size, bracket_mode="
             print(f"group post detailed: opening detail {result_index}.{detail_index}")
             transform = get_transform(config, screenshot().size)
             click(detail_point, transform)
-            time.sleep(float(timings.get("after_group_detail_click_seconds", 2.5)))
-            part = crop_current(config, "group_detailed_result")
+            part = wait_for_detailed_result_page(config, f"group post detailed {result_index}.{detail_index}")
             round_parts.append(part)
             if config.get("save_parts"):
                 save_part(part, parts_dir, f"group_detailed_result_{result_index:02d}_{detail_index:02d}")
@@ -1548,7 +1918,13 @@ def click_config_point_or_ratio(config, point_key, ratio_key=None):
 def navigate_from_group_to_top8(config):
     timings = config["timing"]
     print("season: returning to championship arena selection")
-    press_escape(config, 1)
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    if server in {"global", "hmt"}:
+        # The lower-left return control is anchored to the full screen.  Its
+        # ratio stays clear of the homepage button immediately to its right.
+        click_config_point_or_ratio(config, "season_return_button", "season_return_button_ratio")
+    else:
+        press_escape(config, 1)
     time.sleep(float(timings.get("after_season_back_to_arena_seconds", 1.0)))
     print("season: opening TOP8 championship bracket")
     click_config_point_or_ratio(config, "season_top8_entry", "season_top8_entry_ratio")
@@ -1703,7 +2079,7 @@ def collect_cached_stage_results(
         print(f"{stage_label}: opening result {result_index}/{len(result_buttons)}")
         transform = get_transform(config, screenshot().size)
         click(point, transform)
-        time.sleep(float(timings.get("after_group_result_click_seconds", 0.9)))
+        time.sleep(float(timings.get("after_bracket_result_click_seconds", 1.0)))
 
         with_stage_tabs = prepare_group_result_page(
             config,
@@ -1740,8 +2116,7 @@ def collect_cached_stage_results(
                 print(f"{stage_label}: opening detail {result_index}.{detail_index}")
                 transform = get_transform(config, screenshot().size)
                 click(detail_point, transform)
-                time.sleep(float(timings.get("after_group_detail_click_seconds", 2.5)))
-                part = crop_current(config, "group_detailed_result")
+                part = wait_for_detailed_result_page(config, f"{stage_label} detailed {result_index}.{detail_index}")
                 round_parts.append(part)
                 if config.get("save_parts"):
                     save_part(part, parts_dir, f"{stage_label}_detailed_{result_index:02d}_{detail_index:02d}")
@@ -2014,7 +2389,7 @@ def preview_regions(config, output_path):
         "research_cards": "lime",
     }
     for name, color in colors.items():
-        crop = config["crops"][name]
+        crop = get_research_card_rects(config) if name == "research_cards" else config["crops"][name]
         rects = crop if name == "research_cards" else [crop]
         for rect in rects:
             box = scale_rect(rect, transform, img.size)
@@ -2137,15 +2512,51 @@ def parse_args():
         help="Minimum delay in seconds after UI clicks before the next automatic screenshot.",
     )
     parser.add_argument(
+        "--avatar-profile-delay",
+        type=float,
+        default=None,
+        help="Delay in seconds after opening a player profile before capturing its basic information page.",
+    )
+    parser.add_argument(
+        "--bracket-result-delay",
+        type=float,
+        default=None,
+        help="Delay in seconds after clicking a bracket result tag before using the result page.",
+    )
+    parser.add_argument(
         "--detail-click-delay",
         type=float,
         default=None,
-        help="Minimum delay in seconds after clicking black battle-detail buttons before capture.",
+        help="Legacy override for the minimum delay before detailed-page readiness checks.",
+    )
+    parser.add_argument(
+        "--detail-page-min-wait",
+        type=float,
+        default=None,
+        help="Minimum delay in seconds before detailed-page readiness checks begin.",
+    )
+    parser.add_argument(
+        "--detail-page-timeout",
+        type=float,
+        default=None,
+        help="Maximum seconds to wait for one detailed battle record page before stopping safely.",
     )
     parser.add_argument(
         "--low-memory",
         action="store_true",
         help="Store cached player images on disk and release large temporary images more aggressively.",
+    )
+    parser.add_argument(
+        "--server",
+        choices=["cn", "global", "hmt"],
+        default="cn",
+        help="NIKKE client server code. Global and HMT dismiss popups by clicking their backdrop.",
+    )
+    parser.add_argument(
+        "--window-handle",
+        type=lambda value: int(value, 0),
+        default=None,
+        help="Capture inside this NIKKE client window handle instead of the full desktop.",
     )
     parser.add_argument(
         "--quiet",
@@ -2176,6 +2587,9 @@ def main():
         return
 
     config = load_config(args.config)
+    config["runtime_server"] = args.server
+    if args.window_handle is not None:
+        enable_window_capture(args.window_handle)
     if args.low_memory:
         config["low_memory"] = True
     if args.framed_output:
@@ -2186,7 +2600,6 @@ def main():
         click_delay = max(0.0, min(5.0, float(args.click_delay)))
         for key in (
             "after_round_click_seconds",
-            "after_avatar_click_seconds",
             "after_support_avatar_click_seconds",
             "after_group_avatar_click_seconds",
             "after_group_tab_click_seconds",
@@ -2194,10 +2607,24 @@ def main():
             "after_outpost_click_seconds",
         ):
             config["timing"][key] = max(float(config["timing"].get(key, 0)), click_delay)
+    if args.avatar_profile_delay is not None:
+        config["timing"]["after_avatar_click_seconds"] = max(
+            0.45, min(5.0, float(args.avatar_profile_delay))
+        )
+    if args.bracket_result_delay is not None:
+        config["timing"]["after_bracket_result_click_seconds"] = max(
+            0.45, min(5.0, float(args.bracket_result_delay))
+        )
     if args.detail_click_delay is not None:
         detail_click_delay = max(0.0, min(5.0, float(args.detail_click_delay)))
         key = "after_group_detail_click_seconds"
         config["timing"][key] = detail_click_delay
+    if args.detail_page_min_wait is not None:
+        detail_page_min_wait = max(0.0, min(5.0, float(args.detail_page_min_wait)))
+        config["timing"]["after_group_detail_click_seconds"] = detail_page_min_wait
+    if args.detail_page_timeout is not None:
+        detail_page_timeout = max(10.0, min(180.0, float(args.detail_page_timeout)))
+        config["timing"]["detail_page_timeout_seconds"] = detail_page_timeout
     if args.preview:
         preview_regions(config, args.output)
         return
@@ -2226,6 +2653,11 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except DetailPageTimeout as exc:
+        # Keep this machine-readable even when --quiet has disabled regular progress output.
+        sys.stdout.write(f"NIKKE_DETAIL_PAGE_TIMEOUT|{exc.context}|{exc.timeout_seconds:.1f}\n")
+        sys.stdout.flush()
+        sys.exit(42)
     except KeyboardInterrupt:
         print("cancelled")
         sys.exit(130)

@@ -1,3 +1,4 @@
+; [utf8-binary] 011010100110000100111101111001001011100010010110111001111001010110001100111001011011100110110011111001011001001010001100
 #ifndef AppVersion
   #define AppVersion "0.1.0"
 #endif
@@ -9,8 +10,12 @@
 #define AppName "NIKKE C ARENA Tool"
 #define AppPublisher "NIKKE C ARENA Tool"
 
+#ifndef AppIdentifier
+  #define AppIdentifier "{{E4DBE1A8-8998-4F1B-AF3B-25CD3D76B762}"
+#endif
+
 [Setup]
-AppId={{E4DBE1A8-8998-4F1B-AF3B-25CD3D76B762}
+AppId={#AppIdentifier}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
@@ -45,6 +50,7 @@ Source: "{#ReleaseRoot}\run_all_characters.bat"; DestDir: "{app}"; Flags: ignore
 Source: "{#ReleaseRoot}\nikke_gui_bootstrap.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_gui_launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_round_stitcher.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ReleaseRoot}\nikke_image_tools.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_character_capture.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_round_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
 Source: "{#ReleaseRoot}\nikke_character_capture_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
@@ -67,10 +73,10 @@ Source: "{#ReleaseRoot}\dataanalysis\arena_ocr_tool\requirements-ocr-gpu.txt"; D
 
 Source: "{#ReleaseRoot}\setup_gpu_runtime.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\setup_gpu_runtime_cn.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ReleaseRoot}\setup_gpu_runtime_aliyun.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\setup_gpu_runtime.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\GPU_OCR_RUNTIME_SETUP_GUIDE.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\GPU_OCR_RUNTIME_SETUP_GUIDE.pdf"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#ReleaseRoot}\group_custom_backgrounds\pixiewall-a1cg6q-3840x2160.jpg"; DestDir: "{app}\group_custom_backgrounds"; Flags: ignoreversion
 
 Source: "{#ReleaseRoot}\runtime_cpu\*"; DestDir: "{app}\runtime_cpu"; Flags: ignoreversion recursesubdirs createallsubdirs
 

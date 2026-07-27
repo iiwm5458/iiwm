@@ -1,3 +1,4 @@
+; [utf8-binary] 01101011011011110011110111101100100001001011100011101010101100111000010000100000111011011000111110001001111011011001100110010100
 #ifndef AppVersion
   #define AppVersion "0.1.0"
 #endif
@@ -9,8 +10,12 @@
 #define AppName "NIKKE C ARENA 截图工具 轻量版"
 #define AppPublisher "NIKKE C ARENA Tool"
 
+#ifndef AppIdentifier
+  #define AppIdentifier "{{4B7BBD85-F7E5-41DC-955B-0B7756B4C344}"
+#endif
+
 [Setup]
-AppId={{4B7BBD85-F7E5-41DC-955B-0B7756B4C344}
+AppId={#AppIdentifier}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
@@ -41,6 +46,7 @@ Name: "{app}\group_custom_backgrounds"; Flags: uninsneveruninstall
 Source: "{#ReleaseRoot}\run_capture_lite.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_capture_lite_launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_round_stitcher.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ReleaseRoot}\nikke_image_tools.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_character_capture.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_round_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
 Source: "{#ReleaseRoot}\nikke_character_capture_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
@@ -48,7 +54,6 @@ Source: "{#ReleaseRoot}\RELEASE_INFO.json"; DestDir: "{app}"; Flags: ignoreversi
 
 Source: "{#ReleaseRoot}\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#ReleaseRoot}\runtime_core\*"; DestDir: "{app}\runtime_core"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#ReleaseRoot}\group_custom_backgrounds\pixiewall-a1cg6q-3840x2160.jpg"; DestDir: "{app}\group_custom_backgrounds"; Flags: ignoreversion
 
 [Icons]
 Name: "{app}\NIKKE C ARENA 截图工具 轻量版"; Filename: "{app}\run_capture_lite.bat"; WorkingDir: "{app}"; IconFilename: "{app}\assets\app_doro_commander.ico"

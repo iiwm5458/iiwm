@@ -11,6 +11,7 @@
     "research_row_gap":  0,
     "research_row_background":  "#f7f8fa",
     "research_card_align":  "top",
+    "research_card_slot_width_global_hmt":  132,
     "team_summary_output_width":  672,
     "team_summary_x_offset":  -8,
     "team_summary_background":  "#f7f8fa",
@@ -35,20 +36,46 @@
     "close_profile_after_capture":  true,
     "launcher_settings":  {
                               "ocr_performance_mode":  "gpu",
-                              "ocr_thermal_mode":  "performance"
+                              "ocr_thermal_mode":  "performance",
+                              "ocr_runtime_cache":  {
+                                                        "schema_version":  1,
+                                                        "checked_at":  "2026-07-19T22:38:18.6754642+08:00",
+                                                        "cpu":  {
+                                                                    "available":  true,
+                                                                    "path":  "C:\\Users\\iiwm\\Documents\\Codex\\2026-06-06\\files-mentioned-by-the-user-qq\\outputs\\runtime_cpu\\python.exe",
+                                                                    "file_length":  101760,
+                                                                    "file_last_write_utc_ticks":  638010755400000000,
+                                                                    "python_version":  "3.10.8"
+                                                                },
+                                                        "gpu":  {
+                                                                    "available":  true,
+                                                                    "path":  "C:\\Users\\iiwm\\Documents\\Codex\\2026-06-06\\files-mentioned-by-the-user-qq\\outputs\\runtime_gpu\\Scripts\\python.exe",
+                                                                    "file_length":  268568,
+                                                                    "file_last_write_utc_ticks":  639187019485851944,
+                                                                    "python_version":  "3.10.11"
+                                                                }
+                                                    },
+                              "ocr_roster_preflight_suppressed_month":  "",
+                              "capture_parameters_preflight_suppressed_month":  ""
                           },
     "timing":  {
                    "countdown_seconds":  0,
-                   "after_round_click_seconds":  1,
-                   "after_avatar_click_seconds":  1,
-                   "after_support_avatar_click_seconds":  1,
-                   "after_group_avatar_click_seconds":  1,
-                   "after_group_tab_click_seconds":  1,
-                   "after_group_result_click_seconds":  1,
-                   "after_group_detail_click_seconds":  3.5,
+                   "after_round_click_seconds":  0.8,
+                   "after_avatar_click_seconds":  0.6,
+                   "after_support_avatar_click_seconds":  0.8,
+                   "after_group_avatar_click_seconds":  0.8,
+                   "after_group_tab_click_seconds":  0.8,
+                   "after_group_result_click_seconds":  0.8,
+                   "after_bracket_result_click_seconds":  1,
+                   "after_group_detail_click_seconds":  0.7,
+                   "detail_page_timeout_seconds":  60,
+                   "detail_page_poll_interval_seconds":  0.35,
+                   "profile_page_poll_enabled":  true,
+                   "profile_page_timeout_seconds":  10,
+                   "profile_page_poll_interval_seconds":  0.35,
                    "after_season_back_to_arena_seconds":  1.0,
                    "after_season_top8_entry_click_seconds":  1.2,
-                   "after_outpost_click_seconds":  1,
+                   "after_outpost_click_seconds":  0.8,
                    "after_profile_close_seconds":  0.4,
                    "after_escape_seconds":  0.45
                },
@@ -61,6 +88,16 @@
                                          2049,
                                          138
                                      ],
+                   "modal_dismiss_side_points":  [
+                                                     [
+                                                         1230,
+                                                         720
+                                                     ],
+                                                     [
+                                                         2190,
+                                                         720
+                                                     ]
+                                                 ],
                    "outpost_tab":  [
                                        1899,
                                        1333
@@ -337,6 +374,14 @@
                                                          892
                                                      ]
                                                  ],
+                   "season_return_button":  [
+                                                80,
+                                                1362
+                                            ],
+                   "season_return_button_ratio":  [
+                                                      0.0233,
+                                                      0.946
+                                                  ],
                    "season_top8_entry":  [
                                              1995,
                                              882
@@ -505,6 +550,56 @@
                                              112
                                          ]
                                      ],
+                  "research_cards_global_hmt":  [
+                                                    [
+                                                        1500,
+                                                        724,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1650,
+                                                        724,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1800,
+                                                        724,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1578,
+                                                        850,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1728,
+                                                        850,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1460,
+                                                        1040,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1650,
+                                                        1040,
+                                                        132,
+                                                        112
+                                                    ],
+                                                    [
+                                                        1838,
+                                                        1040,
+                                                        144,
+                                                        112
+                                                    ]
+                                                ],
                   "outpost_research":  [
                                            1403,
                                            976,
@@ -529,6 +624,18 @@
                                                 681,
                                                 873
                                             ],
+                  "group_detailed_result_global_hmt":  [
+                                                           1380,
+                                                           356,
+                                                           681,
+                                                           788
+                                                       ],
+                  "group_detailed_title_probe":  [
+                                                     1415,
+                                                     160,
+                                                     610,
+                                                     140
+                                                 ],
                   "group_result_stage_tabs_probe":  [
                                                         1450,
                                                         1110,

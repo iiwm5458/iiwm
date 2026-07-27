@@ -200,6 +200,10 @@ def build_pdf() -> None:
             make_paragraph("setup_gpu_runtime_cn.bat", styles["body"]),
             make_paragraph("清华 PyPI 镜像。适合中国大陆网络环境。", styles["body"]),
         ],
+        [
+            make_paragraph("setup_gpu_runtime_aliyun.bat", styles["body"]),
+            make_paragraph("阿里云 PyPI 镜像。清华镜像下载报错时可尝试此入口。", styles["body"]),
+        ],
     ]
     table = Table(rows, colWidths=[6.0 * cm, 11.7 * cm])
     table.setStyle(
@@ -300,7 +304,7 @@ def build_pdf() -> None:
                 styles["body"],
             ),
             make_paragraph(
-                "<b>国内镜像下载失败：</b>改用 setup_gpu_runtime.bat 的官方 PyPI 源，并检查网络、代理或安全软件设置。",
+                "<b>国内镜像下载失败：</b>清华镜像失败时尝试 setup_gpu_runtime_aliyun.bat；阿里云镜像失败时尝试 setup_gpu_runtime_cn.bat。两个国内镜像都失败后，再改用 setup_gpu_runtime.bat 的官方 PyPI 源，并检查网络、代理或安全软件设置。",
                 styles["body"],
             ),
         ]

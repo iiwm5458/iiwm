@@ -19,6 +19,7 @@ $required = @(
     "nikke_gui_bootstrap.ps1",
     "nikke_gui_launcher.ps1",
     "nikke_round_stitcher.py",
+    "nikke_image_tools.py",
     "nikke_character_capture.py",
     "nikke_round_config.json",
     "assets",
@@ -26,6 +27,10 @@ $required = @(
     "runtime_core\python.exe",
     "runtime_cpu\python.exe",
     "runtime_python310_base\python.exe",
+    "setup_gpu_runtime.bat",
+    "setup_gpu_runtime_cn.bat",
+    "setup_gpu_runtime_aliyun.bat",
+    "setup_gpu_runtime.ps1",
     "dataanalysis\arena_ocr_tool\main.py",
     "dataanalysis\arena_ocr_tool\recognizer",
     "dataanalysis\arena_ocr_tool\data\nikke_names.json",
@@ -39,6 +44,8 @@ $cpuPython = Require-Path "runtime_cpu\python.exe"
 $gpuBasePython = Require-Path "runtime_python310_base\python.exe"
 & $corePython -c "import sys; from pathlib import Path; from PIL import ImageGrab; assert Path(sys.prefix).resolve() == Path(sys.base_prefix).resolve(); print('core_runtime_ok')"
 if ($LASTEXITCODE -ne 0) { throw "runtime_core validation failed" }
+& $corePython (Require-Path "nikke_image_tools.py") "--help" *> $null
+if ($LASTEXITCODE -ne 0) { throw "Image tools runtime validation failed" }
 & $cpuPython -c "import sys; from pathlib import Path; import paddle, paddleocr, cv2, openpyxl; assert Path(sys.prefix).resolve() == Path(sys.base_prefix).resolve(); print('cpu_runtime_ok', paddle.__version__)"
 if ($LASTEXITCODE -ne 0) { throw "runtime_cpu validation failed" }
 & $gpuBasePython -c "import ensurepip, ssl, sqlite3, sys, venv; assert sys.version_info[:2] == (3, 10); print('gpu_base_runtime_ok')"

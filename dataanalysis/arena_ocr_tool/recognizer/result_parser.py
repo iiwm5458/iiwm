@@ -24,17 +24,102 @@ DEFENDER_CARD_SLOT_CENTERS = (0.215, 0.385, 0.555, 0.725, 0.895)
 ATTACKER_POWER_SLOT_CENTERS = (0.082, 0.266, 0.449, 0.633, 0.816)
 DEFENDER_POWER_SLOT_CENTERS = (0.172, 0.356, 0.539, 0.722, 0.906)
 DETAIL_SLOT_CENTERS = (0.109, 0.291, 0.473, 0.655, 0.837)
+DETAIL_NAME_HARD_TOP_Y = 0.060
+DETAIL_NAME_CONDITIONAL_TOP_Y = 0.085
+# The HP percentage is printed near the lower edge of each detailed-result
+# card, not at the character-name centers above.
+DETAIL_HP_SLOT_CENTERS = (0.225, 0.402, 0.582, 0.758, 0.937)
+DETAIL_HP_RETRY_X = {
+    "attacker": (0.00, 0.32),
+    "defender": (0.68, 1.00),
+}
+DETAIL_HP_RETRY_MIN_CONFIDENCE = 0.75
 DETAILED_RESULT_PANEL_X = (0.4019, 0.5992)
 DETAILED_RESULT_LEFT_PORTRAIT_X = (0.015, 0.205)
 DETAILED_RESULT_RIGHT_PORTRAIT_X = (0.785, 0.985)
 DETAILED_DEFEAT_VISUAL_DARK_THRESHOLD = 0.43
 DETAILED_DEFEAT_VISUAL_CENTER_DARK_THRESHOLD = 0.50
 DETAILED_DEFEAT_STRICT_COUNT = 5
-DETAILED_DEFEAT_SOFT_COUNT = 4
 DETAILED_DEFEAT_TEMPLATE_THRESHOLD = 0.78
+CLIENT_PROFILE_CN = "cn"
+CLIENT_PROFILE_OVERSEAS = "overseas"
+OVERSEAS_NICKNAME_LANGUAGES = ("ch", "japan", "korean", "chinese_cht")
+OVERSEAS_NICKNAME_MIN_COMMON_TEXT = 2
+OVERSEAS_DEFEAT_TEMPLATE_THRESHOLD = 0.85
+OVERSEAS_PRECISE_DEFEAT_TEMPLATE_THRESHOLD = 0.65
+OVERSEAS_DETAILED_RESULT_PANEL_X = (0.3950, 0.6050)
 DETAILED_DEFEAT_STICKER_X = {
     "attacker": (0.026, 0.216),
     "defender": (0.773, 0.974),
+}
+OVERSEAS_DEFEAT_STICKER_X = {
+    "attacker": (0.031, 0.213),
+    "defender": (0.795, 1.000),
+}
+# Overseas 3440x1440 group64 regions manually tightened in the full-image
+# calibration tool. Coordinates are local to one match block and deliberately
+# exclude the white gutters. The same boxes also cover the HP percentage used
+# for an equal-survivor tiebreak. Other overseas resolutions scale these
+# normalized coordinates; the Chinese profile never reads them.
+OVERSEAS_DEFEAT_SLOT_BOXES = {
+    "top": {
+        "attacker": (
+            ((0.400976, 0.014370, 0.037152, 0.032036), (0.401509, 0.050069, 0.037685, 0.031704), (0.401509, 0.085604, 0.037685, 0.031972), (0.401509, 0.121441, 0.037685, 0.031670), (0.401509, 0.157110, 0.037152, 0.032338)),
+            ((0.400976, 0.213499, 0.037152, 0.032135), (0.401509, 0.248270, 0.037685, 0.033106), (0.401509, 0.284301, 0.037685, 0.032653), (0.401509, 0.320112, 0.037685, 0.032101), (0.401509, 0.355380, 0.037152, 0.032705)),
+            ((0.400976, 0.413102, 0.037152, 0.031437), (0.401509, 0.448270, 0.037685, 0.031704), (0.401509, 0.483438, 0.037685, 0.032442), (0.401509, 0.518779, 0.037685, 0.032998), (0.401509, 0.555449, 0.037152, 0.031437)),
+            ((0.400976, 0.611337, 0.037152, 0.032135), (0.401509, 0.646838, 0.037685, 0.032403), (0.401509, 0.682575, 0.037685, 0.031674), (0.401509, 0.718313, 0.037685, 0.031337), (0.401509, 0.753581, 0.037152, 0.032338)),
+            ((0.401509, 0.810470, 0.037152, 0.031734), (0.401509, 0.846139, 0.037685, 0.032243), (0.401509, 0.882105, 0.037685, 0.031575), (0.401509, 0.917972, 0.037685, 0.031670), (0.401509, 0.953110, 0.037152, 0.031790)),
+        ),
+        "defender": (
+            ((0.561952, 0.014802, 0.037717, 0.031605), (0.561952, 0.050500, 0.037717, 0.031273), (0.561952, 0.086035, 0.038251, 0.031540), (0.561952, 0.121009, 0.038251, 0.032532), (0.561952, 0.157541, 0.038251, 0.031907)),
+            ((0.561952, 0.213930, 0.037717, 0.031704), (0.561952, 0.248270, 0.037717, 0.032675), (0.561952, 0.285164, 0.038251, 0.031790), (0.561952, 0.319681, 0.038251, 0.032532), (0.561952, 0.355380, 0.038251, 0.032705)),
+            ((0.561952, 0.413533, 0.037717, 0.031005), (0.561952, 0.448701, 0.037717, 0.031273), (0.561952, 0.483007, 0.038251, 0.032442), (0.561952, 0.519211, 0.038251, 0.032567), (0.561952, 0.554586, 0.038251, 0.032299)),
+            ((0.561952, 0.611769, 0.037717, 0.031704), (0.561952, 0.647269, 0.037717, 0.031972), (0.561952, 0.683438, 0.038251, 0.031242), (0.561952, 0.718313, 0.038251, 0.032200), (0.561952, 0.754012, 0.038251, 0.031907)),
+            ((0.561952, 0.810470, 0.037717, 0.031303), (0.561952, 0.846570, 0.037717, 0.031812), (0.561952, 0.882537, 0.038251, 0.031143), (0.561952, 0.917110, 0.038251, 0.032532), (0.561952, 0.953110, 0.038251, 0.031790)),
+        ),
+    },
+    "bottom": {
+        "attacker": (
+            ((0.400976, 0.019547, 0.037152, 0.032036), (0.401509, 0.054814, 0.037685, 0.031704), (0.401509, 0.089918, 0.037685, 0.031972), (0.401509, 0.125755, 0.037685, 0.031670), (0.401509, 0.162286, 0.037152, 0.032338)),
+            ((0.400976, 0.218244, 0.037152, 0.032135), (0.401509, 0.253016, 0.037685, 0.033106), (0.401509, 0.289047, 0.037685, 0.032653), (0.401509, 0.324858, 0.037685, 0.032101), (0.401509, 0.360988, 0.037152, 0.032705)),
+            ((0.400976, 0.417847, 0.037152, 0.031437), (0.401509, 0.453016, 0.037685, 0.031704), (0.401509, 0.489047, 0.037685, 0.032442), (0.401509, 0.523956, 0.037685, 0.032998), (0.401509, 0.561057, 0.037152, 0.031437)),
+            ((0.400976, 0.616946, 0.037152, 0.032135), (0.401509, 0.652015, 0.037685, 0.032403), (0.401509, 0.687321, 0.037685, 0.031674), (0.401509, 0.723059, 0.037685, 0.031337), (0.401509, 0.759189, 0.037152, 0.032338)),
+            ((0.401509, 0.815216, 0.037152, 0.031734), (0.401509, 0.850884, 0.037685, 0.032243), (0.401509, 0.886851, 0.037685, 0.031575), (0.401509, 0.922286, 0.037685, 0.031670), (0.401509, 0.957856, 0.037152, 0.031790)),
+        ),
+        "defender": (
+            ((0.561952, 0.019116, 0.037717, 0.031605), (0.561952, 0.055246, 0.037717, 0.031273), (0.561952, 0.090781, 0.038251, 0.031540), (0.561952, 0.126186, 0.038251, 0.032532), (0.561952, 0.162286, 0.038251, 0.031907)),
+            ((0.561952, 0.218244, 0.037717, 0.031704), (0.561952, 0.253447, 0.037717, 0.032675), (0.561952, 0.289478, 0.038251, 0.031790), (0.561952, 0.325289, 0.038251, 0.032532), (0.561952, 0.360988, 0.038251, 0.032705)),
+            ((0.561952, 0.417416, 0.037717, 0.031005), (0.561952, 0.453447, 0.037717, 0.031273), (0.561952, 0.488184, 0.038251, 0.032442), (0.561952, 0.524387, 0.038251, 0.032567), (0.561952, 0.560194, 0.038251, 0.032299)),
+            ((0.561952, 0.616514, 0.037717, 0.031704), (0.561952, 0.652446, 0.037717, 0.031972), (0.561952, 0.688184, 0.038251, 0.031242), (0.561952, 0.723490, 0.038251, 0.032200), (0.561952, 0.759189, 0.038251, 0.031907)),
+            ((0.561952, 0.816079, 0.037717, 0.031303), (0.561952, 0.851747, 0.037717, 0.031812), (0.561952, 0.886851, 0.038251, 0.032006), (0.561952, 0.922286, 0.038251, 0.032532), (0.561419, 0.957856, 0.038251, 0.032222)),
+        ),
+    },
+}
+OVERSEAS_PLAYER_REGION_BOXES = {
+    "top": {
+        "attacker": {
+            "nickname": (0.115568, 0.173469, 0.253040, 0.025729),
+            "id": (0.113035, 0.199823, 0.144096, 0.025280),
+            "id_fallback": (0.113829, 0.198770, 0.140123, 0.027623),
+        },
+        "defender": {
+            "nickname": (0.730549, 0.173956, 0.232976, 0.026911),
+            "id": (0.728363, 0.198645, 0.144128, 0.022403),
+            "id_fallback": (0.728501, 0.198628, 0.142421, 0.027187),
+        },
+    },
+    "bottom": {
+        "attacker": {
+            "nickname": (0.115568, 0.177136, 0.253040, 0.024866),
+            "id": (0.113035, 0.203059, 0.144096, 0.023986),
+            "id_fallback": (0.113829, 0.202006, 0.140123, 0.024387),
+        },
+        "defender": {
+            "nickname": (0.730549, 0.176760, 0.232976, 0.024754),
+            "id": (0.728363, 0.202959, 0.144128, 0.023913),
+            "id_fallback": (0.728501, 0.201648, 0.142421, 0.024167),
+        },
+    },
 }
 DETAILED_DEFEAT_STICKER_Y = (
     (0.087, 0.241),
@@ -90,10 +175,14 @@ MAX_CARD_POWER = 400_000
 STRONG_POWER_RECHECK_SUPPORT = 12.0
 POWER_TIGHT_RECHECK_SUPPORT = 20.0
 POWER_ANCHORED_CONFIDENCE_FLOOR = 0.88
+POWER_GEOMETRY_STRONG_CONFIDENCE = 0.99
+POWER_GEOMETRY_MIN_STRONG_VOTES = 3
+POWER_GEOMETRY_MIN_VOTE_LEAD = 2
 POWER_STRIP_CROP_TOP = 0.64
 POWER_STRIP_CROP_BOTTOM = 0.985
 POWER_STRIP_CROP_HALF_WIDTH = 0.125
 POWER_STRIP_BATCH_SIZE = 32
+SHORT_NAME_POWER_PROBE_MIN_CONFIDENCE = 0.70
 COLLECTION_ICON_BOX = (0.07, 0.41, 0.23, 0.515)
 COLLECTION_NONE = "\u65e0"
 COLLECTION_DIRECT_LABELS = ("R", "R15", "SR", "SR15", "SSR", "SSR3")
@@ -129,6 +218,34 @@ COLLECTION_PRECISE_GROUP64_FHD = {
     "defender_x_half": 0.02072,
     "y_half": 0.0599,
 }
+# Overseas roster cards use the same icon artwork but a different card grid.
+# These two profiles were fitted from the aligned 1920x1080 and 3440x1440
+# group64 exports. Coordinates are local to the cropped roster row except for
+# icon_y0, which is local to the whole match block.
+OVERSEAS_COLLECTION_GRID_FHD = {
+    "block_height": 2296,
+    "row_width": {"attacker": 787, "defender": 788},
+    "icon_x0": {
+        "attacker": (2, 144, 286, 428, 570),
+        "defender": (87, 229, 371, 513, 655),
+    },
+    "icon_y0": (720, 1018, 1316, 1614, 1912),
+    "icon_width": 27,
+    "icon_height": 29,
+    "bottom_match_dy": 11,
+}
+OVERSEAS_COLLECTION_GRID_WIDE = {
+    "block_height": 2318,
+    "row_width": {"attacker": 789, "defender": 790},
+    "icon_x0": {
+        "attacker": (3, 145, 287, 429, 571),
+        "defender": (90, 232, 374, 516, 658),
+    },
+    "icon_y0": (718, 1017, 1316, 1615, 1914),
+    "icon_width": 26,
+    "icon_height": 29,
+    "bottom_match_dy": 12,
+}
 COLLECTION_TEMPLATE_SIZE = (64, 64)
 COLLECTION_TEMPLATE_THRESHOLD = 0.72
 COLLECTION_DIRECT_TEMPLATE_SIZE = (48, 48)
@@ -151,11 +268,11 @@ COLLECTION_DIRECT_SR_WEAK_PURPLE_GUARD = 0.21
 COLLECTION_DIRECT_SR_SCORE_DELTA_GUARD = -0.04
 COLLECTION_DIRECT_R_TO_SR_MARGIN = 0.015
 COLLECTION_DIRECT_R_TO_SR_DARK_MAX = 0.03
-COLLECTION_DIRECT_NONE_VETO_MARGIN = -0.18
-COLLECTION_DIRECT_TREASURE_NONE_MARGIN = 0.0
-COLLECTION_DIRECT_R_BRIGHT_NONE_MARGIN = -0.04
-COLLECTION_DIRECT_R_BRIGHT_ACTIVE_MAX = 0.20
-COLLECTION_DIRECT_R_BRIGHT_WHITE_MIN = 0.60
+# A positive icon crop can resemble a manually collected empty-slot crop at
+# low resolution.  Keep a small tolerance instead of requiring a positive
+# template to beat every empty-slot template outright, while still rejecting
+# portrait backgrounds that score materially closer to the empty samples.
+COLLECTION_DIRECT_PRESENCE_MARGIN = -0.025
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_DARK_MIN = 0.24
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_DARK_MAX = 0.34
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_WHITE_MAX = 0.46
@@ -165,12 +282,29 @@ COLLECTION_DIRECT_R15_CYAN_OVERRIDE_SCORE_MARGIN = -0.08
 NAME_PROFILE_DEFAULT = "default"
 NAME_PROFILE_FHD = "fhd"
 SOURCE_PROFILE_3840 = "3840x2160"
-FHD_NAME_TEXT_ALIASES = (
+SOURCE_PROFILE_2560_1600 = "2560x1600"
+# Exact OCR artifacts observed on multiple client layouts. These preserve the
+# colon evidence needed by the existing special-name matcher without lowering
+# any general name-matching threshold.
+GLOBAL_NAME_TEXT_ALIASES = (
+    ("阿妮斯一起", "阿妮斯：超"),
+    ("米哈拉一颗", "米哈拉：羁"),
+    ("德當克", "德雷克"),
+    ("特蓄娜", "特蕾娜"),
+    ("蓄贝儿", "蕾贝儿"),
+    ("拉誉拉斯", "拉普拉斯"),
     ("\u8d22\u72fc", "\u8c7a\u72fc"),
     ("\u6750\u72fc", "\u8c7a\u72fc"),
     ("\u5bf9\u72fc", "\u8c7a\u72fc"),
     ("\u6e21\u9e21", "\u6e21\u9e26"),
+    ("\u95ea\u4eae\u514d\u5973\u90ce", "\u95ea\u4eae\u5154\u5973\u90ce"),
+    ("\u95ea\u4eae\u514d\u5973\u90ae", "\u95ea\u4eae\u5154\u5973\u90ce"),
+    ("\u7d2b\u9c9c", "\u5a1c\u5609"),
 )
+FHD_NAME_TEXT_ALIASES: tuple[tuple[str, str], ...] = ()
+CN_DETAIL_NAME_TEXT_ALIASES_BY_RESOLUTION = {
+    "1920x1080": (("面餐", "基里"),),
+}
 STAT_LEVEL_HEADERS = (
     "\u6781\u4e50\u51c0\u571f",
     "\u6cf0\u7279\u62c9",
@@ -184,7 +318,9 @@ STAT_LEVEL_HEADERS = (
 ATTACKER_STAT_LEVEL_CENTERS = (0.070, 0.185, 0.300, 0.399, 0.513, 0.607, 0.731, 0.856)
 DEFENDER_STAT_LEVEL_CENTERS = (0.159, 0.274, 0.388, 0.486, 0.601, 0.694, 0.818, 0.944)
 STAT_LEVEL_MIN = 1
-STAT_LEVEL_MAX = 250
+STAT_LEVEL_MAX = 999
+STAT_LEVEL_HIGH_VALUE_MIN = 251
+STAT_LEVEL_HIGH_DIRECT_CONFIDENCE = 0.90
 STAT_LEVEL_RECHECK_BELOW = 50
 STAT_LEVEL_AREA = (0.0, 0.948, 1.0, 0.998)
 STAT_LEVEL_SLOT_Y0 = 0.980
@@ -195,6 +331,29 @@ STAT_LEVEL_RECHECK_SLOT_BOXES = (
     (STAT_LEVEL_SLOT_Y0, STAT_LEVEL_SLOT_Y1, 1.00),
     (0.985, STAT_LEVEL_SLOT_Y1, 1.35),
 )
+# International and HK/TW detailed screens use the same central layout, but
+# their DISCONNECTED sticker is shorter than the Chinese defeat sticker. The
+# values describe the dark sticker itself and intentionally exclude the white
+# card gutters around it.
+OVERSEAS_DEFEAT_STICKER_Y_BY_ROUND = tuple(
+    tuple((max(0.0, top - 0.0013), min(1.0, top + 0.0305)) for top, _bottom in row)
+    for row in DETAILED_DEFEAT_STICKER_Y_BY_ROUND
+)
+OVERSEAS_DEFEAT_TEMPLATE_FILES = (
+    "disconnected_1920.png",
+    "disconnected_3440.png",
+)
+STAT_LEVEL_MISREAD_DIGIT = "6"
+STAT_LEVEL_CORRECT_DIGIT = "9"
+STAT_LEVEL_NINE_TAIL_SCORE_MIN = 0.08
+STAT_LEVEL_LINE_Y0 = 0.975
+STAT_LEVEL_LINE_Y1 = 0.998
+STAT_LEVEL_LINE_MIN_VOTES = 3
+STAT_LEVEL_LINE_MIN_CONFIDENCE = 0.70
+STAT_LEVEL_LINE_HIGH_MIN_VOTES = 4
+STAT_LEVEL_LINE_HIGH_MIN_CONFIDENCE = 0.85
+STAT_LEVEL_LINE_BATCH_SIZE = 32
+OVERSEAS_ID_LEFT_RETRY_PADDING = 0.014
 
 
 @dataclass
@@ -205,6 +364,15 @@ class _PowerObservation:
     trailing_marker: bool
     distance: float = 0.0
     text: str = ""
+
+
+@dataclass(frozen=True)
+class _PowerGeometryVote:
+    geometry_id: str
+    value: int
+    confidence: float
+    anchored: bool
+    trailing_marker: bool
 
 
 @dataclass
@@ -291,6 +459,77 @@ def _module_data_dir() -> Path:
     return Path(__file__).resolve().parent.parent / "data"
 
 
+def _normalize_client_profile(client_profile: str) -> str:
+    return CLIENT_PROFILE_OVERSEAS if str(client_profile or "").strip().lower() == CLIENT_PROFILE_OVERSEAS else CLIENT_PROFILE_CN
+
+
+def _overseas_calibration_tier(stage_name: str, match_index: int) -> str:
+    if stage_name == STAGE_NAME and match_index in (3, 4):
+        return "bottom"
+    return "top"
+
+
+def _xywh_to_xyxy(box: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    x, y, width, height = box
+    return x, y, x + width, y + height
+
+
+def _overseas_player_side_box(
+    side: str,
+    field: str,
+    stage_name: str,
+    match_index: int,
+) -> tuple[float, float, float, float]:
+    tier = _overseas_calibration_tier(stage_name, match_index)
+    whole_box = _xywh_to_xyxy(OVERSEAS_PLAYER_REGION_BOXES[tier][side][field])
+    side_origin = 0.0 if side == "attacker" else 0.57
+    side_width = 0.43
+    return (
+        (whole_box[0] - side_origin) / side_width,
+        whole_box[1],
+        (whole_box[2] - side_origin) / side_width,
+        whole_box[3],
+    )
+
+
+def _overseas_defeat_boxes_for_panel(
+    match_image: Image.Image,
+    panel_image: Image.Image,
+    stage_name: str,
+    match_index: int,
+) -> dict[str, tuple[tuple[tuple[float, float, float, float], ...], ...]]:
+    """Map the manually calibrated block-local boxes into panel pixels."""
+    tier = _overseas_calibration_tier(stage_name, match_index)
+    panel_left = int(match_image.width * OVERSEAS_DETAILED_RESULT_PANEL_X[0])
+    mapped: dict[str, tuple[tuple[tuple[float, float, float, float], ...], ...]] = {}
+    for side in ("attacker", "defender"):
+        rounds: list[tuple[tuple[float, float, float, float], ...]] = []
+        for row_boxes in OVERSEAS_DEFEAT_SLOT_BOXES[tier][side]:
+            slots: list[tuple[float, float, float, float]] = []
+            for rel_box in row_boxes:
+                x0, y0, x1, y1 = _xywh_to_xyxy(rel_box)
+                slots.append(
+                    (
+                        match_image.width * x0 - panel_left,
+                        panel_image.height * y0,
+                        match_image.width * x1 - panel_left,
+                        panel_image.height * y1,
+                    )
+                )
+            rounds.append(tuple(slots))
+        mapped[side] = tuple(rounds)
+    return mapped
+
+
+def _panel_boxes_to_round_boxes(
+    panel_image: Image.Image,
+    row: int,
+    boxes: tuple[tuple[float, float, float, float], ...],
+) -> tuple[tuple[float, float, float, float], ...]:
+    round_top = int(panel_image.height * row / 5)
+    return tuple((x0, y0 - round_top, x1, y1 - round_top) for x0, y0, x1, y1 in boxes)
+
+
 def _items_to_text(items: list[OCRItem]) -> str:
     return " ".join(item.text.strip() for item in items if item.text.strip())
 
@@ -309,6 +548,19 @@ def _clean_text(text: str) -> str:
 def _extract_id(text: str) -> str:
     match = re.search(r"ID\s*[:：]?\s*([0-9]{6,})", text, flags=re.IGNORECASE)
     return match.group(1) if match else ""
+
+
+def _extract_left_clipped_id(text: str) -> str:
+    """Read an ID only when its leading I was clipped inside an ID-only crop."""
+    match = re.search(r"(?<![A-Z0-9])D\s*[:：]\s*([0-9]{6,9})(?!\d)", text.upper())
+    return match.group(1) if match else ""
+
+
+def _expand_left_rel_box(
+    box: tuple[float, float, float, float],
+    padding: float,
+) -> tuple[float, float, float, float]:
+    return max(0.0, box[0] - padding), box[1], box[2], box[3]
 
 
 def _is_noise_token(text: str) -> bool:
@@ -351,9 +603,11 @@ def _name_profile_from_block_height(block_height: int | None) -> str:
 
 
 def _apply_name_profile_aliases(text: str, name_profile: str) -> str:
-    if name_profile != NAME_PROFILE_FHD:
-        return text
     value = text
+    for wrong, correct in GLOBAL_NAME_TEXT_ALIASES:
+        value = value.replace(wrong, correct)
+    if name_profile != NAME_PROFILE_FHD:
+        return value
     for wrong, correct in FHD_NAME_TEXT_ALIASES:
         value = value.replace(wrong, correct)
     return value
@@ -386,15 +640,22 @@ def recognize_player_id(
     side_image: Image.Image,
     side: str,
     ocr: ArenaOCRRecognizer,
+    client_profile: str = CLIENT_PROFILE_CN,
+    stage_name: str = STAGE_NAME,
+    match_index: int = 1,
 ) -> str:
-    if side == "attacker":
+    if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS:
+        id_box = _overseas_player_side_box(side, "id", stage_name, match_index)
+        fallback_box = _overseas_player_side_box(side, "id_fallback", stage_name, match_index)
+    elif side == "attacker":
         id_box = (0.23, 0.205, 0.86, 0.245)
         fallback_box = (0.15, 0.19, 0.98, 0.255)
     else:
         id_box = (0.02, 0.205, 0.76, 0.245)
         fallback_box = (0.02, 0.19, 0.85, 0.255)
     id_text, id_items = _ocr_text(ocr, _crop_rel(side_image, id_box), f"{side}_id")
-    player_id = _extract_id(" ".join([id_text, _items_to_text(id_items)]))
+    id_source = " ".join([id_text, _items_to_text(id_items)])
+    player_id = _extract_id(id_source)
     if player_id:
         return player_id
 
@@ -403,53 +664,382 @@ def recognize_player_id(
         _crop_rel(side_image, fallback_box),
         f"{side}_id_fallback",
     )
-    return _extract_id(" ".join([fallback_text, _items_to_text(fallback_items)]))
+    fallback_source = " ".join([fallback_text, _items_to_text(fallback_items)])
+    player_id = _extract_id(fallback_source)
+    if player_id:
+        return player_id
+
+    if _normalize_client_profile(client_profile) != CLIENT_PROFILE_OVERSEAS:
+        return ""
+
+    # The overseas crop deliberately excludes the language/server labels. A few
+    # screenshots place the I in ID directly on its left border, so retry only
+    # that edge instead of restoring the old broad, noisy crop.
+    retry_box = _expand_left_rel_box(id_box, OVERSEAS_ID_LEFT_RETRY_PADDING)
+    retry_text, retry_items = _ocr_text(
+        ocr,
+        _crop_rel(side_image, retry_box),
+        f"{side}_id_left_retry",
+    )
+    retry_source = " ".join([retry_text, _items_to_text(retry_items)])
+    player_id = _extract_id(retry_source)
+    if player_id:
+        return player_id
+
+    clipped_candidates = [
+        candidate
+        for candidate in (
+            _extract_left_clipped_id(id_source),
+            _extract_left_clipped_id(fallback_source),
+            _extract_left_clipped_id(retry_source),
+        )
+        if candidate
+    ]
+    counts = Counter(clipped_candidates)
+    return next((candidate for candidate, count in counts.items() if count >= 2), "")
+
+
+def _overseas_nickname_images(
+    nickname_band: Image.Image,
+    ocr: ArenaOCRRecognizer,
+) -> list[tuple[str, Image.Image]]:
+    """Return tight nickname crops plus a conservative horizontal inset.
+
+    The international profile has Japanese/Korean text models. Their
+    recognition-only mode treats every pixel in the supplied crop as one line,
+    which can append a neighbouring UI glyph. The multilingual detector finds
+    the actual text first; if it cannot, the legacy crop remains available.
+    """
+    boxes = ocr.detect_nickname_text_boxes(nickname_band)
+    if not boxes:
+        return [("fallback", prepare_for_ocr(nickname_band))]
+
+    def box_bounds(box: list[tuple[float, float]]) -> tuple[float, float, float, float]:
+        x_values = [point[0] for point in box]
+        y_values = [point[1] for point in box]
+        return min(x_values), min(y_values), max(x_values), max(y_values)
+
+    bounded_boxes = [(box, box_bounds(box)) for box in boxes if len(box) >= 4]
+    if not bounded_boxes:
+        return [("fallback", prepare_for_ocr(nickname_band))]
+
+    # A detector can occasionally see small parts of the nearby blue profile
+    # action button. Start with the largest text-shaped box, then join only
+    # horizontally adjacent boxes on the same baseline. This preserves names
+    # containing a visual space while excluding those button fragments.
+    primary_box, primary_bounds = max(
+        bounded_boxes,
+        key=lambda item: max(1.0, item[1][2] - item[1][0]) * max(1.0, item[1][3] - item[1][1]),
+    )
+    px0, py0, px1, py1 = primary_bounds
+    primary_height = max(1.0, py1 - py0)
+    relevant_boxes = [primary_box]
+    for box, (x0, y0, x1, y1) in bounded_boxes:
+        if box is primary_box:
+            continue
+        same_baseline = abs(((y0 + y1) / 2) - ((py0 + py1) / 2)) <= primary_height * 0.45
+        horizontal_gap = max(0.0, max(px0, x0) - min(px1, x1))
+        if same_baseline and horizontal_gap <= primary_height * 1.25:
+            relevant_boxes.append(box)
+
+    points = [point for box in relevant_boxes for point in box]
+    if not points:
+        return [("fallback", prepare_for_ocr(nickname_band))]
+    x_values = [point[0] for point in points]
+    y_values = [point[1] for point in points]
+    x0, x1 = min(x_values), max(x_values)
+    y0, y1 = min(y_values), max(y_values)
+    text_height = max(1.0, y1 - y0)
+    pad_x = max(2, int(round(text_height * 0.14)))
+    pad_y = max(2, int(round(text_height * 0.12)))
+    left = max(0, int(x0) - pad_x)
+    top = max(0, int(y0) - pad_y)
+    right = min(nickname_band.width, int(x1 + 0.999) + pad_x)
+    bottom = min(nickname_band.height, int(y1 + 0.999) + pad_y)
+    if right <= left or bottom <= top:
+        return [("fallback", prepare_for_ocr(nickname_band))]
+
+    tight = nickname_band.crop((left, top, right, bottom))
+    images = [("tight", prepare_for_ocr(tight))]
+    inset = max(1, int(round(text_height * 0.045)))
+    if tight.width > inset * 2 + 8:
+        inner = tight.crop((inset, 0, tight.width - inset, tight.height))
+        images.append(("tight_inset", prepare_for_ocr(inner)))
+    return images
+
+
+def _nickname_reading(
+    raw_text: str,
+    confidence: float,
+    language: str,
+    variant: str,
+) -> dict[str, object] | None:
+    text = _clean_text(raw_text)
+    if not text or len(text) > 28 or re.fullmatch(r"[\d\W_]+", text):
+        return None
+    upper_text = text.upper()
+    if (
+        "\u670d\u52a1\u5668" in text
+        or re.fullmatch(r"(?:ID|LV|SERVER)", upper_text) is not None
+        or re.search(r"(?<![A-Z0-9])(?:ID|LV)\s*[:\uff1a]?\s*\d", upper_text) is not None
+        or re.search(r"(?<![A-Z])SERVER\s*[:\uff1a]?\s*[A-Z0-9-]+", upper_text) is not None
+    ):
+        return None
+    has_kana = bool(re.search(r"[\u3040-\u30ff]", text))
+    has_hangul = bool(re.search(r"[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]", text))
+    has_han = bool(re.search(r"[\u3400-\u9fff]", text))
+
+    # Korean nicknames commonly mix Hangul with Latin letters and digits. Hanja
+    # is exceptionally rare in this UI, so retain the historical cleanup for
+    # the occasional Han glyph hallucinated by the Korean recognizer.
+    if language == "korean" and has_hangul:
+        text = _clean_text(re.sub(r"[\u3400-\u9fff]+", "", text))
+        has_hangul = bool(re.search(r"[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]", text))
+
+    # Script gates prevent foreign recognizers from assigning high-confidence
+    # nonsense to a valid Chinese or Latin nickname. A Kanji-only Japanese
+    # name remains ambiguous by nature and is intentionally left to the
+    # Chinese/Traditional candidates instead of pretending certainty.
+    if language == "japan" and not has_kana:
+        return None
+    if language == "korean" and not has_hangul:
+        return None
+    if language == "chinese_cht" and not has_han:
+        return None
+
+    score = float(confidence)
+    if language == "japan" and has_kana:
+        score += 0.15
+    elif language == "korean" and has_hangul:
+        score += 0.15
+    return {
+        "text": text,
+        "language": language,
+        "variant": variant,
+        "confidence": float(confidence),
+        "score": score,
+    }
+
+
+def _is_edge_confirmed_shorter(long_text: str, short_text: str) -> bool:
+    if len(short_text) < OVERSEAS_NICKNAME_MIN_COMMON_TEXT or len(long_text) <= len(short_text):
+        return False
+    if len(long_text) - len(short_text) > 3:
+        return False
+    return long_text.startswith(short_text) or long_text.endswith(short_text)
+
+
+def _add_japanese_prolonged_mark_corrections(
+    readings: list[dict[str, object]],
+    reference_readings: list[dict[str, object]],
+) -> None:
+    """Repair a low-resolution Japanese long-vowel mark only with proof.
+
+    At low resolutions, the final glyph in ``ばんちょー`` can be read as the
+    visually similar Han character ``一``. Do not replace it globally: make a
+    corrected candidate only when a wider Japanese-only reading contains the
+    identical stem followed by the prolonged sound mark.
+    """
+    references = [
+        str(reading["text"])
+        for reading in reference_readings
+        if str(reading["language"]) == "japan"
+    ]
+    if not references:
+        return
+    corrections: list[dict[str, object]] = []
+    for reading in readings:
+        if str(reading["language"]) != "japan":
+            continue
+        text = str(reading["text"])
+        if len(text) < 2 or not text.endswith("一") or not re.search(r"[\u3040-\u30ff]", text[:-1]):
+            continue
+        corrected = f"{text[:-1]}ー"
+        if not any(corrected in reference for reference in references):
+            continue
+        correction = dict(reading)
+        correction["text"] = corrected
+        correction["variant"] = "prolonged_mark_reference"
+        correction["score"] = float(reading["score"]) + 0.035
+        corrections.append(correction)
+    readings.extend(corrections)
+
+
+def _repair_japanese_han_tail_from_cross_model_consensus(
+    readings: list[dict[str, object]],
+    selected_text: str,
+) -> str:
+    """Repair one kana-shaped tail glyph only when two OCR families agree.
+
+    Overseas nicknames can mix kana and Han characters. At FHD, the Japanese
+    recognizer can read a final Han glyph such as ``力`` as the similarly shaped
+    katakana ``カ`` while the Chinese recognizers retain the Han suffix. Keep the
+    Japanese reading as the structural source and borrow only a 2-4 character
+    Han suffix supported by both Chinese model families and both crop variants.
+    """
+    if not re.search(r"[\u3040-\u30ff]", selected_text):
+        return selected_text
+    if not any(
+        str(reading.get("language") or "") == "japan"
+        and str(reading.get("text") or "") == selected_text
+        for reading in readings
+    ):
+        return selected_text
+
+    suffix_support: dict[str, dict[str, object]] = {}
+    for reading in readings:
+        language = str(reading.get("language") or "")
+        if language not in {"ch", "chinese_cht"}:
+            continue
+        confidence = float(reading.get("confidence") or 0.0)
+        if confidence < 0.65:
+            continue
+        text = str(reading.get("text") or "")
+        variant = str(reading.get("variant") or "")
+        for length in range(2, min(4, len(text)) + 1):
+            suffix = text[-length:]
+            if re.fullmatch(r"[\u3400-\u9fff]+", suffix) is None:
+                continue
+            support = suffix_support.setdefault(
+                suffix,
+                {"sources": set(), "languages": set(), "confidence": 0.0},
+            )
+            support["sources"].add((language, variant))
+            support["languages"].add(language)
+            support["confidence"] = float(support["confidence"]) + confidence
+
+    candidates: list[tuple[tuple[int, int, int, float], str]] = []
+    for suffix, support in suffix_support.items():
+        sources = support["sources"]
+        languages = support["languages"]
+        if len(languages) < 2 or len(sources) < 3 or len(selected_text) < len(suffix):
+            continue
+        current_tail = selected_text[-len(suffix) :]
+        differences = [index for index, pair in enumerate(zip(current_tail, suffix)) if pair[0] != pair[1]]
+        if len(differences) != 1:
+            continue
+        difference_index = differences[0]
+        old_char = current_tail[difference_index]
+        new_char = suffix[difference_index]
+        if re.fullmatch(r"[\u3040-\u30ff]", old_char) is None:
+            continue
+        if re.fullmatch(r"[\u3400-\u9fff]", new_char) is None:
+            continue
+        shared_chars = [
+            char
+            for index, char in enumerate(suffix)
+            if index != difference_index and re.fullmatch(r"[\u3400-\u9fff]", char)
+        ]
+        if not shared_chars:
+            continue
+        repaired = selected_text[: -len(suffix)] + suffix
+        rank = (len(languages), len(sources), len(suffix), float(support["confidence"]))
+        candidates.append((rank, repaired))
+
+    if not candidates:
+        return selected_text
+    return max(candidates, key=lambda item: item[0])[1]
+
+
+def _select_nickname_candidate(readings: list[dict[str, object]], use_edge_consensus: bool) -> str:
+    if not readings:
+        return ""
+
+    occurrences: dict[tuple[str, str], set[str]] = {}
+    for reading in readings:
+        key = (str(reading["language"]), str(reading["text"]))
+        occurrences.setdefault(key, set()).add(str(reading["variant"]))
+
+    candidates: list[tuple[float, int, int, str]] = []
+    for reading in readings:
+        language = str(reading["language"])
+        text = str(reading["text"])
+        stability = len(occurrences[(language, text)])
+        score = float(reading["score"]) + (0.025 if stability >= 2 else 0.0)
+        # Shorter is deliberately the last tiebreaker. The old positive length
+        # tiebreaker chose an extra tail character whenever confidences tied.
+        candidates.append((score, stability, -len(text), text))
+
+    if use_edge_consensus:
+        for long_reading in readings:
+            if str(long_reading["variant"]) != "tight":
+                continue
+            for short_reading in readings:
+                if str(short_reading["variant"]) != "tight_inset":
+                    continue
+                if str(long_reading["language"]) != str(short_reading["language"]):
+                    continue
+                long_text = str(long_reading["text"])
+                short_text = str(short_reading["text"])
+                if not _is_edge_confirmed_shorter(long_text, short_text):
+                    continue
+                if float(short_reading["score"]) + 0.05 < float(long_reading["score"]):
+                    continue
+                candidates.append(
+                    (
+                        max(float(long_reading["score"]), float(short_reading["score"])) + 0.03,
+                        2,
+                        -len(short_text),
+                        short_text,
+                    )
+                )
+    selected = max(candidates, key=lambda value: (value[0], value[1], value[2]))[3]
+    if use_edge_consensus:
+        selected = _repair_japanese_han_tail_from_cross_model_consensus(readings, selected)
+    return selected
 
 
 def recognize_player_nickname(
     side_image: Image.Image,
     side: str,
     ocr: ArenaOCRRecognizer,
+    client_profile: str = CLIENT_PROFILE_CN,
+    stage_name: str = STAGE_NAME,
+    match_index: int = 1,
 ) -> str:
     # The nickname is the single text row between the decorative title and ID.
-    # Keep this crop narrow so badges, server text and profile titles stay out.
-    name_box = (0.20, 0.172, 0.74, 0.202) if side == "attacker" else (0.12, 0.172, 0.67, 0.202)
-    nickname_image = prepare_for_ocr(_crop_rel(side_image, name_box))
-    readings = ocr.recognize_nickname_candidates(nickname_image, f"{side}_nickname")
-    candidates: list[tuple[float, int, str]] = []
-    for raw_text, confidence, language in readings:
-        text = _clean_text(raw_text)
-        if not text or len(text) > 28 or re.fullmatch(r"[\d\W_]+", text):
-            continue
-        if any(token in text.upper() for token in ("ID", "LV", "SERVER")) or "\u670d\u52a1\u5668" in text:
-            continue
-        has_kana = bool(re.search(r"[\u3040-\u30ff]", text))
-        has_hangul = bool(re.search(r"[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]", text))
-
-        # The Korean dictionary occasionally appends one spurious Han glyph to
-        # an otherwise clean Hangul result. Korean nicknames commonly mix
-        # Hangul with Latin letters/numbers, but Hanja is exceptionally rare in
-        # this UI, so discard only those Han glyphs when Hangul is present.
-        if language == "korean" and has_hangul:
-            text = _clean_text(re.sub(r"[\u3400-\u9fff]+", "", text))
-            has_hangul = bool(re.search(r"[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]", text))
-
-        # Japanese/Korean recognizers are deliberately script-gated. Without
-        # this guard they can assign high confidence to nonsense readings of a
-        # perfectly valid Chinese or Latin nickname.
-        if language == "japan" and not has_kana:
-            continue
-        if language == "korean" and not has_hangul:
-            continue
-        score = float(confidence)
-        if language == "japan" and has_kana:
-            score += 0.15
-        elif language == "korean" and has_hangul:
-            score += 0.15
-        candidates.append((score, len(text), text))
-    if not candidates:
-        return ""
-    return max(candidates, key=lambda value: (value[0], value[1]))[2]
+    # The Chinese path deliberately keeps its existing crop and candidate order.
+    is_overseas = _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS
+    name_box = (
+        _overseas_player_side_box(side, "nickname", stage_name, match_index)
+        if is_overseas
+        else ((0.20, 0.172, 0.74, 0.202) if side == "attacker" else (0.12, 0.172, 0.67, 0.202))
+    )
+    nickname_band = _crop_rel(side_image, name_box)
+    image_variants = (
+        _overseas_nickname_images(nickname_band, ocr)
+        if is_overseas
+        else [("fallback", prepare_for_ocr(nickname_band))]
+    )
+    languages = OVERSEAS_NICKNAME_LANGUAGES if is_overseas else ("ch", "japan", "korean")
+    readings: list[dict[str, object]] = []
+    for variant, nickname_image in image_variants:
+        for raw_text, confidence, language in ocr.recognize_nickname_candidates(
+            nickname_image,
+            f"{side}_nickname_{variant}",
+            languages=languages,
+        ):
+            reading = _nickname_reading(raw_text, confidence, language, variant)
+            if reading is not None:
+                readings.append(reading)
+    if is_overseas and any(
+        str(reading["language"]) == "japan"
+        and str(reading["text"]).endswith("一")
+        and bool(re.search(r"[\u3040-\u30ff]", str(reading["text"])[:-1]))
+        for reading in readings
+    ):
+        reference_readings: list[dict[str, object]] = []
+        for raw_text, confidence, language in ocr.recognize_nickname_candidates(
+            prepare_for_ocr(nickname_band),
+            f"{side}_nickname_full_reference",
+            languages=("japan",),
+            include_detected_chinese=False,
+        ):
+            reading = _nickname_reading(raw_text, confidence, language, "full_reference")
+            if reading is not None:
+                reference_readings.append(reading)
+        _add_japanese_prolonged_mark_corrections(readings, reference_readings)
+    return _select_nickname_candidate(readings, use_edge_consensus=is_overseas)
 
 
 def _candidate_character_texts(items: list[OCRItem]) -> list[tuple[float, str, float]]:
@@ -1135,6 +1725,12 @@ def _collection_direct_score(candidate: np.ndarray, template: _CollectionDirectT
     return max(0.0, min(1.0, score))
 
 
+def _collection_has_positive_evidence(best_score: float, none_score: float | None) -> bool:
+    if none_score is None:
+        return True
+    return best_score - none_score > COLLECTION_DIRECT_PRESENCE_MARGIN
+
+
 def _collection_visual_stats(rgb: np.ndarray, mask: np.ndarray | None = None) -> dict[str, float]:
     if mask is None:
         mask = np.ones(rgb.shape[:2], dtype=bool)
@@ -1237,23 +1833,9 @@ def _classify_collection_icon_by_direct_template(icon_image: Image.Image) -> str
         negative_templates = _collection_direct_negative_templates()
         if negative_templates:
             none_score = max(_collection_direct_score(candidate, template) for template in negative_templates)
-            if best_score - none_score <= COLLECTION_DIRECT_NONE_VETO_MARGIN:
+            if not _collection_has_positive_evidence(best_score, none_score):
                 return COLLECTION_NONE
         label = _postprocess_collection_direct_label(best_label, scores, stats)
-        if (
-            label in COLLECTION_TREASURE_LABELS
-            and none_score is not None
-            and best_score - none_score <= COLLECTION_DIRECT_TREASURE_NONE_MARGIN
-        ):
-            return COLLECTION_NONE
-        if (
-            label == "R"
-            and none_score is not None
-            and best_score - none_score <= COLLECTION_DIRECT_R_BRIGHT_NONE_MARGIN
-            and stats["active"] <= COLLECTION_DIRECT_R_BRIGHT_ACTIVE_MAX
-            and stats["white"] >= COLLECTION_DIRECT_R_BRIGHT_WHITE_MIN
-        ):
-            return COLLECTION_NONE
         if (
             label == "R"
             and stats["dark"] <= COLLECTION_DIRECT_R_TO_SR_DARK_MAX
@@ -1327,11 +1909,16 @@ def _collection_precise_group64_geometry(
     stage_name: str,
     block_height: int | None,
     source_profile: str = "",
+    client_profile: str = CLIENT_PROFILE_CN,
+    row_height: int | None = None,
 ) -> tuple[_CollectionSlotGeometry, float]:
     if stage_name != STAGE_NAME or match_index not in {1, 2, 3, 4} or block_height is None:
         return geometry, 0.0
     if source_profile == SOURCE_PROFILE_3840:
         profile = COLLECTION_PRECISE_GROUP64_3840
+    elif source_profile == SOURCE_PROFILE_2560_1600:
+        # The 16:10 capture uses the verified 2560x1440 wide group64 geometry.
+        profile = COLLECTION_PRECISE_GROUP64_WIDE
     else:
         profile = (
             COLLECTION_PRECISE_GROUP64_WIDE
@@ -1340,6 +1927,14 @@ def _collection_precise_group64_geometry(
         )
     x_half_key = "attacker_x_half" if side == "attacker" else "defender_x_half"
     dy = profile["top_dy"] if match_index in {1, 2} else profile["bottom_dy"]
+    if (
+        source_profile == SOURCE_PROFILE_2560_1600
+        and _normalize_client_profile(client_profile) == CLIENT_PROFILE_CN
+        and row_height
+    ):
+        # The 16:10 CN stitch has a one-pixel lower icon phase than the wide
+        # reference. Keep the crop size intact and only align it vertically.
+        dy += 1.0 / max(1, row_height)
     return (
         _CollectionSlotGeometry(
             x_center=geometry.x_center,
@@ -1348,6 +1943,43 @@ def _collection_precise_group64_geometry(
             y_half=float(profile["y_half"]),
         ),
         float(dy),
+    )
+
+
+def _overseas_collection_slot_box(
+    row_image: Image.Image,
+    *,
+    side: str,
+    team_index: int,
+    slot_index: int,
+    match_index: int | None,
+    block_height: int | None,
+) -> tuple[int, int, int, int] | None:
+    if block_height is None or not 1 <= team_index <= 5 or not 1 <= slot_index <= 5:
+        return None
+    profile = min(
+        (OVERSEAS_COLLECTION_GRID_FHD, OVERSEAS_COLLECTION_GRID_WIDE),
+        key=lambda candidate: abs(block_height - int(candidate["block_height"])),
+    )
+    reference_row_width = float(profile["row_width"][side])
+    scale_x = row_image.width / max(1.0, reference_row_width)
+    reference_x0 = float(profile["icon_x0"][side][slot_index - 1])
+    x0 = round(reference_x0 * scale_x)
+    x1 = round((reference_x0 + float(profile["icon_width"])) * scale_x)
+
+    reference_block_height = float(profile["block_height"])
+    scale_y = block_height / max(1.0, reference_block_height)
+    row_start = int(block_height * (0.275 + (team_index - 1) * 0.13))
+    reference_y0 = float(profile["icon_y0"][team_index - 1])
+    if match_index in {3, 4}:
+        reference_y0 += float(profile["bottom_match_dy"])
+    y0 = round(reference_y0 * scale_y) - row_start
+    y1 = round((reference_y0 + float(profile["icon_height"])) * scale_y) - row_start
+    return (
+        max(0, min(row_image.width, x0)),
+        max(0, min(row_image.height, y0)),
+        max(0, min(row_image.width, x1)),
+        max(0, min(row_image.height, y1)),
     )
 
 
@@ -1420,12 +2052,27 @@ def recognize_collection_slots(
     stage_name: str = STAGE_NAME,
     block_height: int | None = None,
     source_profile: str = "",
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> list[str]:
     levels: list[str] = []
     x_offsets = COLLECTION_ROW_ICON_X_OFFSETS.get(side, COLLECTION_ROW_ICON_X_OFFSETS["attacker"])
     for slot in range(slot_count):
         x_offset = x_offsets[min(slot, len(x_offsets) - 1)]
         icon_center = centers[slot] - x_offset
+        if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS:
+            icon_box = _overseas_collection_slot_box(
+                row_image,
+                side=side,
+                team_index=team_index,
+                slot_index=slot + 1,
+                match_index=match_index,
+                block_height=block_height,
+            )
+            if icon_box is None or icon_box[2] <= icon_box[0] or icon_box[3] <= icon_box[1]:
+                levels.append(COLLECTION_NONE)
+                continue
+            levels.append(_classify_collection_icon(row_image.crop(icon_box)))
+            continue
         geometry = _collection_slot_geometry(side, team_index, slot + 1, icon_center)
         geometry, dy = _collection_precise_group64_geometry(
             geometry,
@@ -1434,6 +2081,8 @@ def recognize_collection_slots(
             stage_name=stage_name,
             block_height=block_height,
             source_profile=source_profile,
+            client_profile=client_profile,
+            row_height=row_image.height,
         )
         icon_image = _crop_rel(
             row_image,
@@ -1472,7 +2121,10 @@ def _stat_level_observations_from_text(
     normalized = raw_text.translate(_LEVEL_TRANSLATION)
     observations: list[_StatLevelObservation] = []
 
-    for match in re.finditer(r"[Ll][Vv]\s*([0-9]{1,3})", normalized):
+    # On the compact cycle-level strip Paddle occasionally drops the L in Lv
+    # but keeps a clear V plus all digits (for example, v381). This remains a
+    # bounded level-prefix rule, not a general acceptance of bare numbers.
+    for match in re.finditer(r"(?<![A-Za-z])(?:[Ll][Vv]|[Vv])\s*([0-9]{1,3})(?!\d)", normalized):
         value = int(match.group(1))
         if STAT_LEVEL_MIN <= value <= STAT_LEVEL_MAX:
             observations.append(
@@ -1525,6 +2177,23 @@ def _choose_stat_level(observations: list[_StatLevelObservation]) -> int | None:
         if repaired_candidates:
             return max(repaired_candidates, key=score)
     return chosen
+
+
+def _is_stat_level_value_trusted(
+    value: int | None,
+    observations: list[_StatLevelObservation],
+) -> bool:
+    """Require explicit, high-confidence Lv evidence for unusually high levels."""
+    if value is None:
+        return False
+    if value < STAT_LEVEL_HIGH_VALUE_MIN:
+        return True
+    return any(
+        observation.value == value
+        and observation.from_lv
+        and observation.confidence >= STAT_LEVEL_HIGH_DIRECT_CONFIDENCE
+        for observation in observations
+    )
 
 
 def _stat_level_preprocess_variants(image: Image.Image) -> list[tuple[Image.Image, float]]:
@@ -1592,6 +2261,167 @@ def _stat_level_slot_bounds(centers: tuple[float, ...], index: int) -> tuple[flo
     return max(0.0, left), min(1.0, right)
 
 
+def _stat_level_merged_item_slots(
+    item: OCRItem,
+    prepared_width: int,
+    centers: tuple[float, ...],
+) -> set[int]:
+    """Return slots covered by a detector box that contains multiple Lv values."""
+    normalized = str(item.text or "").translate(_LEVEL_TRANSLATION)
+    if len(re.findall(r"[Ll][Vv]\s*\d{1,3}(?!\d)", normalized)) < 2:
+        return set()
+    xs = [point[0] for point in item.bbox]
+    if not xs:
+        return set()
+    left = min(xs) / max(1, prepared_width)
+    right = max(xs) / max(1, prepared_width)
+    return {
+        index
+        for index, center in enumerate(centers)
+        if left - 0.025 <= center <= right + 0.025
+    }
+
+
+def _choose_stat_level_line_confirmation(observations: list[_StatLevelObservation]) -> int | None:
+    """Return a conservative consensus from recognition-only numeric line reads."""
+    if not observations:
+        return None
+    grouped: dict[int, list[_StatLevelObservation]] = {}
+    for observation in observations:
+        grouped.setdefault(observation.value, []).append(observation)
+
+    candidates: list[tuple[int, int, float, float]] = []
+    for value, items in grouped.items():
+        count = len(items)
+        mean_confidence = sum(item.confidence for item in items) / count
+        if value >= STAT_LEVEL_HIGH_VALUE_MIN:
+            if count < STAT_LEVEL_LINE_HIGH_MIN_VOTES or mean_confidence < STAT_LEVEL_LINE_HIGH_MIN_CONFIDENCE:
+                continue
+        elif count < STAT_LEVEL_LINE_MIN_VOTES or mean_confidence < STAT_LEVEL_LINE_MIN_CONFIDENCE:
+            continue
+        candidates.append((value, count, mean_confidence, sum(item.confidence for item in items)))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: (item[1], item[2], item[3]))[0]
+
+
+def _recognize_stat_level_line_confirmations(
+    side_image: Image.Image,
+    centers: tuple[float, ...],
+    indices: set[int],
+    ocr: ArenaOCRRecognizer,
+    side: str,
+) -> dict[int, int]:
+    """Batch-read only ambiguous slots from their tightly cropped numeric line."""
+    if not indices:
+        return {}
+    images: list[Image.Image] = []
+    names: list[str] = []
+    metadata: list[tuple[int, float]] = []
+    for index in sorted(indices):
+        left, right = _stat_level_slot_bounds(centers, index)
+        line_image = _crop_rel(side_image, (left, STAT_LEVEL_LINE_Y0, right, STAT_LEVEL_LINE_Y1))
+        for variant_index, (variant, weight) in enumerate(_stat_level_preprocess_variants(line_image), start=1):
+            images.append(prepare_for_ocr(variant))
+            names.append(f"{side}_stat_level_{index + 1}_line_v{variant_index}")
+            metadata.append((index, weight))
+
+    grouped: dict[int, list[_StatLevelObservation]] = {index: [] for index in indices}
+    for (index, weight), items in zip(
+        metadata,
+        ocr.recognize_text_lines(images, names, batch_size=STAT_LEVEL_LINE_BATCH_SIZE),
+    ):
+        for item in items:
+            grouped[index].extend(_stat_level_observations_from_text(item.text, item.confidence, weight=weight))
+
+    return {
+        index: confirmed
+        for index, observations in grouped.items()
+        if (confirmed := _choose_stat_level_line_confirmation(observations)) is not None
+    }
+
+
+def _stat_level_trailing_digit_tail_scores(image: Image.Image, count: int) -> list[float] | None:
+    """Return topology scores for the requested rightmost numeric tails."""
+    if count < 1:
+        return None
+    gray = np.asarray(image.convert("L"), dtype=np.uint8)
+    if gray.size == 0:
+        return None
+    height, width = gray.shape[:2]
+    if height < 8 or width < 8:
+        return None
+
+    # The label and separator sit above the value. Keep only the lower value
+    # band, then select one lower tail for each requested trailing digit.
+    threshold = max(105, min(165, int(np.percentile(gray, 24))))
+    mask = (gray < threshold).astype(np.uint8)
+    mask[: int(height * 0.42), :] = 0
+    component_count, labels, stats, _centroids = cv2.connectedComponentsWithStats(mask, 8)
+    tails: list[tuple[int, int, int, int, int, int]] = []
+    min_height = max(4, int(round(height * 0.08)))
+    for component_index in range(1, component_count):
+        x, y, component_width, component_height, area = (int(value) for value in stats[component_index])
+        if x < int(width * 0.18) or y < int(height * 0.55):
+            continue
+        if component_width > int(width * 0.45) or component_height < min_height or area < 12:
+            continue
+        tails.append((x, y, component_width, component_height, area, component_index))
+
+    # A rendered 9/6 is split into its upper loop and lower tail. Restricting
+    # the candidates to the bottom band leaves one tail per visible digit.
+    tails.sort(key=lambda item: item[0])
+    if len(tails) < count:
+        return None
+    tails = tails[-count:]
+    if max(item[1] for item in tails) - min(item[1] for item in tails) > max(3, int(round(height * 0.16))):
+        return None
+    min_gap = max(2, int(round(width * 0.08)))
+    if any(right[0] - left[0] < min_gap for left, right in zip(tails, tails[1:])):
+        return None
+
+    scores: list[float] = []
+    for x, y, component_width, component_height, _area, component_index in tails:
+        digit = (labels[y : y + component_height, x : x + component_width] == component_index).astype(np.uint8)
+        normalized = cv2.resize(digit, (32, 48), interpolation=cv2.INTER_NEAREST)
+        upper_right = float(normalized[6:23, 22:32].mean())
+        lower_left = float(normalized[27:44, 0:10].mean())
+        scores.append(upper_right - lower_left)
+    return scores
+
+
+def _repair_stat_level_trailing_sixes(
+    value: int | None,
+    side_image: Image.Image,
+    centers: tuple[float, ...],
+    index: int,
+) -> int | None:
+    if value is None:
+        return value
+    value_text = str(value)
+    if not value_text.isdigit() or not value_text.endswith(STAT_LEVEL_MISREAD_DIGIT):
+        return value
+    trailing_six_count = len(value_text) - len(value_text.rstrip(STAT_LEVEL_MISREAD_DIGIT))
+    # Only repair a full trailing 99 that Paddle rendered as at least 66.
+    # A lone final 6 is a common legitimate digit (for example Lv116).
+    if trailing_six_count < 2:
+        return value
+    left, right = _stat_level_slot_bounds(centers, index)
+    slot_image = _crop_rel(side_image, (left, 0.94, right, 1.0))
+    scores = _stat_level_trailing_digit_tail_scores(slot_image, trailing_six_count)
+    if not scores:
+        return value
+    repaired_text = list(value_text)
+    tail_start = len(value_text) - trailing_six_count
+    for offset, score in enumerate(scores):
+        if score >= STAT_LEVEL_NINE_TAIL_SCORE_MIN:
+            repaired_text[tail_start + offset] = STAT_LEVEL_CORRECT_DIGIT
+    repaired = int("".join(repaired_text))
+    if not STAT_LEVEL_MIN <= repaired <= STAT_LEVEL_MAX:
+        return value
+    return repaired
+
+
 def recognize_stat_levels(
     side_image: Image.Image,
     side: str,
@@ -1603,9 +2433,25 @@ def recognize_stat_levels(
     prepared = prepare_for_ocr(stat_area)
     items = ocr.recognize_region(prepared, f"{side}_stat_levels")
     slot_observations: list[list[_StatLevelObservation]] = [[] for _ in centers]
+    line_confirmation_indices: set[int] = set()
+    forced_slot_recheck_indices: set[int] = set()
     width = max(1, prepared.width)
     for item in items:
         observations = _stat_level_observations_from_text(item.text, item.confidence)
+        merged_slots = sorted(_stat_level_merged_item_slots(item, width, centers))
+        if merged_slots:
+            # A high-resolution detector may combine adjacent values such as
+            # "Lv102 Lv139" into one box. The text order still follows the
+            # horizontal stat order, while the box center cannot identify an
+            # individual slot. Assign exact one-to-one merges directly; for
+            # any mismatch, defer to the existing independent slot recheck.
+            merged_lv_observations = [observation for observation in observations if observation.from_lv]
+            if len(merged_lv_observations) == len(merged_slots):
+                for slot, observation in zip(merged_slots, merged_lv_observations):
+                    slot_observations[slot].append(observation)
+            else:
+                forced_slot_recheck_indices.update(merged_slots)
+            continue
         if not observations:
             continue
         xs = [point[0] for point in item.bbox]
@@ -1620,7 +2466,16 @@ def recognize_stat_levels(
     levels = [_choose_stat_level(observations) for observations in slot_observations]
     for index, value in enumerate(levels):
         has_lv_source = any(observation.from_lv for observation in slot_observations[index])
-        if value is not None and has_lv_source and value >= STAT_LEVEL_RECHECK_BELOW:
+        if not has_lv_source:
+            line_confirmation_indices.add(index)
+        if (
+            index not in forced_slot_recheck_indices
+            and
+            value is not None
+            and has_lv_source
+            and value >= STAT_LEVEL_RECHECK_BELOW
+            and _is_stat_level_value_trusted(value, slot_observations[index])
+        ):
             continue
         left, right = _stat_level_slot_bounds(centers, index)
         slot_recheck_observations = _recognize_stat_level_slot_observations(
@@ -1631,8 +2486,31 @@ def recognize_stat_levels(
             f"{side}_stat_level_{index + 1}",
         )
         slot_value = _choose_stat_level(slot_observations[index] + slot_recheck_observations)
-        if slot_value is not None:
-            levels[index] = slot_value
+        levels[index] = slot_value if _is_stat_level_value_trusted(slot_value, slot_recheck_observations + slot_observations[index]) else None
+
+    line_confirmations = _recognize_stat_level_line_confirmations(
+        side_image,
+        centers,
+        line_confirmation_indices,
+        ocr,
+        side,
+    )
+    for index, value in line_confirmations.items():
+        current = levels[index]
+        # For malformed merged boxes, the wider detector recheck is the
+        # primary source. The narrow recognition-only crop can truncate a
+        # three-digit value, so use it only when the recheck found nothing.
+        if index in forced_slot_recheck_indices and current is not None:
+            continue
+        if current is None or len(str(value)) >= len(str(current)):
+            levels[index] = value
+
+    # Paddle can systematically read a visually distinct trailing 9 as 6.
+    # Repair only the affected trailing digits whose lower-tail topology is
+    # independently consistent with 9. This covers 66 -> 99, 266 -> 299,
+    # 366 -> 399, and 666 -> 999 without altering genuine 6 values.
+    for index, value in enumerate(levels):
+        levels[index] = _repair_stat_level_trailing_sixes(value, side_image, centers, index)
     return levels
 
 
@@ -1857,6 +2735,43 @@ def _power_strip_value(items: list[OCRItem]) -> int | None:
     return value
 
 
+def _has_valid_power_observation(
+    items: list[OCRItem],
+    min_confidence: float = SHORT_NAME_POWER_PROBE_MIN_CONFIDENCE,
+) -> bool:
+    for item in items:
+        if float(item.confidence or 0.0) < min_confidence:
+            continue
+        if _extract_power_observations_clean(item.text, item.confidence):
+            return True
+    return False
+
+
+def _probe_power_presence_for_short_name(
+    row_image: Image.Image,
+    center: float,
+    ocr: ArenaOCRRecognizer,
+    region_name: str,
+) -> bool:
+    """Confirm an occupied blank-name slot without exporting its power value."""
+    crop = _crop_rel(
+        row_image,
+        (
+            max(0.0, center - POWER_STRIP_CROP_HALF_WIDTH),
+            POWER_STRIP_CROP_TOP,
+            min(1.0, center + POWER_STRIP_CROP_HALF_WIDTH),
+            POWER_STRIP_CROP_BOTTOM,
+        ),
+    )
+    band = _isolate_power_strip(crop)
+    variants = [band, prepare_for_ocr(band)]
+    names = [f"{region_name}_native", f"{region_name}_prepared"]
+    return any(
+        _has_valid_power_observation(items)
+        for items in ocr.recognize_text_lines(variants, names, batch_size=2)
+    )
+
+
 def _recognize_power_strip_rows(
     row_images: list[Image.Image],
     centers: tuple[float, ...],
@@ -2005,6 +2920,91 @@ def _choose_power_observation(observations: list[_PowerObservation]) -> tuple[in
     return best_value, group_score(best_value, grouped[best_value])[0]
 
 
+def _power_geometry_vote_from_observations(
+    observations: list[_PowerObservation],
+    geometry_id: str,
+) -> _PowerGeometryVote | None:
+    """Return one high-confidence five-digit vote from a physical crop.
+
+    Preprocessing variants of the same crop are correlated evidence. They may
+    pick the sharpest candidate for this crop, but never contribute multiple
+    votes to the later cross-crop consensus.
+    """
+    if not geometry_id:
+        return None
+    grouped: dict[int, list[_PowerObservation]] = {}
+    for item in observations:
+        if MIN_CARD_POWER <= item.value <= MAX_CARD_POWER and len(str(item.value)) == 5:
+            grouped.setdefault(item.value, []).append(item)
+    if not grouped:
+        return None
+
+    def quality(item: _PowerObservation) -> float:
+        return (
+            max(0.0, min(1.0, item.confidence))
+            + (0.05 if item.anchored else 0.0)
+            - (0.12 if item.trailing_marker else 0.0)
+            - item.distance * 0.10
+        )
+
+    representatives = {
+        value: max(items, key=quality)
+        for value, items in grouped.items()
+    }
+    ranked = sorted(representatives.items(), key=lambda pair: quality(pair[1]), reverse=True)
+    value, best = ranked[0]
+    if best.confidence < POWER_GEOMETRY_STRONG_CONFIDENCE:
+        return None
+    if len(ranked) > 1:
+        runner_up = ranked[1][1]
+        if (
+            runner_up.confidence >= POWER_GEOMETRY_STRONG_CONFIDENCE
+            and quality(best) - quality(runner_up) < 0.02
+        ):
+            return None
+    return _PowerGeometryVote(
+        geometry_id=geometry_id,
+        value=value,
+        confidence=best.confidence,
+        anchored=best.anchored,
+        trailing_marker=best.trailing_marker,
+    )
+
+
+def _resolve_power_geometry_consensus(
+    current_value: int | None,
+    current_support: float,
+    votes: list[_PowerGeometryVote],
+) -> tuple[int | None, float]:
+    """Override a conflicted five-digit result only with strong crop consensus."""
+    if current_value is None or len(str(current_value)) != 5:
+        return current_value, current_support
+    grouped: dict[int, dict[str, _PowerGeometryVote]] = {}
+    for vote in votes:
+        grouped.setdefault(vote.value, {})[vote.geometry_id] = vote
+    current_count = len(grouped.get(current_value, {}))
+    alternatives = [
+        (value, list(by_geometry.values()))
+        for value, by_geometry in grouped.items()
+        if value != current_value
+        and len(by_geometry) >= POWER_GEOMETRY_MIN_STRONG_VOTES
+        and len(by_geometry) >= current_count + POWER_GEOMETRY_MIN_VOTE_LEAD
+    ]
+    if not alternatives:
+        return current_value, current_support
+
+    replacement, replacement_votes = max(
+        alternatives,
+        key=lambda item: (
+            len(item[1]),
+            sum(vote.confidence for vote in item[1]),
+            sum(1 for vote in item[1] if vote.anchored),
+            -sum(1 for vote in item[1] if vote.trailing_marker),
+        ),
+    )
+    return replacement, max(current_support, POWER_TIGHT_RECHECK_SUPPORT)
+
+
 def _is_confident_power_candidate(value: int | None) -> bool:
     if value is None:
         return False
@@ -2146,10 +3146,20 @@ def _recognize_power_from_crop_with_support(
     crop_right: float = 1.0,
     target_center: float | None = None,
     max_distance: float = 0.09,
+    geometry_id: str = "",
+    geometry_votes: list[_PowerGeometryVote] | None = None,
 ) -> tuple[int | None, float]:
     observations: list[_PowerObservation] = []
     early_observations: list[_PowerObservation] = []
     crop_width = max(0.0001, crop_right - crop_left)
+
+    def finish(value: int | None, support: float) -> tuple[int | None, float]:
+        if geometry_votes is not None:
+            vote = _power_geometry_vote_from_observations(observations, geometry_id)
+            if vote is not None:
+                geometry_votes.append(vote)
+        return value, support
+
     for index, variant in enumerate(_power_preprocess_variants(power_image, max_variants=max_variants), start=1):
         prepared = prepare_for_ocr(variant)
         power_items = ocr.recognize_region(prepared, f"{region_name}_v{index}")
@@ -2186,11 +3196,12 @@ def _recognize_power_from_crop_with_support(
                 early_groups.setdefault(observation.value, []).append(observation)
             for value, items in early_groups.items():
                 if len(items) >= 2 and max(item.confidence for item in items) >= 0.98:
-                    return value, STRONG_POWER_RECHECK_SUPPORT
+                    return finish(value, STRONG_POWER_RECHECK_SUPPORT)
         chosen, support = _choose_power_observation(observations)
         if early_stop and _is_confident_power_candidate(chosen) and support >= STRONG_POWER_RECHECK_SUPPORT:
-            return chosen, support
-    return _choose_power_observation(observations)
+            return finish(chosen, support)
+    value, support = _choose_power_observation(observations)
+    return finish(value, support)
 
 
 def _recognize_power_from_slot(
@@ -2245,6 +3256,7 @@ def _recognize_power_from_slot_with_support(
         active_boxes: tuple[tuple[float, float, float, float], ...],
         suffix: str,
         target: list[_PowerObservation],
+        geometry_votes: list[_PowerGeometryVote],
     ) -> tuple[int | None, float]:
         start_index = len(target) + 1
         local: list[_PowerObservation] = []
@@ -2265,6 +3277,8 @@ def _recognize_power_from_slot_with_support(
                 crop_right=crop_right,
                 target_center=center,
                 max_distance=0.085,
+                geometry_id=f"{suffix}{index}",
+                geometry_votes=geometry_votes,
             )
             if value is not None:
                 observation = _PowerObservation(
@@ -2281,13 +3295,25 @@ def _recognize_power_from_slot_with_support(
                 return chosen, combined_support
         return _choose_power_observation(local)
 
-    tight_value, tight_support = scan_boxes(tight_boxes, "tight", observations)
+    tight_geometry_votes: list[_PowerGeometryVote] = []
+    tight_value, tight_support = scan_boxes(tight_boxes, "tight", observations, tight_geometry_votes)
+    tight_value, tight_support = _resolve_power_geometry_consensus(
+        tight_value,
+        tight_support,
+        tight_geometry_votes,
+    )
     if _is_confident_power_candidate(tight_value) and tight_support >= POWER_TIGHT_RECHECK_SUPPORT:
         return tight_value, tight_support
 
     active_wide_boxes = wide_boxes[: max(1, max_boxes)] if max_boxes is not None else wide_boxes
-    scan_boxes(active_wide_boxes, "box", observations)
-    return _choose_power_observation(observations)
+    wide_geometry_votes: list[_PowerGeometryVote] = []
+    scan_boxes(active_wide_boxes, "box", observations, wide_geometry_votes)
+    value, support = _choose_power_observation(observations)
+    return _resolve_power_geometry_consensus(
+        value,
+        support,
+        tight_geometry_votes + wide_geometry_votes,
+    )
 
 
 def recognize_team_rows(
@@ -2301,6 +3327,7 @@ def recognize_team_rows(
     stage_name: str = STAGE_NAME,
     block_height: int | None = None,
     source_profile: str = "",
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> tuple[list[list[str]], list[list[int | None]], list[list[str]]]:
     teams: list[list[str]] = []
     powers: list[list[int | None]] = []
@@ -2342,6 +3369,7 @@ def recognize_team_rows(
                 stage_name=stage_name,
                 block_height=block_height,
                 source_profile=source_profile,
+                client_profile=client_profile,
             )
             if include_collection
             else [COLLECTION_NONE] * 5
@@ -2349,9 +3377,25 @@ def recognize_team_rows(
         if include_power:
             power_readings = _match_power_slot_readings(items, prepared.width, prepared.height, row_power_centers)
             power_slots = [reading.value for reading in power_readings]
+            power_presence_slots = [
+                value is not None and MIN_CARD_POWER <= int(value) <= MAX_CARD_POWER
+                for value in power_slots
+            ]
         else:
             power_readings = [_PowerSlotReading() for _ in range(5)]
             power_slots = [None] * 5
+            # The row OCR has already run for names. Reuse any power numbers it
+            # detected as occupancy evidence without enabling power export.
+            presence_readings = _match_power_slot_readings(
+                items,
+                prepared.width,
+                prepared.height,
+                row_power_centers,
+            )
+            power_presence_slots = [
+                reading.value is not None and MIN_CARD_POWER <= int(reading.value) <= MAX_CARD_POWER
+                for reading in presence_readings
+            ]
 
         # Retry only blank slots with a tighter single-card crop. This improves
         # small/long labels without multiplying OCR work for every card.
@@ -2370,17 +3414,18 @@ def recognize_team_rows(
                 prepared_card,
                 name_profile=name_profile,
             )
-            slot_has_power = power_slots[slot] is not None and MIN_CARD_POWER <= int(power_slots[slot]) <= MAX_CARD_POWER
+            slot_has_power = power_presence_slots[slot]
+            fallback_texts = _slot_texts(card_items)
             if not card_name and slot_has_power:
                 card_name, _ = _slot_precise_name_from_texts(
-                    _slot_texts(card_items),
+                    fallback_texts,
                     matcher,
                     current_name="",
                     name_profile=name_profile,
                 )
             if not card_name and slot_has_power:
                 card_name, _ = _slot_short_name_from_texts(
-                    _slot_texts(card_items),
+                    fallback_texts,
                     matcher,
                     name_profile=name_profile,
                 )
@@ -2395,6 +3440,7 @@ def recognize_team_rows(
                     prepared_label,
                     f"team_row_{row + 1}_slot_{slot + 1}_fhd_label",
                 )
+                fallback_texts.extend(_slot_texts(label_items))
                 card_name, _, _ = _best_positioned_character_match(
                     label_items,
                     matcher,
@@ -2414,6 +3460,27 @@ def recognize_team_rows(
                         matcher,
                         name_profile=name_profile,
                     )
+            if not card_name and not include_power and not slot_has_power:
+                slot_has_power = _probe_power_presence_for_short_name(
+                    row_image,
+                    row_power_centers[slot],
+                    ocr,
+                    f"team_row_{row + 1}_slot_{slot + 1}_short_name_power_probe",
+                )
+                power_presence_slots[slot] = slot_has_power
+            if not card_name and not include_power and slot_has_power:
+                card_name, _ = _slot_precise_name_from_texts(
+                    fallback_texts,
+                    matcher,
+                    current_name="",
+                    name_profile=name_profile,
+                )
+            if not card_name and not include_power and slot_has_power:
+                card_name, _ = _slot_short_name_from_texts(
+                    fallback_texts,
+                    matcher,
+                    name_profile=name_profile,
+                )
             if card_name:
                 slots[slot] = card_name
 
@@ -2503,6 +3570,98 @@ def recognize_team_rows(
     return teams, powers, collections
 
 
+def _detail_item_bounds(item: OCRItem) -> tuple[float, float, float, float] | None:
+    xs = [point[0] for point in item.bbox]
+    ys = [point[1] for point in item.bbox]
+    if not xs or not ys:
+        return None
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _detail_joined_name_candidates(items: list[tuple[OCRItem, str]]) -> list[str]:
+    positioned: list[tuple[float, float, float, float, str]] = []
+    for item, text in items:
+        bounds = _detail_item_bounds(item)
+        if bounds is None:
+            continue
+        x0, y0, x1, y1 = bounds
+        positioned.append((x0, y0, x1, y1, text))
+    positioned.sort(key=lambda value: (value[0], value[1]))
+
+    joined: list[str] = []
+
+    def extend(chain: list[int]) -> None:
+        if len(chain) >= 2:
+            value = "".join(positioned[index][4] for index in chain)
+            if 3 <= len(value) <= 20 and value not in joined:
+                joined.append(value)
+        if len(chain) >= 3:
+            return
+        last_index = chain[-1]
+        _lx0, ly0, lx1, ly1, _last_text = positioned[last_index]
+        last_height = max(1.0, ly1 - ly0)
+        last_center_y = (ly0 + ly1) / 2
+        for next_index in range(last_index + 1, len(positioned)):
+            nx0, ny0, nx1, ny1, _next_text = positioned[next_index]
+            next_height = max(1.0, ny1 - ny0)
+            next_center_y = (ny0 + ny1) / 2
+            gap = nx0 - lx1
+            if gap > max(last_height, next_height) * 1.4:
+                break
+            if gap < -max(last_height, next_height) * 0.80:
+                continue
+            if abs(next_center_y - last_center_y) > max(last_height, next_height) * 0.45:
+                continue
+            extend(chain + [next_index])
+
+    for index in range(len(positioned)):
+        extend([index])
+    return joined
+
+
+def _joined_special_name_from_fragments(
+    texts: list[str],
+    current_name: str,
+    matcher: NikkeNameMatcher,
+    name_profile: str,
+) -> tuple[str, float]:
+    precise_name, precise_score = _slot_precise_name_from_texts(
+        texts,
+        matcher,
+        current_name=current_name,
+        name_profile=name_profile,
+    )
+    if precise_name:
+        return precise_name, precise_score
+
+    current_base = _base_name_norm(current_name, matcher) if current_name else ""
+    best_name = ""
+    best_score = -1.0
+    for text in texts:
+        candidate, score = _best_character_match(text, matcher, name_profile=name_profile)
+        candidate_norm = matcher.normalize_name(candidate)
+        if not candidate or CANONICAL_COLON not in candidate_norm or score < 90.0:
+            continue
+        candidate_base, candidate_suffix = candidate_norm.split(CANONICAL_COLON, 1)
+        if current_base and candidate_base != current_base:
+            continue
+        text_norm = matcher.normalize_name(_apply_name_profile_aliases(_clean_text(text), name_profile))
+        text_compact = text_norm.replace(CANONICAL_COLON, "")
+        base_compact = candidate_base.replace(CANONICAL_COLON, "")
+        suffix_compact = candidate_suffix.replace(CANONICAL_COLON, "")
+        suffix_evidence = text_compact[len(base_compact) :] if text_compact.startswith(base_compact) else text_compact
+        has_evidence = any(
+            suffix_compact[start : start + 2] in suffix_evidence
+            for start in range(max(0, len(suffix_compact) - 1))
+        )
+        if not has_evidence:
+            continue
+        if score > best_score:
+            best_name = candidate
+            best_score = score
+    return best_name, best_score
+
+
 def _match_detail_team_slots(
     items: list[OCRItem],
     matcher: NikkeNameMatcher,
@@ -2511,9 +3670,14 @@ def _match_detail_team_slots(
     name_profile: str = NAME_PROFILE_DEFAULT,
     slot_boxes: tuple[list[tuple[float, float, float, float] | None], list[tuple[float, float, float, float] | None]]
     | None = None,
+    merge_adjacent_name_fragments: bool = False,
 ) -> tuple[list[str], list[str], list[float], list[float]]:
     teams = [[""] * 5, [""] * 5]
     scores = [[-1.0] * 5, [-1.0] * 5]
+    slot_text_items: list[list[list[tuple[OCRItem, str]]]] = [
+        [[] for _ in range(5)],
+        [[] for _ in range(5)],
+    ]
     width = max(1, image_width)
     height = max(1, image_height)
     for item in items:
@@ -2526,6 +3690,7 @@ def _match_detail_team_slots(
             continue
         x_ratio = (sum(xs) / len(xs)) / width
         y_ratio = (sum(ys) / len(ys)) / height
+        conditional_top_slot = False
         if slot_boxes:
             side = -1
             slot = -1
@@ -2545,12 +3710,18 @@ def _match_detail_team_slots(
             if side < 0 or slot < 0:
                 continue
         else:
-            if y_ratio < 0.085 or 0.46 <= x_ratio <= 0.54:
+            if y_ratio < DETAIL_NAME_HARD_TOP_Y or 0.46 <= x_ratio <= 0.54:
                 continue
             slot = min(range(5), key=lambda index: abs(y_ratio - DETAIL_SLOT_CENTERS[index]))
             if abs(y_ratio - DETAIL_SLOT_CENTERS[slot]) > 0.055:
                 continue
             side = 0 if x_ratio < 0.5 else 1
+            conditional_top_slot = y_ratio < DETAIL_NAME_CONDITIONAL_TOP_Y
+            if conditional_top_slot and slot != 0:
+                continue
+
+        fragment_text = str(item.text or "").strip().strip(" |/\\") or text
+        slot_text_items[side][slot].append((item, fragment_text))
 
         name, match_score = _best_character_match(text, matcher, name_profile=name_profile)
         if not name or name == "unknown" or match_score < matcher.threshold:
@@ -2573,10 +3744,37 @@ def _match_detail_team_slots(
                     continue
                 name = short_name
                 match_score = short_score
+        if conditional_top_slot and (
+            match_score < matcher.threshold or (matcher.names and name not in matcher.names)
+        ):
+            continue
         combined_score = match_score + max(0.0, min(1.0, item.confidence)) * 2.0
         if combined_score > scores[side][slot]:
             teams[side][slot] = name
             scores[side][slot] = combined_score
+
+    if merge_adjacent_name_fragments:
+        for side in range(2):
+            for slot in range(5):
+                joined_texts = _detail_joined_name_candidates(slot_text_items[side][slot])
+                if not joined_texts:
+                    continue
+                joined_name, joined_score = _joined_special_name_from_fragments(
+                    joined_texts,
+                    teams[side][slot],
+                    matcher,
+                    name_profile,
+                )
+                if not joined_name:
+                    continue
+                current_norm = matcher.normalize_name(teams[side][slot])
+                joined_norm = matcher.normalize_name(joined_name)
+                if current_norm and _base_name_norm(current_norm, matcher) != _base_name_norm(joined_norm, matcher):
+                    continue
+                if current_norm and len(joined_norm) <= len(current_norm):
+                    continue
+                teams[side][slot] = joined_name
+                scores[side][slot] = max(scores[side][slot], joined_score + 2.0)
     return teams[0], teams[1], scores[0], scores[1]
 
 
@@ -2589,8 +3787,68 @@ def _detail_round_crop(
     return _crop_rel(center_image, rel_box), _box_rel_to_abs((0.0, 0.0), center_size, rel_box)
 
 
-def _detailed_result_panel_image(match_image: Image.Image) -> Image.Image:
-    return _crop_rel(match_image, (DETAILED_RESULT_PANEL_X[0], 0.0, DETAILED_RESULT_PANEL_X[1], 1.0))
+def _detailed_result_panel_image(
+    match_image: Image.Image,
+    client_profile: str = CLIENT_PROFILE_CN,
+) -> Image.Image:
+    panel_x = (
+        OVERSEAS_DETAILED_RESULT_PANEL_X
+        if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS
+        else DETAILED_RESULT_PANEL_X
+    )
+    return _crop_rel(match_image, (panel_x[0], 0.0, panel_x[1], 1.0))
+
+
+def _detail_name_image(
+    match_image: Image.Image,
+    legacy_center_image: Image.Image,
+    result_mode: str,
+    client_profile: str,
+) -> Image.Image:
+    """Keep profile-specific crops separate while sharing name OCR logic."""
+    if (
+        result_mode == RESULT_MODE_DETAILED
+        and _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS
+    ):
+        return _detailed_result_panel_image(match_image, client_profile=CLIENT_PROFILE_OVERSEAS)
+    return legacy_center_image
+
+
+def _source_resolution_key(source_name: str) -> str:
+    normalized = str(source_name or "").replace("×", "x")
+    match = re.search(r"(?<!\d)(\d{4})\s*[xX]\s*(\d{4})(?!\d)", normalized)
+    if not match:
+        return ""
+    return f"{match.group(1)}x{match.group(2)}"
+
+
+def _apply_scoped_detail_name_aliases(
+    items: list[OCRItem],
+    client_profile: str,
+    source_name: str,
+) -> list[OCRItem]:
+    if _normalize_client_profile(client_profile) != CLIENT_PROFILE_CN:
+        return items
+    aliases = CN_DETAIL_NAME_TEXT_ALIASES_BY_RESOLUTION.get(_source_resolution_key(source_name), ())
+    if not aliases:
+        return items
+
+    mapped: list[OCRItem] = []
+    for item in items:
+        cleaned = _clean_text(item.text)
+        replacement = next((correct for wrong, correct in aliases if cleaned == wrong), "")
+        if not replacement:
+            mapped.append(item)
+            continue
+        mapped.append(
+            OCRItem(
+                text=replacement,
+                bbox=list(item.bbox),
+                confidence=item.confidence,
+                region_name=item.region_name,
+            )
+        )
+    return mapped
 
 
 def recognize_detail_team_rows(
@@ -2598,6 +3856,8 @@ def recognize_detail_team_rows(
     ocr: ArenaOCRRecognizer,
     matcher: NikkeNameMatcher,
     block_height: int | None = None,
+    client_profile: str = CLIENT_PROFILE_CN,
+    source_name: str = "",
 ) -> tuple[list[list[str]], list[list[str]], list[list[float]], list[list[float]], list[list[OCRItem]]]:
     attacker_rows: list[list[str]] = []
     defender_rows: list[list[str]] = []
@@ -2605,6 +3865,10 @@ def recognize_detail_team_rows(
     defender_scores: list[list[float]] = []
     round_items: list[list[OCRItem]] = []
     name_profile = _name_profile_from_block_height(block_height)
+    # Paddle can split one displayed Nikke name into overlapping text boxes at
+    # any resolution or client profile. Rejoining already detected boxes is a
+    # geometry-only post-process and does not add OCR calls.
+    merge_adjacent_name_fragments = True
 
     def merge_recheck(
         current: list[str],
@@ -2633,22 +3897,26 @@ def recognize_detail_team_rows(
         round_image, _round_abs = _detail_round_crop(center_image, row)
         prepared = prepare_for_ocr(round_image)
         items = ocr.recognize_region(prepared, f"detail_round_{row + 1}")
+        items = _apply_scoped_detail_name_aliases(items, client_profile, source_name)
         attacker, defender, attacker_score, defender_score = _match_detail_team_slots(
             items,
             matcher,
             prepared.width,
             prepared.height,
             name_profile=name_profile,
+            merge_adjacent_name_fragments=merge_adjacent_name_fragments,
         )
         if name_profile == NAME_PROFILE_FHD and ("" in attacker or "" in defender):
             upscaled = round_image.resize((round_image.width * 3, round_image.height * 3), Image.Resampling.LANCZOS)
             extra_items = ocr.recognize_region(upscaled, f"detail_round_{row + 1}_fhd_up3")
+            extra_items = _apply_scoped_detail_name_aliases(extra_items, client_profile, source_name)
             extra_attacker, extra_defender, extra_attacker_score, extra_defender_score = _match_detail_team_slots(
                 extra_items,
                 matcher,
                 upscaled.width,
                 upscaled.height,
                 name_profile=name_profile,
+                merge_adjacent_name_fragments=merge_adjacent_name_fragments,
             )
             merge_recheck(attacker, attacker_score, extra_attacker, extra_attacker_score)
             merge_recheck(defender, defender_score, extra_defender, extra_defender_score)
@@ -2758,6 +4026,21 @@ def _detail_slot_from_y_ratio(y_ratio: float) -> int | None:
     return None
 
 
+def _detail_hp_slot_bounds(index: int) -> tuple[float, float]:
+    center = DETAIL_HP_SLOT_CENTERS[index]
+    top = 0.0 if index == 0 else (DETAIL_HP_SLOT_CENTERS[index - 1] + center) / 2
+    bottom = 1.0 if index == len(DETAIL_HP_SLOT_CENTERS) - 1 else (center + DETAIL_HP_SLOT_CENTERS[index + 1]) / 2
+    return max(0.0, top), min(1.0, bottom)
+
+
+def _detail_hp_slot_from_y_ratio(y_ratio: float) -> int | None:
+    for index, center in enumerate(DETAIL_HP_SLOT_CENTERS):
+        top, bottom = _detail_hp_slot_bounds(index)
+        if top <= y_ratio <= bottom:
+            return index
+    return None
+
+
 @lru_cache(maxsize=1)
 def _defeat_text_template_image() -> Image.Image:
     rows: list[list[int]] = []
@@ -2772,6 +4055,39 @@ def _defeat_template_binary(image: Image.Image) -> np.ndarray:
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     _threshold, binary = cv2.threshold(gray, 72, 255, cv2.THRESH_BINARY)
     return binary
+
+
+@lru_cache(maxsize=1)
+def _overseas_defeat_label_templates() -> tuple[np.ndarray, ...]:
+    template_dir = _module_data_dir() / "defeat_templates" / "overseas"
+    templates: list[np.ndarray] = []
+    for file_name in OVERSEAS_DEFEAT_TEMPLATE_FILES:
+        path = template_dir / file_name
+        if not path.is_file():
+            continue
+        try:
+            with Image.open(path) as image:
+                templates.append(np.asarray(image.convert("L"), dtype=np.uint8))
+        except (OSError, ValueError):
+            continue
+    return tuple(templates)
+
+
+def _overseas_defeat_template_score(crop: Image.Image) -> float:
+    if crop.width < 8 or crop.height < 8:
+        return 0.0
+    source = np.asarray(crop.convert("L"), dtype=np.uint8)
+    best_score = 0.0
+    for template in _overseas_defeat_label_templates():
+        for scale in np.linspace(0.80, 1.20, 17):
+            width = max(4, int(round(template.shape[1] * scale)))
+            height = max(4, int(round(template.shape[0] * scale)))
+            if width > source.shape[1] or height > source.shape[0]:
+                continue
+            scaled = cv2.resize(template, (width, height), interpolation=cv2.INTER_AREA)
+            score = float(cv2.minMaxLoc(cv2.matchTemplate(source, scaled, cv2.TM_CCOEFF_NORMED))[1])
+            best_score = max(best_score, score)
+    return best_score
 
 
 def _defeat_template_score(crop: Image.Image) -> float:
@@ -2793,12 +4109,14 @@ def _defeat_template_score(crop: Image.Image) -> float:
     return best_score
 
 
-def _is_defeat_sticker_visual(crop: Image.Image) -> bool:
+def _is_defeat_sticker_visual(crop: Image.Image, client_profile: str = CLIENT_PROFILE_CN) -> bool:
+    if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS:
+        return _overseas_defeat_template_score(crop) >= OVERSEAS_DEFEAT_TEMPLATE_THRESHOLD
     return _defeat_template_score(crop) >= DETAILED_DEFEAT_TEMPLATE_THRESHOLD
 
 
-def _contains_defeat_sticker_visual(crop: Image.Image) -> bool:
-    if _is_defeat_sticker_visual(crop):
+def _contains_defeat_sticker_visual(crop: Image.Image, client_profile: str = CLIENT_PROFILE_CN) -> bool:
+    if _is_defeat_sticker_visual(crop, client_profile=client_profile):
         return True
     if crop.width < 16 or crop.height < 20:
         return False
@@ -2820,7 +4138,10 @@ def _contains_defeat_sticker_visual(crop: Image.Image) -> bool:
             x0 = 0 if x_steps == 1 else int(round((width - win_w) * xi / (x_steps - 1)))
             for yi in range(y_steps):
                 y0 = 0 if y_steps == 1 else int(round((height - win_h) * yi / (y_steps - 1)))
-                if _is_defeat_sticker_visual(crop.crop((x0, y0, x0 + win_w, y0 + win_h))):
+                if _is_defeat_sticker_visual(
+                    crop.crop((x0, y0, x0 + win_w, y0 + win_h)),
+                    client_profile=client_profile,
+                ):
                     return True
     return False
 
@@ -2843,6 +4164,7 @@ def _detect_detail_visual_defeat_slots(
     round_image: Image.Image,
     side: str,
     defeat_boxes: list[tuple[float, float, float, float] | None] | None = None,
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> list[bool]:
     if defeat_boxes:
         flags: list[bool] = []
@@ -2857,14 +4179,19 @@ def _detect_detail_visual_defeat_slots(
             if x1 <= x0 or y1 <= y0:
                 flags.append(False)
                 continue
-            flags.append(_is_defeat_sticker_visual(round_image.crop((x0, y0, x1, y1))))
+            flags.append(
+                _is_defeat_sticker_visual(
+                    round_image.crop((x0, y0, x1, y1)),
+                    client_profile=client_profile,
+                )
+            )
         return flags
 
     x0_ratio, x1_ratio = DETAILED_DEFEAT_STICKER_X[side]
     flags: list[bool] = []
     for crop_top, crop_bottom in DETAILED_DEFEAT_STICKER_Y:
         crop = _crop_rel(round_image, (x0_ratio, crop_top, x1_ratio, crop_bottom))
-        flags.append(_is_defeat_sticker_visual(crop))
+        flags.append(_is_defeat_sticker_visual(crop, client_profile=client_profile))
     return flags
 
 
@@ -2872,47 +4199,121 @@ def _detect_detail_visual_defeat_slots_from_panel(
     panel_image: Image.Image,
     row: int,
     side: str,
+    client_profile: str = CLIENT_PROFILE_CN,
+    slot_boxes: tuple[tuple[float, float, float, float], ...] | None = None,
 ) -> list[bool]:
-    x0_ratio, x1_ratio = DETAILED_DEFEAT_STICKER_X[side]
+    if slot_boxes is not None:
+        flags: list[bool] = []
+        for x0, y0, x1, y1 in slot_boxes:
+            crop_box = (
+                max(0, min(panel_image.width, int(round(x0)))),
+                max(0, min(panel_image.height, int(round(y0)))),
+                max(0, min(panel_image.width, int(round(x1)))),
+                max(0, min(panel_image.height, int(round(y1)))),
+            )
+            if crop_box[2] <= crop_box[0] or crop_box[3] <= crop_box[1]:
+                flags.append(False)
+                continue
+            crop = panel_image.crop(crop_box)
+            if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS:
+                flags.append(
+                    _overseas_defeat_template_score(crop)
+                    >= OVERSEAS_PRECISE_DEFEAT_TEMPLATE_THRESHOLD
+                )
+            else:
+                flags.append(_is_defeat_sticker_visual(crop, client_profile=client_profile))
+        return flags
+
+    is_overseas = _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS
+    x_ranges = OVERSEAS_DEFEAT_STICKER_X if is_overseas else DETAILED_DEFEAT_STICKER_X
+    y_ranges = OVERSEAS_DEFEAT_STICKER_Y_BY_ROUND if is_overseas else DETAILED_DEFEAT_STICKER_Y_BY_ROUND
+    x0_ratio, x1_ratio = x_ranges[side]
     flags: list[bool] = []
-    for crop_top, crop_bottom in DETAILED_DEFEAT_STICKER_Y_BY_ROUND[row]:
+    for crop_top, crop_bottom in y_ranges[row]:
         crop = _crop_rel(panel_image, (x0_ratio, crop_top, x1_ratio, crop_bottom))
-        flags.append(_is_defeat_sticker_visual(crop))
+        flags.append(_is_defeat_sticker_visual(crop, client_profile=client_profile))
     return flags
 
 
 def _winner_from_detail_defeat_flags(
     attacker_flags: list[bool],
     defender_flags: list[bool],
+    client_profile: str = CLIENT_PROFILE_CN,
+    allow_empty_defeat_flags: bool = False,
 ) -> tuple[str, float]:
-    attacker_defeats = sum(attacker_flags)
-    defender_defeats = sum(defender_flags)
-    if attacker_defeats >= DETAILED_DEFEAT_STRICT_COUNT and defender_defeats >= DETAILED_DEFEAT_STRICT_COUNT:
-        return "unknown", 0.35
-    if defender_defeats >= DETAILED_DEFEAT_STRICT_COUNT and attacker_defeats < DETAILED_DEFEAT_STRICT_COUNT:
-        return "attacker", 0.96
-    if attacker_defeats >= DETAILED_DEFEAT_STRICT_COUNT and defender_defeats < DETAILED_DEFEAT_STRICT_COUNT:
+    """Resolve a detailed result by survivor count before considering HP.
+
+    A defeated-sticker flag represents one eliminated Nikke. More surviving
+    Nikkes always wins. China does not display the per-Nikke HP percentage, so
+    a survivor-count tie there follows the game's defender-advantage rule.
+    Overseas ties are deliberately returned as unknown for the caller to
+    resolve from complete per-slot HP readings.
+    """
+    attacker_defeats = sum(bool(value) for value in attacker_flags)
+    defender_defeats = sum(bool(value) for value in defender_flags)
+    total_slots = len(DETAIL_SLOT_CENTERS)
+    if not allow_empty_defeat_flags and attacker_defeats + defender_defeats == 0:
+        return "unknown", 0.0
+    if attacker_defeats > defender_defeats:
         return "defender", 0.96
-    if defender_defeats >= DETAILED_DEFEAT_SOFT_COUNT and attacker_defeats <= 2:
-        return "attacker", 0.78
-    if attacker_defeats >= DETAILED_DEFEAT_SOFT_COUNT and defender_defeats <= 2:
-        return "defender", 0.78
-    return "unknown", 0.35
+    if defender_defeats > attacker_defeats:
+        return "attacker", 0.96
+
+    attacker_survivors = total_slots - attacker_defeats
+    defender_survivors = total_slots - defender_defeats
+    if attacker_survivors != defender_survivors:
+        return ("attacker", 0.96) if attacker_survivors > defender_survivors else ("defender", 0.96)
+    if _normalize_client_profile(client_profile) == CLIENT_PROFILE_CN:
+        return "defender", 0.90
+    return "unknown", 0.55
+
+
+def _detail_defeat_flags_from_panel(
+    panel_image: Image.Image,
+    row: int,
+    client_profile: str = CLIENT_PROFILE_CN,
+    precise_boxes: dict[str, tuple[tuple[tuple[float, float, float, float], ...], ...]] | None = None,
+) -> tuple[list[bool], list[bool]]:
+    attacker_flags = _detect_detail_visual_defeat_slots_from_panel(
+        panel_image,
+        row,
+        "attacker",
+        client_profile=client_profile,
+        slot_boxes=precise_boxes["attacker"][row] if precise_boxes is not None else None,
+    )
+    defender_flags = _detect_detail_visual_defeat_slots_from_panel(
+        panel_image,
+        row,
+        "defender",
+        client_profile=client_profile,
+        slot_boxes=precise_boxes["defender"][row] if precise_boxes is not None else None,
+    )
+    return attacker_flags, defender_flags
 
 
 def _detect_round_winner_by_detailed_defeat_panel(
     panel_image: Image.Image,
     row: int,
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> tuple[str, float]:
-    attacker_flags = _detect_detail_visual_defeat_slots_from_panel(panel_image, row, "attacker")
-    defender_flags = _detect_detail_visual_defeat_slots_from_panel(panel_image, row, "defender")
-    return _winner_from_detail_defeat_flags(attacker_flags, defender_flags)
+    attacker_flags, defender_flags = _detail_defeat_flags_from_panel(
+        panel_image,
+        row,
+        client_profile=client_profile,
+    )
+    return _winner_from_detail_defeat_flags(
+        attacker_flags,
+        defender_flags,
+        client_profile=client_profile,
+        allow_empty_defeat_flags=True,
+    )
 
 
 def _detect_detail_text_defeat_slots(
     round_image: Image.Image,
     items: list[OCRItem],
     defeat_boxes: dict[str, list[tuple[float, float, float, float] | None]] | None = None,
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> dict[str, list[bool]]:
     coord_size = _ocr_coordinate_size(items, round_image)
     flags = {
@@ -2920,7 +4321,7 @@ def _detect_detail_text_defeat_slots(
         "defender": [False] * len(DETAIL_SLOT_CENTERS),
     }
     for item in items:
-        if not _is_defeat_result_text(item.text):
+        if not _is_defeat_result_text(item.text, client_profile=client_profile):
             continue
         x_ratio, y_ratio = _ocr_item_center_ratio(item, round_image, coord_size)
         if defeat_boxes:
@@ -2941,25 +4342,44 @@ def _detect_detail_text_defeat_slots(
     return flags
 
 
-def _is_defeat_result_text(text: str) -> bool:
-    return any(token in str(text or "") for token in ("\u6218\u8d25", "\u6230\u6557"))
+def _is_defeat_result_text(text: str, client_profile: str = CLIENT_PROFILE_CN) -> bool:
+    raw_text = str(text or "")
+    if any(token in raw_text for token in ("\u6218\u8d25", "\u6230\u6557")):
+        return True
+    compact_text = re.sub(r"\s+", "", raw_text).upper()
+    return (
+        _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS
+        and "DISCONNECT" in compact_text
+    )
 
 
 def _detect_round_winner_by_detailed_defeat(
     round_image: Image.Image,
     items: list[OCRItem] | None = None,
     defeat_boxes: dict[str, list[tuple[float, float, float, float] | None]] | None = None,
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> tuple[str, float]:
     if items is None:
         items = []
-    text_flags = _detect_detail_text_defeat_slots(round_image, items, defeat_boxes=defeat_boxes)
+    text_flags = _detect_detail_text_defeat_slots(
+        round_image,
+        items,
+        defeat_boxes=defeat_boxes,
+        client_profile=client_profile,
+    )
     attacker_defeat_boxes = defeat_boxes.get("attacker") if defeat_boxes else None
     defender_defeat_boxes = defeat_boxes.get("defender") if defeat_boxes else None
     attacker_visual_flags = _detect_detail_visual_defeat_slots(
-        round_image, "attacker", defeat_boxes=attacker_defeat_boxes
+        round_image,
+        "attacker",
+        defeat_boxes=attacker_defeat_boxes,
+        client_profile=client_profile,
     )
     defender_visual_flags = _detect_detail_visual_defeat_slots(
-        round_image, "defender", defeat_boxes=defender_defeat_boxes
+        round_image,
+        "defender",
+        defeat_boxes=defender_defeat_boxes,
+        client_profile=client_profile,
     )
     if sum(attacker_visual_flags) >= DETAILED_DEFEAT_STRICT_COUNT and sum(defender_visual_flags) >= DETAILED_DEFEAT_STRICT_COUNT:
         attacker_visual_flags = [False] * len(DETAIL_SLOT_CENTERS)
@@ -2972,24 +4392,19 @@ def _detect_round_winner_by_detailed_defeat(
         visual or text
         for visual, text in zip(defender_visual_flags, text_flags["defender"])
     ]
-    attacker_defeats = sum(attacker_flags)
-    defender_defeats = sum(defender_flags)
-
-    if defender_defeats >= DETAILED_DEFEAT_STRICT_COUNT and attacker_defeats < DETAILED_DEFEAT_STRICT_COUNT:
-        return "attacker", 0.96
-    if attacker_defeats >= DETAILED_DEFEAT_STRICT_COUNT and defender_defeats < DETAILED_DEFEAT_STRICT_COUNT:
-        return "defender", 0.96
-    if defender_defeats >= DETAILED_DEFEAT_SOFT_COUNT and attacker_defeats <= 2:
-        return "attacker", 0.78
-    if attacker_defeats >= DETAILED_DEFEAT_SOFT_COUNT and defender_defeats <= 2:
-        return "defender", 0.78
-    return "unknown", 0.35
+    return _winner_from_detail_defeat_flags(
+        attacker_flags,
+        defender_flags,
+        client_profile=client_profile,
+        allow_empty_defeat_flags=False,
+    )
 
 
 def _detect_round_winner_by_text(
     round_image: Image.Image,
     ocr: ArenaOCRRecognizer,
     items: list[OCRItem] | None = None,
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> tuple[str, float]:
     if items is None:
         items = ocr.recognize_region(prepare_for_ocr(round_image), "round_result")
@@ -3005,7 +4420,7 @@ def _detect_round_winner_by_text(
         text = item.text.upper()
         x_ratio, _y_ratio = _ocr_item_center_ratio(item, round_image, coord_size)
         is_left = x_ratio < 0.5
-        if _is_defeat_result_text(item.text) or "LOSE" in text:
+        if _is_defeat_result_text(item.text, client_profile=client_profile) or "LOSE" in text:
             if is_left:
                 left_loses += 1
             else:
@@ -3024,6 +4439,156 @@ def _detect_round_winner_by_text(
     if attacker_score > defender_score:
         return "attacker", min(0.96, 0.65 + diff * 0.07)
     return "defender", min(0.96, 0.65 + diff * 0.07)
+
+
+def _parse_detail_hp_percent(text: str) -> float | None:
+    compact = str(text or "").replace(" ", "")
+    match = re.search(r"(?<!\d)(\d{1,3}(?:[.,]\d{1,2})?)\s*[%％]", compact)
+    if not match:
+        return None
+    try:
+        value = float(match.group(1).replace(",", "."))
+    except ValueError:
+        return None
+    return value if 0.0 <= value <= 100.0 else None
+
+
+def _recognize_detail_hp_slot(
+    round_image: Image.Image,
+    side: str,
+    slot: int,
+    ocr: ArenaOCRRecognizer,
+    precise_box: tuple[float, float, float, float] | None = None,
+) -> tuple[float, float] | None:
+    """Retry one visually crowded survivor HP label at a larger scale."""
+    if precise_box is None:
+        x0_ratio, x1_ratio = DETAIL_HP_RETRY_X[side]
+        y0_ratio, y1_ratio = _detail_hp_slot_bounds(slot)
+        crop = _crop_rel(round_image, (x0_ratio, y0_ratio, x1_ratio, y1_ratio))
+    else:
+        x0, y0, x1, y1 = precise_box
+        crop_box = (
+            max(0, min(round_image.width, int(round(x0)))),
+            max(0, min(round_image.height, int(round(y0)))),
+            max(0, min(round_image.width, int(round(x1)))),
+            max(0, min(round_image.height, int(round(y1)))),
+        )
+        if crop_box[2] <= crop_box[0] or crop_box[3] <= crop_box[1]:
+            return None
+        crop = round_image.crop(crop_box)
+    if crop.width < 8 or crop.height < 8:
+        return None
+    enlarged = crop.resize((crop.width * 4, crop.height * 4), Image.Resampling.LANCZOS)
+    variants = (
+        enlarged,
+        ImageEnhance.Contrast(enlarged).enhance(2.3),
+    )
+    best: tuple[float, float] | None = None
+    for image in variants:
+        for item in ocr.recognize_region(image, f"{side}_hp_retry_{slot + 1}"):
+            value = _parse_detail_hp_percent(item.text)
+            if value is None or item.confidence < DETAIL_HP_RETRY_MIN_CONFIDENCE:
+                continue
+            candidate = (value, float(item.confidence))
+            if best is None or candidate[1] > best[1]:
+                best = candidate
+    return best
+
+
+def _detailed_survivor_hp_totals(
+    round_image: Image.Image,
+    items: list[OCRItem],
+    attacker_defeat_flags: list[bool],
+    defender_defeat_flags: list[bool],
+    ocr: ArenaOCRRecognizer | None = None,
+    precise_boxes: dict[str, tuple[tuple[float, float, float, float], ...]] | None = None,
+) -> tuple[dict[str, float] | None, dict[str, tuple[int, ...]]]:
+    """Read one HP percentage for every surviving detailed-result card.
+
+    Returning no totals is intentional when OCR misses any survivor. A partial
+    sum can look plausible but must never decide a battle.
+    """
+    values: dict[str, list[tuple[float, float] | None]] = {
+        "attacker": [None] * len(DETAIL_SLOT_CENTERS),
+        "defender": [None] * len(DETAIL_SLOT_CENTERS),
+    }
+    defeat_flags = {
+        "attacker": list(attacker_defeat_flags),
+        "defender": list(defender_defeat_flags),
+    }
+    coord_size = _ocr_coordinate_size(items, round_image)
+    for item in items:
+        value = _parse_detail_hp_percent(item.text)
+        if value is None:
+            continue
+        x_ratio, y_ratio = _ocr_item_center_ratio(item, round_image, coord_size)
+        if 0.46 <= x_ratio <= 0.54:
+            continue
+        side = "attacker" if x_ratio < 0.5 else "defender"
+        slot = _detail_hp_slot_from_y_ratio(y_ratio)
+        if slot is None or slot >= len(defeat_flags[side]) or defeat_flags[side][slot]:
+            continue
+        previous = values[side][slot]
+        candidate = (value, float(item.confidence))
+        if previous is None or candidate[1] > previous[1]:
+            values[side][slot] = candidate
+
+    if ocr is not None:
+        for side in ("attacker", "defender"):
+            for slot, is_defeated in enumerate(defeat_flags[side]):
+                if is_defeated or values[side][slot] is not None:
+                    continue
+                retry = _recognize_detail_hp_slot(
+                    round_image,
+                    side,
+                    slot,
+                    ocr,
+                    precise_box=precise_boxes[side][slot] if precise_boxes is not None else None,
+                )
+                if retry is not None:
+                    values[side][slot] = retry
+
+    missing: dict[str, tuple[int, ...]] = {}
+    totals: dict[str, float] = {}
+    for side in ("attacker", "defender"):
+        missing_slots = tuple(
+            index + 1
+            for index, is_defeated in enumerate(defeat_flags[side])
+            if not is_defeated and values[side][index] is None
+        )
+        missing[side] = missing_slots
+        if missing_slots:
+            continue
+        totals[side] = sum(value[0] for value in values[side] if value is not None)
+    if missing["attacker"] or missing["defender"]:
+        return None, missing
+    return totals, missing
+
+
+def _detect_overseas_health_tiebreak(
+    round_image: Image.Image,
+    items: list[OCRItem],
+    attacker_defeat_flags: list[bool],
+    defender_defeat_flags: list[bool],
+    ocr: ArenaOCRRecognizer | None = None,
+    precise_boxes: dict[str, tuple[tuple[float, float, float, float], ...]] | None = None,
+) -> tuple[str, float]:
+    """Resolve equal-survivor overseas rounds from complete HP totals only."""
+    totals, missing = _detailed_survivor_hp_totals(
+        round_image,
+        items,
+        attacker_defeat_flags,
+        defender_defeat_flags,
+        ocr=ocr,
+        precise_boxes=precise_boxes,
+    )
+    if totals is None or missing["attacker"] or missing["defender"]:
+        return "unknown", 0.0
+    difference = totals["attacker"] - totals["defender"]
+    if abs(difference) < 0.005:
+        return "draw", 0.94
+    winner = "attacker" if difference > 0 else "defender"
+    return winner, min(0.94, 0.82 + min(0.12, abs(difference) / 100.0))
 
 
 def _detect_round_winner_by_color(round_image: Image.Image) -> tuple[str, float]:
@@ -3063,24 +4628,62 @@ def detect_round_winner(
     ocr: ArenaOCRRecognizer,
     items: list[OCRItem] | None = None,
     result_mode: str = RESULT_MODE_AUTO,
+    client_profile: str = CLIENT_PROFILE_CN,
+    precise_defeat_boxes: dict[str, tuple[tuple[tuple[float, float, float, float], ...], ...]] | None = None,
 ) -> tuple[str, float]:
     round_image, _round_abs = _detail_round_crop(center_image, row)
     if result_mode == RESULT_MODE_DETAILED:
-        detail_winner, detail_conf = _detect_round_winner_by_detailed_defeat_panel(center_image, row)
+        attacker_flags, defender_flags = _detail_defeat_flags_from_panel(
+            center_image,
+            row,
+            client_profile=client_profile,
+            precise_boxes=precise_defeat_boxes,
+        )
+        detail_winner, detail_conf = _winner_from_detail_defeat_flags(
+            attacker_flags,
+            defender_flags,
+            client_profile=client_profile,
+            allow_empty_defeat_flags=True,
+        )
         if detail_winner != "unknown":
             return detail_winner, detail_conf
-        text_winner, text_conf = _detect_round_winner_by_text(round_image, ocr, items=items)
-        if text_winner != "unknown":
-            return text_winner, text_conf
-        return "unknown", max(detail_conf, text_conf, 0.35)
+        # Overseas ties must be settled only by a complete sum of surviving
+        # card HP values. Do not let a partial percentage read fall through to
+        # a looser text/color heuristic.
+        health_items = items
+        if health_items is None:
+            health_items = ocr.recognize_region(prepare_for_ocr(round_image), "round_result")
+        precise_hp_boxes = None
+        if precise_defeat_boxes is not None:
+            precise_hp_boxes = {
+                side: _panel_boxes_to_round_boxes(center_image, row, precise_defeat_boxes[side][row])
+                for side in ("attacker", "defender")
+            }
+        health_winner, health_conf = _detect_overseas_health_tiebreak(
+            round_image,
+            health_items,
+            attacker_flags,
+            defender_flags,
+            ocr=ocr,
+            precise_boxes=precise_hp_boxes,
+        )
+        if health_winner != "unknown":
+            return health_winner, health_conf
+        return "unknown", detail_conf
     if result_mode == RESULT_MODE_AUTO:
         detail_winner, detail_conf = _detect_round_winner_by_detailed_defeat(
             round_image,
             items=items,
+            client_profile=client_profile,
         )
         if detail_winner != "unknown":
             return detail_winner, detail_conf
-    text_winner, text_conf = _detect_round_winner_by_text(round_image, ocr, items=items)
+    text_winner, text_conf = _detect_round_winner_by_text(
+        round_image,
+        ocr,
+        items=items,
+        client_profile=client_profile,
+    )
     if text_winner != "unknown":
         return text_winner, text_conf
     return _detect_round_winner_by_color(round_image)
@@ -3098,6 +4701,8 @@ def recognize_match_block(
     include_collection: bool = True,
     include_stat_levels: bool = True,
     source_profile: str = "",
+    force_detailed_results: bool = False,
+    client_profile: str = CLIENT_PROFILE_CN,
 ) -> list[dict]:
     regions: MatchRegions = split_match_block(block.image)
     if debug_dir:
@@ -3111,24 +4716,51 @@ def recognize_match_block(
         attacker_image,
         "attacker",
         ocr,
+        client_profile=client_profile,
+        stage_name=stage_name,
+        match_index=block.match_index,
     )
     defender_id = recognize_player_id(
         defender_image,
         "defender",
         ocr,
+        client_profile=client_profile,
+        stage_name=stage_name,
+        match_index=block.match_index,
     )
     attacker_nickname = recognize_player_nickname(
         attacker_image,
         "attacker",
         ocr,
+        client_profile=client_profile,
+        stage_name=stage_name,
+        match_index=block.match_index,
     )
     defender_nickname = recognize_player_nickname(
         defender_image,
         "defender",
         ocr,
+        client_profile=client_profile,
+        stage_name=stage_name,
+        match_index=block.match_index,
     )
-    result_mode = _infer_result_mode(source_name)
-    winner_center_image = _detailed_result_panel_image(block.image) if result_mode == RESULT_MODE_DETAILED else center_image
+    result_mode = RESULT_MODE_DETAILED if force_detailed_results else _infer_result_mode(source_name)
+    winner_center_image = (
+        _detailed_result_panel_image(block.image, client_profile=client_profile)
+        if result_mode == RESULT_MODE_DETAILED
+        else center_image
+    )
+    precise_defeat_boxes = (
+        _overseas_defeat_boxes_for_panel(
+            block.image,
+            winner_center_image,
+            stage_name,
+            block.match_index,
+        )
+        if result_mode == RESULT_MODE_DETAILED
+        and _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS
+        else None
+    )
     if ocr.available and include_teams:
         attacker_stat_levels = (
             recognize_stat_levels(
@@ -3159,6 +4791,7 @@ def recognize_match_block(
             stage_name=stage_name,
             block_height=block.image.height,
             source_profile=source_profile,
+            client_profile=client_profile,
         )
         defender_teams, defender_powers, defender_collections = recognize_team_rows(
             defender_image,
@@ -3171,6 +4804,7 @@ def recognize_match_block(
             stage_name=stage_name,
             block_height=block.image.height,
             source_profile=source_profile,
+            client_profile=client_profile,
         )
     else:
         attacker_stat_levels = []
@@ -3183,11 +4817,21 @@ def recognize_match_block(
         defender_collections = [[COLLECTION_NONE] * 5 for _ in range(5)]
     detail_items: list[list[OCRItem]] = [[] for _ in range(5)]
     if ocr.available and include_teams:
-        detail_attacker, detail_defender, attacker_scores, defender_scores, detail_items = recognize_detail_team_rows(
+        # Detailed-result name OCR shares one parser, but each client profile
+        # selects its own calibrated panel coordinates above.
+        detail_name_image = _detail_name_image(
+            block.image,
             center_image,
+            result_mode,
+            client_profile,
+        )
+        detail_attacker, detail_defender, attacker_scores, defender_scores, detail_items = recognize_detail_team_rows(
+            detail_name_image,
             ocr,
             matcher,
             block_height=block.image.height,
+            client_profile=client_profile,
+            source_name=source_name if result_mode == RESULT_MODE_DETAILED else "",
         )
         attacker_teams = _merge_team_sources(attacker_teams, detail_attacker, attacker_scores, matcher)
         defender_teams = _merge_team_sources(defender_teams, detail_defender, defender_scores, matcher)
@@ -3211,6 +4855,8 @@ def recognize_match_block(
             ocr,
             items=winner_items,
             result_mode=result_mode,
+            client_profile=client_profile,
+            precise_defeat_boxes=precise_defeat_boxes,
         )
         recognized_count = sum(bool(name) for name in attacker_teams[row] + defender_teams[row])
         team_conf = 0.15 * recognized_count

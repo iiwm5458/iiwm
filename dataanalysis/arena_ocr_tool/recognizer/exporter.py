@@ -416,7 +416,7 @@ def export_excel(
         return export_csv(records, output_dir, stem, include_power=include_power)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    path = output_dir / f"{stem}_result.xlsx"
+    path = output_dir / f"{stem}.xlsx"
     headers = build_headers(include_power=include_power)
     roster_headers = build_roster_headers(
         include_power=include_power,
@@ -522,7 +522,7 @@ def export_csv(records: Iterable[dict], output_dir: Path, stem: str, include_pow
     import csv
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    path = output_dir / f"{stem}_result.csv"
+    path = output_dir / f"{stem}.csv"
     with path.open("w", encoding="utf-8-sig", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(build_headers(include_power=include_power))

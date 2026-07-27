@@ -75,7 +75,19 @@ setup_gpu_runtime_cn.bat
 https://pypi.tuna.tsinghua.edu.cn/simple
 ~~~
 
-两个脚本安装完全相同的锁定版本。运行前会提示将下载第三方组件和相关许可信息；确认后按任意键继续。
+如清华镜像下载报错，可双击：
+
+~~~
+setup_gpu_runtime_aliyun.bat
+~~~
+
+该版本使用阿里云 PyPI 镜像：
+
+~~~
+https://mirrors.aliyun.com/pypi/simple/
+~~~
+
+三个脚本安装完全相同的锁定版本。运行前会提示将下载第三方组件和相关许可信息；确认后按任意键继续。若两个国内镜像都失败，再使用官方 PyPI 脚本。
 
 脚本会自动：
 
@@ -149,7 +161,7 @@ runtime_python310_base\python.exe
 
 ### 国内镜像下载失败
 
-改用 setup_gpu_runtime.bat 的官方 PyPI 源；同时检查网络、代理或安全软件设置。
+先尝试另一个国内镜像脚本：清华镜像失败时使用 setup_gpu_runtime_aliyun.bat；阿里云镜像失败时使用 setup_gpu_runtime_cn.bat。两个国内镜像都失败后，再改用 setup_gpu_runtime.bat 的官方 PyPI 源，并检查网络、代理或安全软件设置。
 
 ## 七、封装说明
 
@@ -161,6 +173,7 @@ runtime_cpu\
 runtime_python310_base\
 setup_gpu_runtime.bat
 setup_gpu_runtime_cn.bat
+setup_gpu_runtime_aliyun.bat
 setup_gpu_runtime.ps1
 dataanalysis\arena_ocr_tool\requirements-ocr-gpu.txt
 GPU_OCR_RUNTIME_SETUP_GUIDE.md

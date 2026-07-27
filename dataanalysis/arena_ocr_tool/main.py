@@ -55,6 +55,14 @@ EXPECTED_SEASON_BLOCKS = {
 }
 
 SOURCE_PROFILE_3840 = "3840x2160"
+SOURCE_PROFILE_2560_1600 = "2560x1600"
+SOURCE_SERVER_LABELS = (
+    ("\u6e2f\u6fb3\u53f0", "\u6e2f\u6fb3\u53f0"),
+    ("\u56fd\u9645\u670d", "\u56fd\u9645\u670d"),
+    ("\u56fd\u670d", "\u56fd\u670d"),
+)
+SOURCE_RESOLUTION_RE = re.compile(r"(?<!\d)(\d{3,5})\s*[xX\u00d7*]\s*(\d{3,5})(?!\d)")
+WINDOWS_FILENAME_INVALID_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
 
 
 class ProgressReporter:
@@ -208,6 +216,8 @@ def source_profile_from_path(path: Path | str | None) -> str:
     text = str(path).lower()
     if re.search(r"3840\s*[x×]\s*2160", text) or ("3840" in text and "2160" in text):
         return SOURCE_PROFILE_3840
+    if re.search(r"2560\s*[x×]\s*1600", text) or ("2560" in text and "1600" in text):
+        return SOURCE_PROFILE_2560_1600
     return ""
 
 
@@ -220,22 +230,174 @@ def source_profile_from_args(args: argparse.Namespace) -> str:
         args.season_group16_image,
         args.season_top8_image,
     ]
-    return SOURCE_PROFILE_3840 if any(source_profile_from_path(path) == SOURCE_PROFILE_3840 for path in paths) else ""
+    profiles = {source_profile_from_path(path) for path in paths}
+    if SOURCE_PROFILE_3840 in profiles:
+        return SOURCE_PROFILE_3840
+    if SOURCE_PROFILE_2560_1600 in profiles:
+        return SOURCE_PROFILE_2560_1600
+    return ""
 
 
 def configure_source_profile(args: argparse.Namespace, logger: RunLogger) -> str:
     profile = source_profile_from_args(args)
-    if profile == SOURCE_PROFILE_3840:
-        os.environ["NIKKE_OCR_SOURCE_PROFILE"] = SOURCE_PROFILE_3840
-        if args.use_gpu:
+    if profile:
+        os.environ["NIKKE_OCR_SOURCE_PROFILE"] = profile
+        if profile == SOURCE_PROFILE_3840 and args.use_gpu:
             os.environ["NIKKE_ENABLE_GPU_DLL_DIRECTORIES"] = "1"
             os.environ["NIKKE_OCR_VERBOSE_RUNTIME_ERRORS"] = "1"
-        logger.info("ocr_source_profile=3840x2160")
+        else:
+            os.environ.pop("NIKKE_ENABLE_GPU_DLL_DIRECTORIES", None)
+            os.environ.pop("NIKKE_OCR_VERBOSE_RUNTIME_ERRORS", None)
+        logger.info(f"ocr_source_profile={profile}")
     else:
         os.environ.pop("NIKKE_OCR_SOURCE_PROFILE", None)
         os.environ.pop("NIKKE_ENABLE_GPU_DLL_DIRECTORIES", None)
         os.environ.pop("NIKKE_OCR_VERBOSE_RUNTIME_ERRORS", None)
     return profile
+
+
+def _source_file_name(source: Path | str | None) -> str:
+    return Path(str(source or "")).name
+
+
+def _source_server_label(source_paths: list[Path | str], client_profile: str) -> str:
+    labels: list[str] = []
+    for source in source_paths:
+        file_name = _source_file_name(source)
+        for marker, label in SOURCE_SERVER_LABELS:
+            if marker in file_name:
+                labels.append(label)
+                break
+
+    unique_labels = list(dict.fromkeys(labels))
+    if len(unique_labels) == 1:
+        return unique_labels[0]
+    if len(unique_labels) > 1:
+        return "\u6df7\u5408\u533a\u670d"
+    return "\u6d77\u5916\u670d" if str(client_profile or "").lower() == "overseas" else "\u56fd\u670d"
+
+
+def _source_resolution_label(source_paths: list[Path | str]) -> str:
+    labels: list[str] = []
+    for source in source_paths:
+        match = SOURCE_RESOLUTION_RE.search(_source_file_name(source))
+        if match:
+            labels.append(f"{int(match.group(1))}x{int(match.group(2))}")
+
+    unique_labels = list(dict.fromkeys(labels))
+    if len(unique_labels) == 1:
+        return unique_labels[0]
+    if len(unique_labels) > 1:
+        return "\u6df7\u5408\u5206\u8fa8\u7387"
+    return "\u672a\u6807\u6ce8\u5206\u8fa8\u7387"
+
+
+def _safe_export_filename_component(value: str, fallback: str) -> str:
+    text = WINDOWS_FILENAME_INVALID_RE.sub(" ", str(value or ""))
+    text = re.sub(r"\s+", " ", text).strip(" .")
+    return (text[:80] or fallback).strip(" .") or fallback
+
+
+def _most_common_name(values: list[str]) -> str:
+    counts: dict[str, int] = {}
+    for value in values:
+        name = str(value or "").strip()
+        if name:
+            counts[name] = counts.get(name, 0) + 1
+    if not counts:
+        return ""
+    return max(counts, key=lambda name: (counts[name], name))
+
+
+def infer_champion_identity(records: list[dict]) -> tuple[str, str]:
+    """Return a final-series winner only when the result is unambiguous."""
+    final_stage = STAGE_NAMES["final"]
+    pyramid_stage = STAGE_NAMES["top8_pyramid"]
+    names_by_id: dict[str, list[str]] = {}
+    for record in records:
+        for side in ("attacker", "defender"):
+            player_id = _normalize_player_id(record.get(f"{side}_player_id"))
+            nickname = str(record.get(f"{side}_player_nickname") or "").strip()
+            if player_id and nickname:
+                names_by_id.setdefault(player_id, []).append(nickname)
+
+    winner_counts: dict[str, int] = {}
+    winner_names: dict[str, list[str]] = {}
+    winner_ids: dict[str, list[str]] = {}
+    for record in records:
+        stage = str(record.get("stage") or "")
+        is_final = stage == final_stage or (
+            stage == pyramid_stage and _safe_int(record.get("match_index")) == 1
+        )
+        if not is_final:
+            continue
+        side = str(record.get("winner") or "").strip().lower()
+        if side not in {"attacker", "defender"}:
+            continue
+        player_id = _normalize_player_id(record.get(f"{side}_player_id"))
+        nickname = str(record.get(f"{side}_player_nickname") or "").strip()
+        key = f"id:{player_id}" if player_id else f"name:{_normalize_nickname(nickname)}"
+        if not player_id and not nickname:
+            continue
+        winner_counts[key] = winner_counts.get(key, 0) + 1
+        if nickname:
+            winner_names.setdefault(key, []).append(nickname)
+        elif player_id:
+            winner_names.setdefault(key, []).extend(names_by_id.get(player_id, []))
+        if player_id:
+            winner_ids.setdefault(key, []).append(player_id)
+
+    if not winner_counts:
+        return "", ""
+    best_count = max(winner_counts.values())
+    best_keys = [key for key, count in winner_counts.items() if count == best_count]
+    if best_count < 3 or len(best_keys) != 1:
+        return "", ""
+    champion_key = best_keys[0]
+    return (
+        _most_common_name(winner_names.get(champion_key, [])),
+        _most_common_name(winner_ids.get(champion_key, [])),
+    )
+
+
+def infer_champion_nickname(records: list[dict]) -> str:
+    return infer_champion_identity(records)[0]
+
+
+def build_export_stem(
+    records: list[dict],
+    source_paths: list[Path | str],
+    client_profile: str,
+    partial: bool = False,
+    now: datetime | None = None,
+) -> str:
+    timestamp = now or datetime.now()
+    champion, champion_id = infer_champion_identity(records)
+    parts = [
+        _source_server_label(source_paths, client_profile),
+        champion or "\u51a0\u519b\u672a\u77e5",
+        champion_id or "ID\u672a\u77e5",
+        f"{timestamp.year}\u5e74{timestamp.month}\u6708{timestamp.day}\u65e5",
+        _source_resolution_label(source_paths),
+    ]
+    if partial:
+        parts.append("\u90e8\u5206\u7ed3\u679c")
+    return "-".join(
+        _safe_export_filename_component(part, "\u672a\u77e5")
+        for part in parts
+    )
+
+
+def unique_export_stem(output_dir: Path, preferred_stem: str) -> str:
+    candidate = preferred_stem
+    index = 2
+    while any(
+        (output_dir / f"{candidate}{suffix}").exists()
+        for suffix in (".xlsx", ".csv", "_result.json", "_roster.json")
+    ):
+        candidate = f"{preferred_stem} ({index})"
+        index += 1
+    return candidate
 
 
 def parse_args() -> argparse.Namespace:
@@ -261,6 +423,17 @@ def parse_args() -> argparse.Namespace:
         choices=["auto", "top8_pyramid"],
         default="auto",
         help="Optional layout override for generated composite images.",
+    )
+    parser.add_argument(
+        "--force-detailed-results",
+        action="store_true",
+        help="Force detailed post-battle winner detection instead of inferring the mode from the filename.",
+    )
+    parser.add_argument(
+        "--client-profile",
+        choices=["cn", "overseas"],
+        default="cn",
+        help="OCR client profile. cn preserves national-server behavior; overseas recognizes DISCONNECTED defeat stickers.",
     )
     parser.add_argument(
         "--progress-file",
@@ -594,6 +767,8 @@ def recognize_image_records(
                     include_collection=not args.no_collection,
                     include_stat_levels=not args.no_stat_levels,
                     source_profile=source_profile,
+                    force_detailed_results=args.force_detailed_results,
+                    client_profile=args.client_profile,
                 )
                 if not block_records:
                     block_records = fallback_records(stage_name, block, source_name)
@@ -687,7 +862,15 @@ def run_season_images(
             break
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    stem = f"arena_season_images_{stamp}" + ("_partial" if terminated else "")
+    stem = unique_export_stem(
+        output_dir,
+        build_export_stem(
+            records,
+            [image_path for _, image_path, _ in specs],
+            args.client_profile,
+            partial=terminated,
+        ),
+    )
     json_path = export_json(
         records,
         output_dir,
@@ -790,6 +973,8 @@ def run_manifest(args: argparse.Namespace, manifest_path: Path, output_dir: Path
                 include_collection=not args.no_collection,
                 include_stat_levels=not args.no_stat_levels,
                 source_profile=source_profile,
+                force_detailed_results=args.force_detailed_results,
+                client_profile=args.client_profile,
             )
             if not block_records:
                 block_records = fallback_records(stage_name, block, source_name)
@@ -821,7 +1006,16 @@ def run_manifest(args: argparse.Namespace, manifest_path: Path, output_dir: Path
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     source_stem = manifest_path.stem.replace("_manifest", "")
-    stem = f"arena_64groups_{source_stem}_{stamp}" + ("_partial" if terminated else "")
+    source_paths = [meta.get("source_image") or meta.get("image") or str(manifest_path) for meta in blocks_meta]
+    stem = unique_export_stem(
+        output_dir,
+        build_export_stem(
+            records,
+            source_paths,
+            args.client_profile,
+            partial=terminated,
+        ),
+    )
     roster = build_group64_roster(records, logger, "manifest")
     json_path = export_json(
         records,
@@ -886,6 +1080,7 @@ def main() -> int:
     debug_dir = output_dir / "debug" if args.debug else None
     logger = RunLogger(output_dir)
     run_source_profile = configure_source_profile(args, logger)
+    logger.info(f"ocr_client_profile={args.client_profile}")
     if season_specs:
         logger.info(f"python_executable={sys.executable}")
         logger.info("ocr_cpu_threads=backend-default")
@@ -963,6 +1158,8 @@ def main() -> int:
                     include_collection=not args.no_collection,
                     include_stat_levels=not args.no_stat_levels,
                     source_profile=source_profile_from_path(image_path) or run_source_profile,
+                    force_detailed_results=args.force_detailed_results,
+                    client_profile=args.client_profile,
                 )
             )
         except Exception as exc:
@@ -979,7 +1176,15 @@ def main() -> int:
             break
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    stem = f"arena_64groups_{source_stem}_{stamp}" + ("_partial" if terminated else "")
+    stem = unique_export_stem(
+        output_dir,
+        build_export_stem(
+            records,
+            [image_path],
+            args.client_profile,
+            partial=terminated,
+        ),
+    )
     roster = build_group64_roster(records, logger, "single_image")
     json_path = export_json(
         records,

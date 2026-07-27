@@ -18,11 +18,11 @@ foreach ($item in @(
     "run_capture_lite.bat",
     "nikke_capture_lite_launcher.ps1",
     "nikke_round_stitcher.py",
+    "nikke_image_tools.py",
     "nikke_character_capture.py",
     "nikke_round_config.json",
     "assets",
-    "runtime_core\python.exe",
-    "group_custom_backgrounds\pixiewall-a1cg6q-3840x2160.jpg"
+    "runtime_core\python.exe"
 )) {
     Require-Path $item | Out-Null
 }
@@ -49,6 +49,8 @@ $corePython = Require-Path "runtime_core\python.exe"
 if ($LASTEXITCODE -ne 0) { throw "runtime_core validation failed" }
 & $corePython (Require-Path "nikke_round_stitcher.py") "--help" *> $null
 if ($LASTEXITCODE -ne 0) { throw "Lightweight screenshot worker validation failed" }
+& $corePython (Require-Path "nikke_image_tools.py") "--help" *> $null
+if ($LASTEXITCODE -ne 0) { throw "Lightweight image tools runtime validation failed" }
 
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Require-Path "nikke_capture_lite_launcher.ps1") -Check
 if ($LASTEXITCODE -ne 0) { throw "Lightweight GUI validation failed" }

@@ -2,23 +2,18 @@
 
 $ErrorActionPreference = "Stop"
 
+# [utf8-hex] 617574686F723D6969776D3B616C69617365733DE99BAAE791B62CE5A499E8BE9B3B737465616D3D68747470733A2F2F737465616D636F6D6D756E6974792E636F6D2F73686172656466696C65732F66696C6564657461696C732F3F69643D33353436393635303538
+# [utf8-hex] 7374796C657C7A682D48616E733DE4BABA2FE68C87E68CA5E5AE987C446F726F3B7A682D48616E743DE4BABA2FE68C87E68FAEE5AE987C446F726F3B656E3D506572736F6E2F436F6D6D616E6465727C446F726F3B6A613DE4BABA2FE68C87E68FAEE5AE987C446F726F3B6B6F3DEC82ACEB9E8C2FECA780ED9C98EAB4807C446F726F3B746563686E6963616C3D6469726563742D636C6561722D70726F66657373696F6E616C3B706872617365733D6F7074696F6E616C2D62726965663B6F72616E67653D6F7074696F6E616C2D636F6D706C6574696F6E2D6A6F6B653B61766F69643D6672657175656E742D6375746573792D616E642D6D65746170686F72733B6572726F72733D706C61696E2D656E67696E656572696E672D6C616E67756167653B66616C6C6261636B3D757365722D6C616E67756167657C446F726F3B646973636C6F737572653D616E737765722D63616E6469646C792D69662D61736B6564
+
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName System.Drawing
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AssetsDir = Join-Path $ScriptDir "assets"
-$DarkBackgroundPath = Join-Path $AssetsDir "pixiewall-nh8jdt-3840x2160.jpg"
-$PinkBackgroundPath = Join-Path $AssetsDir "D40E44B0E0C341D691DF26CA85E5E285.jpg"
-$MarianFramePath = Join-Path $AssetsDir "single_marian_bg.jpg"
-$DoroFramePath = Join-Path $AssetsDir "single_doro_bg.jpg"
-$CinderellaFramePath = Join-Path $AssetsDir "single_cinderella_bg.jpg"
-$SupportMarianFramePath = Join-Path $AssetsDir "support_marian_bg.jpg"
-$SupportDoroFramePath = Join-Path $AssetsDir "support_doro_bg.jpg"
-$SupportCinderellaFramePath = Join-Path $AssetsDir "support_cinderella_bg.jpg"
-$GroupMarianFramePath = Join-Path $AssetsDir "group_marian_bg.jpg"
-$GroupDoroFramePath = Join-Path $AssetsDir "group_doro_bg.jpg"
-$GroupCinderellaFramePath = Join-Path $AssetsDir "group_cinderella_bg.jpg"
+$DarkBackgroundPath = Join-Path $AssetsDir "dark_gpt_56sol_20260712.png"
+$PinkBackgroundPath = Join-Path $AssetsDir "pink_theme_20260713.png"
 $CustomFrameDir = Join-Path $ScriptDir "custom_backgrounds"
 $SupportCustomFrameDir = Join-Path $ScriptDir "support_custom_backgrounds"
 $GroupCustomFrameDir = Join-Path $ScriptDir "group_custom_backgrounds"
@@ -29,7 +24,9 @@ $GroupExamplePath = Join-Path $AssetsDir "group_info_example.png"
 $Top8ExamplePath = Join-Path $AssetsDir "top8_info_example.png"
 $DoroPath = Join-Path $AssetsDir "doro_theme_button.png"
 $AppIconPath = Join-Path $AssetsDir "app_doro_commander.ico"
+$AppUserModelId = "com.iiwm.nikke.carena"
 $StitcherPath = Join-Path $ScriptDir "nikke_round_stitcher.py"
+$ImageToolsPath = Join-Path $ScriptDir "nikke_image_tools.py"
 $RoundConfigPath = Join-Path $ScriptDir "nikke_round_config.json"
 $DataAnalysisDir = Join-Path $ScriptDir "dataanalysis"
 $OcrToolPath = Join-Path $DataAnalysisDir "arena_ocr_tool\main.py"
@@ -42,17 +39,18 @@ $SelectedOcrImagePath = $DefaultOcrImagePath
 $OcrSlotReadyIconPath = Join-Path $AssetsDir "ocr_slot_ready.png"
 $OcrSlotEmptyImagePath = Join-Path $AssetsDir "ocr_slot_empty.png"
 $OcrSlotSelectedImagePath = Join-Path $AssetsDir "ocr_slot_selected.png"
-$SiteSkyxmoonIconPath = Join-Path $AssetsDir "site_nikke_skyxmoon.png"
-$SiteNikkeTopIconPath = Join-Path $AssetsDir "site_nikke_top.png"
-$SiteMerlotJjcIconPath = Join-Path $AssetsDir "site_merlot_jjc.png"
-$SiteGamekeeNikkeIconPath = Join-Path $AssetsDir "site_gamekee_nikke.png"
-$SiteBilibiliGuseIconPath = Join-Path $AssetsDir "site_bilibili_guse.png"
-$SiteBilibiliDeen33IconPath = Join-Path $AssetsDir "site_bilibili_deen33.png"
 $OcrSeasonImageSlots = @{
     top8 = $null
     group16 = $null
     group32 = $null
     group64 = $null
+}
+$SelectedBattleAnnotationDataPath = $null
+$ImageToolSlots = @{
+    slot1 = $null
+    slot2 = $null
+    slot3 = $null
+    slot4 = $null
 }
 $RoundWorkerExe = Join-Path $ScriptDir "nikke_round_stitcher_worker.exe"
 $BundledCorePython = Join-Path $ScriptDir "runtime_core\python.exe"
@@ -145,7 +143,7 @@ function Resolve-OcrPythonExe {
     return $null
 }
 
-$OcrPythonExe = Resolve-OcrPythonExe
+$OcrPythonExe = $null
 $OcrGpuPythonExe = $null
 $ActiveOcrPythonExe = $null
 
@@ -175,21 +173,132 @@ function Resolve-OcrGpuPythonExe {
     return $null
 }
 
-$OcrGpuPythonExe = Resolve-OcrGpuPythonExe
-$OcrGpuAvailable = $null -ne $OcrGpuPythonExe
+$OcrRuntimeCacheSchemaVersion = 1
+
+function Get-OcrRuntimeFingerprint([string]$Path) {
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return $null }
+    try {
+        $item = Get-Item -LiteralPath $Path -ErrorAction Stop
+        $version = (& $Path -c "import sys; print(sys.version.split()[0])" 2>$null | Select-Object -First 1)
+        return [ordered]@{
+            path = [IO.Path]::GetFullPath($Path)
+            file_length = [int64]$item.Length
+            file_last_write_utc_ticks = [int64]$item.LastWriteTimeUtc.Ticks
+            python_version = if ($version) { $version.Trim() } else { $null }
+        }
+    } catch {
+        return $null
+    }
+}
+
+function New-OcrRuntimeCacheEntry([string]$Path, [bool]$Available) {
+    if (-not $Available) {
+        return [ordered]@{
+            available = $false
+            path = $null
+            file_length = 0
+            file_last_write_utc_ticks = 0
+            python_version = $null
+        }
+    }
+    $fingerprint = Get-OcrRuntimeFingerprint $Path
+    if (-not $fingerprint) {
+        return New-OcrRuntimeCacheEntry $null $false
+    }
+    return [ordered]@{
+        available = $true
+        path = $fingerprint.path
+        file_length = $fingerprint.file_length
+        file_last_write_utc_ticks = $fingerprint.file_last_write_utc_ticks
+        python_version = $fingerprint.python_version
+    }
+}
+
+function Test-OcrRuntimeCacheEntry($Entry) {
+    if (-not $Entry -or -not $Entry.PSObject.Properties["available"]) { return $false }
+    if (-not [bool]$Entry.available) { return $true }
+    if (-not $Entry.path -or -not (Test-Path -LiteralPath ([string]$Entry.path))) { return $false }
+    try {
+        $item = Get-Item -LiteralPath ([string]$Entry.path) -ErrorAction Stop
+        return ([int64]$item.Length -eq [int64]$Entry.file_length) -and
+            ([int64]$item.LastWriteTimeUtc.Ticks -eq [int64]$Entry.file_last_write_utc_ticks)
+    } catch {
+        return $false
+    }
+}
+
+function Restore-OcrRuntimeCache($Cache) {
+    if (-not $Cache -or -not $Cache.PSObject.Properties["schema_version"] -or
+        [int]$Cache.schema_version -ne $OcrRuntimeCacheSchemaVersion -or
+        -not $Cache.PSObject.Properties["cpu"] -or -not $Cache.PSObject.Properties["gpu"]) {
+        return $false
+    }
+    if (-not (Test-OcrRuntimeCacheEntry $Cache.cpu) -or -not (Test-OcrRuntimeCacheEntry $Cache.gpu)) {
+        return $false
+    }
+
+    $script:OcrPythonExe = if ([bool]$Cache.cpu.available) { [string]$Cache.cpu.path } else { $null }
+    $script:OcrGpuPythonExe = if ([bool]$Cache.gpu.available) { [string]$Cache.gpu.path } else { $null }
+    $script:OcrGpuAvailable = [bool]$Cache.gpu.available
+    $script:OcrRuntimeCacheState = "cached"
+    $script:OcrRuntimeCheckedAt = if ($Cache.PSObject.Properties["checked_at"]) { [string]$Cache.checked_at } else { $null }
+    return $true
+}
+
+function Save-OcrRuntimeCache {
+    try {
+        if (Test-Path -LiteralPath $RoundConfigPath) {
+            $configJson = Get-Content -LiteralPath $RoundConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        } else {
+            $configJson = [pscustomobject]@{}
+        }
+        if (-not $configJson.PSObject.Properties["launcher_settings"] -or $null -eq $configJson.launcher_settings) {
+            Add-Member -InputObject $configJson -MemberType NoteProperty -Name "launcher_settings" -Value ([pscustomobject]@{}) -Force
+        }
+        $cache = [ordered]@{
+            schema_version = $OcrRuntimeCacheSchemaVersion
+            checked_at = (Get-Date).ToString("o")
+            cpu = New-OcrRuntimeCacheEntry $OcrPythonExe ($null -ne $OcrPythonExe)
+            gpu = New-OcrRuntimeCacheEntry $OcrGpuPythonExe $OcrGpuAvailable
+        }
+        if ($configJson.launcher_settings.PSObject.Properties["ocr_runtime_cache"]) {
+            $configJson.launcher_settings.ocr_runtime_cache = [pscustomobject]$cache
+        } else {
+            Add-Member -InputObject $configJson.launcher_settings -MemberType NoteProperty -Name "ocr_runtime_cache" -Value ([pscustomobject]$cache) -Force
+        }
+        $json = $configJson | ConvertTo-Json -Depth 20
+        [IO.File]::WriteAllText($RoundConfigPath, $json, [Text.UTF8Encoding]::new($false))
+        $script:OcrRuntimeCheckedAt = $cache.checked_at
+    } catch {}
+}
+
+function Initialize-OcrRuntimes([bool]$Force = $false) {
+    if (-not $Force -and $script:OcrRuntimeCacheState -eq "cached") { return $true }
+    $script:OcrPythonExe = Resolve-OcrPythonExe
+    $script:OcrGpuPythonExe = Resolve-OcrGpuPythonExe
+    $script:OcrGpuAvailable = $null -ne $script:OcrGpuPythonExe
+    $script:OcrRuntimeCacheState = "detected"
+    Save-OcrRuntimeCache
+    return $true
+}
+
+function Invalidate-OcrRuntimeCache([string]$Reason = "") {
+    $script:OcrPythonExe = $null
+    $script:OcrGpuPythonExe = $null
+    $script:OcrGpuAvailable = $false
+    $script:OcrRuntimeCacheState = "invalid"
+    Save-OcrRuntimeCache
+    if ($Reason) { Append-Log ("OCR runtime cache invalidated: " + $Reason) }
+}
+
+$OcrGpuAvailable = $false
+$script:OcrRuntimeCacheState = "uninitialized"
+$script:OcrRuntimeCheckedAt = $null
 $OcrPerformanceMode = "full"
 $LowMemoryMode = $false
 $OcrMediumMemoryMode = $false
 $SeasonMemoryWarnGb = 8.0
 
-$DarkSourceUrl = "https://www.pixiewall.com/wallpaper/rapi-drake-laplace-maxwell-nikke-4k-25008"
-$PinkSourceUrl = "https://www.pixiewall.com/wallpaper/alice-marchen-dream-nikke-doro-5k-29009"
-$SiteSkyxmoonUrl = "https://nikke.skyxmoon.cn/"
-$SiteNikkeTopUrl = "https://nikke.top/"
-$SiteMerlotJjcUrl = "https://merlot-sve.xyz:17838/jjc"
-$SiteGamekeeNikkeUrl = "https://www.gamekee.com/nikke/second/64581"
-$SiteBilibiliGuseUrl = "https://www.bilibili.com/read/readlist/rl1058034?spm_id_from=333.1387.0.0"
-$SiteBilibiliDeen33Url = "https://www.bilibili.com/read/readlist/rl1020764?spm_id_from=333.1369.opus.module_collection.click"
 $CurrentTheme = "dark"
 $CurrentCaptureMode = "single"
 $ActiveCaptureProcess = $null
@@ -215,19 +324,35 @@ $OcrThermalResumeStableSince = $null
 $OcrThermalEmergencyPromptShown = $false
 $OcrThermalCurrentCooldownSeconds = 0.0
 $DelayMinSeconds = 0.45
-$DetailDelayMinSeconds = 0.7
-$DetailCaptureDelaySeconds = 3.5
+$DetailPageTimeoutMinSeconds = 10
+$DetailPageTimeoutMaxSeconds = 180
+$DetailPageTimeoutSeconds = 60
 $ConfiguredCaptureDelaySeconds = $null
+$ConfiguredAvatarProfileDelaySeconds = $null
+$ConfiguredAvatarProfilePollEnabled = $false
+$ConfiguredBracketResultDelaySeconds = $null
 $ConfiguredOcrPerformanceMode = "cpu"
 $ConfiguredOcrThermalMode = "safe"
+$ConfiguredOcrRuntimeCache = $null
+$ConfiguredOcrRosterPreflightSuppressedMonth = ""
+$ConfiguredCaptureParametersPreflightSuppressedMonth = ""
 try {
     if (Test-Path $RoundConfigPath) {
         $configJson = Get-Content -LiteralPath $RoundConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($null -ne $configJson.timing.after_round_click_seconds) {
             $ConfiguredCaptureDelaySeconds = [double]$configJson.timing.after_round_click_seconds
         }
-        if ($null -ne $configJson.timing.after_group_detail_click_seconds) {
-            $DetailCaptureDelaySeconds = [double]$configJson.timing.after_group_detail_click_seconds
+        if ($null -ne $configJson.timing.after_avatar_click_seconds) {
+            $ConfiguredAvatarProfileDelaySeconds = [double]$configJson.timing.after_avatar_click_seconds
+        }
+        if ($configJson.timing.PSObject.Properties["profile_page_poll_enabled"] -and $null -ne $configJson.timing.profile_page_poll_enabled) {
+            $ConfiguredAvatarProfilePollEnabled = [bool]$configJson.timing.profile_page_poll_enabled
+        }
+        if ($null -ne $configJson.timing.after_bracket_result_click_seconds) {
+            $ConfiguredBracketResultDelaySeconds = [double]$configJson.timing.after_bracket_result_click_seconds
+        }
+        if ($null -ne $configJson.timing.detail_page_timeout_seconds) {
+            $DetailPageTimeoutSeconds = [double]$configJson.timing.detail_page_timeout_seconds
         }
         if ($configJson.PSObject.Properties["launcher_settings"] -and $null -ne $configJson.launcher_settings) {
             if ($configJson.launcher_settings.PSObject.Properties["ocr_performance_mode"] -and $null -ne $configJson.launcher_settings.ocr_performance_mode) {
@@ -236,19 +361,53 @@ try {
             if ($configJson.launcher_settings.PSObject.Properties["ocr_thermal_mode"] -and $null -ne $configJson.launcher_settings.ocr_thermal_mode) {
                 $ConfiguredOcrThermalMode = [string]$configJson.launcher_settings.ocr_thermal_mode
             }
+            if ($configJson.launcher_settings.PSObject.Properties["ocr_runtime_cache"] -and $null -ne $configJson.launcher_settings.ocr_runtime_cache) {
+                $ConfiguredOcrRuntimeCache = $configJson.launcher_settings.ocr_runtime_cache
+            }
+            if ($configJson.launcher_settings.PSObject.Properties["ocr_roster_preflight_suppressed_month"] -and $null -ne $configJson.launcher_settings.ocr_roster_preflight_suppressed_month) {
+                $ConfiguredOcrRosterPreflightSuppressedMonth = [string]$configJson.launcher_settings.ocr_roster_preflight_suppressed_month
+            }
+            if ($configJson.launcher_settings.PSObject.Properties["capture_parameters_preflight_suppressed_month"] -and $null -ne $configJson.launcher_settings.capture_parameters_preflight_suppressed_month) {
+                $ConfiguredCaptureParametersPreflightSuppressedMonth = [string]$configJson.launcher_settings.capture_parameters_preflight_suppressed_month
+            }
         }
     }
 } catch {}
+if (-not (Restore-OcrRuntimeCache $ConfiguredOcrRuntimeCache)) {
+    Initialize-OcrRuntimes $true
+}
 if ($null -ne $ConfiguredCaptureDelaySeconds) {
     $CaptureDelaySeconds = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, [double]$ConfiguredCaptureDelaySeconds))
 } else {
     $CaptureDelaySeconds = [Math]::Max($DelayMinSeconds, 0.80)
 }
+if ($null -ne $ConfiguredAvatarProfileDelaySeconds) {
+    $AvatarProfileDelaySeconds = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, [double]$ConfiguredAvatarProfileDelaySeconds))
+} else {
+    $AvatarProfileDelaySeconds = 0.80
+}
+$AvatarProfilePollEnabled = [bool]$ConfiguredAvatarProfilePollEnabled
+$OcrRosterPreflightSuppressedMonth = $ConfiguredOcrRosterPreflightSuppressedMonth
+$CaptureParametersPreflightSuppressedMonth = $ConfiguredCaptureParametersPreflightSuppressedMonth
+if ($null -ne $ConfiguredBracketResultDelaySeconds) {
+    $BracketResultDelaySeconds = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, [double]$ConfiguredBracketResultDelaySeconds))
+} else {
+    $BracketResultDelaySeconds = 1.0
+}
 $script:SettingsInitialized = $false
+$script:ActiveNikkeServer = "unknown"
+$script:DetectedNikkeServer = "unknown"
+# Server overrides deliberately reset to automatic detection on every launch.
+$script:ServerSelectionMode = "auto"
+$script:ServerSelectionUpdating = $false
 $TextIdle = '"\u7a7a\u95f2"' | ConvertFrom-Json
 $TextRunning = '"\u6b63\u5728\u6267\u884c"' | ConvertFrom-Json
 $TextDoneMessage = '"\u4efb\u52a1\u5df2\u5b8c\u6210\uff0c\u613f\u547d\u8fd0\u7ad9\u5728\u4f60\u8fd9\u4e00\u8fb9\uff0c\u6307\u6325\u5b98\u3002"' | ConvertFrom-Json
 $TextDoneTitle = '"\u4efb\u52a1\u5b8c\u6210"' | ConvertFrom-Json
+$TextDetailPageTimeoutMessage = '"\u68c0\u6d4b\u5230\u5f53\u524d\u65e0\u6cd5\u6b63\u5e38\u8fdb\u5165\u6218\u679c\u9875\uff0c\u8bf7\u6307\u6325\u5b98\u68c0\u67e5\u7f51\u7edc\u73af\u5883\u540e\u91cd\u8bd5\u3002"' | ConvertFrom-Json
+$TextDetailPageTimeoutTitle = '"\u622a\u56fe\u5df2\u6682\u505c"' | ConvertFrom-Json
+$TextCaptureFailureMessage = '"\u622a\u56fe\u4efb\u52a1\u5f02\u5e38\u7ec8\u6b62\uff0c\u8bf7\u67e5\u770b\u4ee5\u4e0b\u8fd0\u884c\u65e5\u5fd7\uff1a"' | ConvertFrom-Json
+$TextCaptureFailureTitle = '"\u622a\u56fe\u5f02\u5e38"' | ConvertFrom-Json
 $TextStopMessage = '"\u4efb\u52a1\u5df2\u7d27\u6025\u505c\u6b62\uff0c\u6307\u6325\u5b98"' | ConvertFrom-Json
 $TextStopTitle = '"\u4efb\u52a1\u505c\u6b62"' | ConvertFrom-Json
 $TextGameMissingMessage = '"\u672a\u68c0\u6d4b\u5230\u6b63\u5728\u8fd0\u884c\u7684\u80dc\u5229\u5973\u795e\u3002"' | ConvertFrom-Json
@@ -293,8 +452,44 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
+public sealed class GameWindowInfo {
+    public IntPtr Handle { get; private set; }
+    public int ClientLeft { get; private set; }
+    public int ClientTop { get; private set; }
+    public int ClientWidth { get; private set; }
+    public int ClientHeight { get; private set; }
+    public bool IsFullscreen { get; private set; }
+    public bool IsWindowed { get { return !IsFullscreen; } }
+
+    public GameWindowInfo(IntPtr handle, int left, int top, int width, int height, bool isFullscreen) {
+        Handle = handle;
+        ClientLeft = left;
+        ClientTop = top;
+        ClientWidth = width;
+        ClientHeight = height;
+        IsFullscreen = isFullscreen;
+    }
+}
+
 public static class NativeWin {
     public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)] public struct RECT {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+    [StructLayout(LayoutKind.Sequential)] public struct POINT {
+        public int X;
+        public int Y;
+    }
+    [StructLayout(LayoutKind.Sequential)] public struct MONITORINFO {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
 
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
@@ -309,9 +504,15 @@ public static class NativeWin {
     [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
 [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vKey);
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int nIndex);
+    [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)] public static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowTextLength(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+    [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
+    [DllImport("user32.dll")] public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
     public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
     public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
@@ -322,15 +523,72 @@ public static class NativeWin {
     public const uint MOD_ALT = 0x0001;
     public const int SM_CXSCREEN = 0;
     public const int SM_CYSCREEN = 1;
+    public const uint WM_SETICON = 0x0080;
+    public const uint MONITOR_DEFAULTTONEAREST = 2;
 
     public static bool IsNikkeRunning() {
         return Process.GetProcessesByName("nikke").Length > 0;
     }
 
-    public static IntPtr FindWindowByProcessOrTitle() {
+    private static string GetWindowTitle(IntPtr hWnd) {
+        if (hWnd == IntPtr.Zero) return "";
+        int length = GetWindowTextLength(hWnd);
+        if (length <= 0) return "";
+        StringBuilder text = new StringBuilder(length + 1);
+        GetWindowText(hWnd, text, text.Capacity);
+        return text.ToString().Trim();
+    }
+
+    public static string GetNikkeServerCodeFromTitle(string title) {
+        if (String.IsNullOrWhiteSpace(title)) return "";
+        if (title.IndexOf("妮姬", StringComparison.OrdinalIgnoreCase) >= 0) return "hmt";
+        if (title.IndexOf("新的希望", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            title.Equals("nikke.exe", StringComparison.OrdinalIgnoreCase)) return "cn";
+        if (title.IndexOf("nikke", StringComparison.OrdinalIgnoreCase) >= 0) return "global";
+        return "";
+    }
+
+    public static string GetNikkeServerCode() {
         Process[] processes = Process.GetProcessesByName("nikke");
+        foreach (Process process in processes) {
+            try {
+                string detected = GetNikkeServerCodeFromTitle(GetWindowTitle(process.MainWindowHandle));
+                if (!String.IsNullOrEmpty(detected)) return detected;
+            } catch {}
+        }
+
+        string found = "";
+        EnumWindows(delegate(IntPtr hWnd, IntPtr lParam) {
+            if (!IsWindowVisible(hWnd)) return true;
+            uint processId;
+            GetWindowThreadProcessId(hWnd, out processId);
+            foreach (Process process in processes) {
+                if ((uint)process.Id != processId) continue;
+                string detected = GetNikkeServerCodeFromTitle(GetWindowTitle(hWnd));
+                if (!String.IsNullOrEmpty(detected)) {
+                    found = detected;
+                    return false;
+                }
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+
+    private static bool MatchesRequestedServer(IntPtr hWnd, string requestedServer) {
+        if (String.IsNullOrWhiteSpace(requestedServer)) return true;
+        return String.Equals(GetNikkeServerCodeFromTitle(GetWindowTitle(hWnd)), requestedServer, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static IntPtr FindWindowByProcessOrTitle(string requestedServer) {
+        Process[] processes = Process.GetProcessesByName("nikke");
+        IntPtr fallback = IntPtr.Zero;
         foreach (Process p in processes) {
-            if (p.MainWindowHandle != IntPtr.Zero) return p.MainWindowHandle;
+            try {
+                if (p.MainWindowHandle == IntPtr.Zero) continue;
+                if (fallback == IntPtr.Zero) fallback = p.MainWindowHandle;
+                if (MatchesRequestedServer(p.MainWindowHandle, requestedServer)) return p.MainWindowHandle;
+            } catch {}
         }
 
         IntPtr found = IntPtr.Zero;
@@ -340,8 +598,12 @@ public static class NativeWin {
             GetWindowThreadProcessId(hWnd, out pid);
             foreach (Process p in processes) {
                 if ((uint)p.Id == pid) {
-                    found = hWnd;
-                    return false;
+                    if (fallback == IntPtr.Zero) fallback = hWnd;
+                    if (MatchesRequestedServer(hWnd, requestedServer)) {
+                        found = hWnd;
+                        return false;
+                    }
+                    return true;
                 }
             }
 
@@ -351,17 +613,50 @@ public static class NativeWin {
                 GetWindowText(hWnd, sb, sb.Capacity);
                 string title = sb.ToString();
                 if (title.Contains("胜利女神") || title.Contains("新的希望") || title.ToLower().Contains("nikke")) {
-                    found = hWnd;
-                    return false;
+                    if (fallback == IntPtr.Zero) fallback = hWnd;
+                    if (MatchesRequestedServer(hWnd, requestedServer)) {
+                        found = hWnd;
+                        return false;
+                    }
                 }
             }
             return true;
         }, IntPtr.Zero);
-        return found;
+        return found != IntPtr.Zero ? found : fallback;
     }
 
-    public static bool FocusGame() {
-        IntPtr hWnd = FindWindowByProcessOrTitle();
+    public static GameWindowInfo GetGameWindowInfo(string requestedServer) {
+        IntPtr hWnd = FindWindowByProcessOrTitle(requestedServer);
+        if (hWnd == IntPtr.Zero) return null;
+
+        RECT clientRect;
+        if (!GetClientRect(hWnd, out clientRect)) return null;
+        int width = clientRect.Right - clientRect.Left;
+        int height = clientRect.Bottom - clientRect.Top;
+        if (width < 320 || height < 240) return null;
+
+        POINT origin = new POINT { X = 0, Y = 0 };
+        if (!ClientToScreen(hWnd, ref origin)) return null;
+
+        bool isFullscreen = false;
+        IntPtr monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+        if (monitor != IntPtr.Zero) {
+            MONITORINFO monitorInfo = new MONITORINFO();
+            monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+            if (GetMonitorInfo(monitor, ref monitorInfo)) {
+                const int tolerance = 8;
+                isFullscreen =
+                    Math.Abs(origin.X - monitorInfo.rcMonitor.Left) <= tolerance &&
+                    Math.Abs(origin.Y - monitorInfo.rcMonitor.Top) <= tolerance &&
+                    Math.Abs(origin.X + width - monitorInfo.rcMonitor.Right) <= tolerance &&
+                    Math.Abs(origin.Y + height - monitorInfo.rcMonitor.Bottom) <= tolerance;
+            }
+        }
+        return new GameWindowInfo(hWnd, origin.X, origin.Y, width, height, isFullscreen);
+    }
+
+    public static bool FocusGame(string requestedServer) {
+        IntPtr hWnd = FindWindowByProcessOrTitle(requestedServer);
         if (hWnd == IntPtr.Zero) return false;
 
         uint targetPid;
@@ -389,6 +684,10 @@ public static class NativeWin {
     }
 }
 "@
+
+try {
+    [NativeWin]::SetCurrentProcessExplicitAppUserModelID($AppUserModelId) | Out-Null
+} catch {}
 
 [xml]$Xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -631,30 +930,226 @@ public static class NativeWin {
         </Setter.Value>
       </Setter>
     </Style>
-    <Style x:Key="SiteIconButton" TargetType="Button">
-      <Setter Property="Width" Value="30"/>
-      <Setter Property="Height" Value="30"/>
+    <Style x:Key="DarkCompressionMode" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="#D7E8F6"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
       <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Background" Value="#66101A2A"/>
-      <Setter Property="BorderBrush" Value="#6BDFFF"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Padding" Value="0"/>
       <Setter Property="Template">
         <Setter.Value>
-          <ControlTemplate TargetType="Button">
-            <Border x:Name="RoundButton" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
-                    CornerRadius="15" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-              <Grid Margin="{TemplateBinding Padding}">
-                <Grid.Clip>
-                  <EllipseGeometry Center="15,15" RadiusX="15" RadiusY="15"/>
-                </Grid.Clip>
-                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Grid>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Segment" CornerRadius="5" BorderThickness="1" BorderBrush="#4C6F90" Background="#40101A2A" Padding="8,4" Margin="1,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="RoundButton" Property="Background" Value="#CC29C7FF"/>
-                <Setter TargetName="RoundButton" Property="BorderBrush" Value="#F7FBFF"/>
+                <Setter TargetName="Segment" Property="BorderBrush" Value="#8CEBFF"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Segment" Property="Background" Value="#CC29C7FF"/>
+                <Setter TargetName="Segment" Property="BorderBrush" Value="#C8F8FF"/>
+                <Setter Property="Foreground" Value="#06151F"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="PinkCompressionMode" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="#6D344B"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Segment" CornerRadius="5" BorderThickness="1" BorderBrush="#FFFFBCD5" Background="#8AFFF8FC" Padding="8,4" Margin="1,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Segment" Property="BorderBrush" Value="#FFFF8DB9"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Segment" Property="Background" Value="#FFFFBBD3"/>
+                <Setter TargetName="Segment" Property="BorderBrush" Value="#FFFFF7FB"/>
+                <Setter Property="Foreground" Value="#5A2439"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="DarkServerModeComboBoxItem" TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="#D7E8F6"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="ItemFrame" Background="Transparent" Padding="9,5">
+              <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="ItemFrame" Property="Background" Value="#5429C7FF"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="ItemFrame" Property="Background" Value="#CC29C7FF"/>
+                <Setter Property="Foreground" Value="#06151F"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="PinkServerModeComboBoxItem" TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="#6D344B"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="ItemFrame" Background="Transparent" Padding="9,5">
+              <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="ItemFrame" Property="Background" Value="#66FFBBD3"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="ItemFrame" Property="Background" Value="#FFFFBBD3"/>
+                <Setter Property="Foreground" Value="#5A2439"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="DarkServerModeComboBox" TargetType="ComboBox">
+      <Setter Property="Foreground" Value="#D7E8F6"/>
+      <Setter Property="Background" Value="#40101A2A"/>
+      <Setter Property="BorderBrush" Value="#4C6F90"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="ItemContainerStyle" Value="{StaticResource DarkServerModeComboBoxItem}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <ToggleButton x:Name="DropDownToggle" Focusable="False" ClickMode="Press" Foreground="{TemplateBinding Foreground}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="SelectionFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                      <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions>
+                        <ContentPresenter Grid.Column="0" Margin="8,0,2,0" Content="{Binding SelectedItem.Content, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="&#9662;" FontSize="10" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SelectionFrame" Property="BorderBrush" Value="#8CEBFF"/></Trigger>
+                      <Trigger Property="IsChecked" Value="True"><Setter TargetName="SelectionFrame" Property="BorderBrush" Value="#C8F8FF"/></Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
+              <Popup x:Name="Popup" Placement="Bottom" PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" AllowsTransparency="True" PopupAnimation="Slide" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                <Border x:Name="DropDownFrame" MinWidth="{Binding ActualWidth, ElementName=DropDownToggle}" Background="#F0101A2A" BorderBrush="#5EDCFF" BorderThickness="1" CornerRadius="5" Margin="0,3,0,0">
+                  <ScrollViewer MaxHeight="220" CanContentScroll="True" Padding="1"><ItemsPresenter/></ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="PinkServerModeComboBox" TargetType="ComboBox">
+      <Setter Property="Foreground" Value="#6D344B"/>
+      <Setter Property="Background" Value="#AAFFF8FC"/>
+      <Setter Property="BorderBrush" Value="#FFFFBCD5"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="ItemContainerStyle" Value="{StaticResource PinkServerModeComboBoxItem}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <ToggleButton x:Name="DropDownToggle" Focusable="False" ClickMode="Press" Foreground="{TemplateBinding Foreground}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="SelectionFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                      <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions>
+                        <ContentPresenter Grid.Column="0" Margin="8,0,2,0" Content="{Binding SelectedItem.Content, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="&#9662;" FontSize="10" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SelectionFrame" Property="BorderBrush" Value="#FFFF8DB9"/></Trigger>
+                      <Trigger Property="IsChecked" Value="True"><Setter TargetName="SelectionFrame" Property="BorderBrush" Value="#FFFFF7FB"/></Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
+              <Popup x:Name="Popup" Placement="Bottom" PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" AllowsTransparency="True" PopupAnimation="Slide" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                <Border x:Name="DropDownFrame" MinWidth="{Binding ActualWidth, ElementName=DropDownToggle}" Background="#FFFFF8FC" BorderBrush="#FFFFBCD5" BorderThickness="1" CornerRadius="5" Margin="0,3,0,0">
+                  <ScrollViewer MaxHeight="220" CanContentScroll="True" Padding="1"><ItemsPresenter/></ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="DetailedResultModeCheck" TargetType="CheckBox">
+      <Setter Property="Width" Value="20"/>
+      <Setter Property="Height" Value="20"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <Border x:Name="Frame" CornerRadius="2" BorderThickness="1" BorderBrush="#4C6F90" Background="#40101A2A">
+              <TextBlock x:Name="CheckMark" Text="&#8730;" FontFamily="Microsoft YaHei UI" FontWeight="Bold" FontSize="15" Foreground="#06151F" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Frame" Property="BorderBrush" Value="#8CEBFF"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Frame" Property="Background" Value="#CC29C7FF"/>
+                <Setter TargetName="Frame" Property="BorderBrush" Value="#C8F8FF"/>
+                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="PinkDetailedResultModeCheck" TargetType="CheckBox">
+      <Setter Property="Width" Value="20"/>
+      <Setter Property="Height" Value="20"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <Border x:Name="Frame" CornerRadius="2" BorderThickness="1" BorderBrush="#FFFFBCD5" Background="#8AFFF8FC">
+              <TextBlock x:Name="CheckMark" Text="&#8730;" FontFamily="Microsoft YaHei UI" FontWeight="Bold" FontSize="15" Foreground="#5A2439" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Frame" Property="BorderBrush" Value="#FFFF8FBD"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Frame" Property="Background" Value="#FFFFBBD3"/>
+                <Setter TargetName="Frame" Property="BorderBrush" Value="#FFFFF7FB"/>
+                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -667,7 +1162,7 @@ public static class NativeWin {
     <Rectangle x:Name="OverlayA" Fill="#AA030712"/>
     <Rectangle x:Name="OverlayB" Fill="#33091423"/>
 
-    <Border x:Name="SubPagePanel" Width="490" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="58,48,0,48"
+    <Border x:Name="SubPagePanel" Width="490" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="58,18,0,18"
             CornerRadius="18" BorderBrush="#766BDFFF" BorderThickness="1.1" Visibility="Collapsed">
       <Border.Effect>
         <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="10" Opacity="0.48"/>
@@ -678,7 +1173,7 @@ public static class NativeWin {
           <GradientStop x:Name="SubPanelBottom" Color="#E407101E" Offset="1"/>
         </LinearGradientBrush>
       </Border.Background>
-      <Grid Margin="30">
+      <Grid Margin="30,14">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
@@ -687,37 +1182,59 @@ public static class NativeWin {
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0">
-          <Button x:Name="BackButton" DockPanel.Dock="Right" Width="42" Height="32" Content="Back" Style="{StaticResource DarkButton}"/>
-          <TextBlock Text="C ARENA" FontFamily="Segoe UI" FontWeight="Bold" FontSize="28" Foreground="#F7FBFF"/>
+          <Button x:Name="BackButton" DockPanel.Dock="Right" Width="42" Height="28" Content="Back" Style="{StaticResource DarkButton}"/>
+          <TextBlock Text="C ARENA" FontFamily="Segoe UI" FontWeight="Bold" FontSize="26" Foreground="#F7FBFF"/>
         </DockPanel>
         <TextBlock x:Name="SubPageHelpText" Grid.Row="1" Text="&#35831;&#25351;&#25381;&#23448;&#20808;&#25171;&#24320;&#20896;&#20891;&#31454;&#25216;&#22330;&#25351;&#23450;&#21442;&#36187;&#32773;&#20449;&#24687;&#65288;&#22914;&#22270;&#65289;&#21518;&#20877;&#25191;&#34892;&#25130;&#22270;" TextWrapping="Wrap"
-                   FontFamily="Microsoft YaHei UI" FontSize="14" Foreground="#D7E8F6" Margin="0,14,0,18"/>
+                   FontFamily="Microsoft YaHei UI" FontSize="13" Foreground="#D7E8F6" Margin="0,4,0,6"/>
         <Border x:Name="ExampleBorder" Grid.Row="2" CornerRadius="18" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="10">
           <Image x:Name="ExampleImage" Stretch="Uniform"/>
         </Border>
-        <Border x:Name="SettingsPanel" Grid.Row="2" CornerRadius="16" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="18" Visibility="Collapsed">
+        <Border x:Name="SettingsPanel" Grid.Row="2" CornerRadius="16" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="16,7" Visibility="Collapsed">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True">
           <StackPanel>
-            <TextBlock Text="&#26222;&#36890;&#28857;&#20987;&#21518;&#31561;&#24453;&#33258;&#21160;&#25130;&#22270;&#30340;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,0,0,12"/>
+            <TextBlock Text="&#26222;&#36890;&#28857;&#20987;&#21518;&#31561;&#24453;&#33258;&#21160;&#25130;&#22270;&#30340;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,0,0,3"/>
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="82"/>
               </Grid.ColumnDefinitions>
-              <Slider x:Name="CaptureDelaySlider" Grid.Column="0" Minimum="0.45" Maximum="5" Value="0.80" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,14,0"/>
-              <TextBox x:Name="CaptureDelayBox" Grid.Column="1" Height="34" Text="0.80" TextAlignment="Center" VerticalContentAlignment="Center"
-                       FontFamily="Segoe UI" FontSize="14" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
+              <Slider x:Name="CaptureDelaySlider" Grid.Column="0" Minimum="0.45" Maximum="5" Value="0.80" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <TextBox x:Name="CaptureDelayBox" Grid.Column="1" Height="27" Text="0.80" TextAlignment="Center" VerticalContentAlignment="Center"
+                       FontFamily="Segoe UI" FontSize="13" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
             </Grid>
-            <TextBlock Text="&#40657;&#33394;&#25353;&#38062;&#30340;&#35814;&#32454;&#23545;&#25112;&#25968;&#25454;&#21152;&#36733;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,22,0,12"/>
+            <TextBlock Text="&#28857;&#20987;&#29992;&#25143;&#22836;&#20687;&#21518;&#21040;&#25130;&#21462;&#22522;&#26412;&#20449;&#24687;&#39029;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,6,0,2"/>
+            <CheckBox x:Name="AvatarProfilePollCheck" Content="&#36718;&#35810;&#26816;&#27979;" Style="{StaticResource DarkOptionCheck}" FontSize="11" Margin="0,0,0,2" ToolTip="检测基础信息页，最长等待 10 秒；超时后仍会截取当前画面。"/>
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="82"/>
               </Grid.ColumnDefinitions>
-              <Slider x:Name="DetailDelaySlider" Grid.Column="0" Minimum="0.70" Maximum="5" Value="3.50" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,14,0"/>
-              <TextBox x:Name="DetailDelayBox" Grid.Column="1" Height="34" Text="3.50" TextAlignment="Center" VerticalContentAlignment="Center"
-                       FontFamily="Segoe UI" FontSize="14" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
+              <Slider x:Name="AvatarProfileDelaySlider" Grid.Column="0" Minimum="0.45" Maximum="5" Value="0.80" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <TextBox x:Name="AvatarProfileDelayBox" Grid.Column="1" Height="27" Text="0.80" TextAlignment="Center" VerticalContentAlignment="Center"
+                       FontFamily="Segoe UI" FontSize="13" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
             </Grid>
-            <TextBlock Text="OCR&#36816;&#34892;&#27169;&#24335;" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,22,0,8"/>
+            <TextBlock Text="&#28857;&#20987;&#20986;&#32447;&#22270;&#25112;&#26524;&#26631;&#31614;&#21518;&#31561;&#24453;&#25112;&#26524;&#39029;&#21152;&#36733;&#30340;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,6,0,3"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="82"/>
+              </Grid.ColumnDefinitions>
+              <Slider x:Name="BracketResultDelaySlider" Grid.Column="0" Minimum="0.45" Maximum="5" Value="1.00" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <TextBox x:Name="BracketResultDelayBox" Grid.Column="1" Height="27" Text="1.00" TextAlignment="Center" VerticalContentAlignment="Center"
+                       FontFamily="Segoe UI" FontSize="13" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
+            </Grid>
+            <TextBlock Text="&#35814;&#32454;&#25112;&#26524;&#39029;&#26368;&#38271;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;&#65292;&#37319;&#29992;&#36718;&#35810;&#26816;&#27979;&#26041;&#24335;&#65292;&#25512;&#33616;&#40664;&#35748;&#54;&#48;&#31186;" TextWrapping="Wrap" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,6,0,3"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="82"/>
+              </Grid.ColumnDefinitions>
+              <Slider x:Name="DetailPageTimeoutSlider" Grid.Column="0" Minimum="10" Maximum="180" Value="60" TickFrequency="1" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <TextBox x:Name="DetailPageTimeoutBox" Grid.Column="1" Height="27" Text="60" TextAlignment="Center" VerticalContentAlignment="Center"
+                       FontFamily="Segoe UI" FontSize="13" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
+            </Grid>
+            <TextBlock Text="OCR&#36816;&#34892;&#27169;&#24335;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,10,0,6"/>
             <WrapPanel HorizontalAlignment="Left">
               <CheckBox x:Name="OcrEcoCheck" Content="&#33410;&#33021; CPU" Style="{StaticResource DarkOptionCheck}" Visibility="Collapsed"/>
               <CheckBox x:Name="OcrBalancedCheck" Content="&#22343;&#34913; CPU" Style="{StaticResource DarkOptionCheck}" Visibility="Collapsed"/>
@@ -728,6 +1245,7 @@ public static class NativeWin {
             <TextBlock Margin="3,7,0,0" FontFamily="Microsoft YaHei UI" FontSize="11">
               <Hyperlink x:Name="OcrGpuGuideLink" FontWeight="SemiBold" TextDecorations="Underline" ToolTip="&#25171;&#24320; GPU &#27169;&#24335;&#19968;&#38190;&#37197;&#32622;&#25945;&#31243;&#65288;PDF&#65289;">&#25171;&#24320; GPU &#27169;&#24335;&#19968;&#38190;&#37197;&#32622;&#25945;&#31243;&#65288;PDF&#65289;</Hyperlink>
             </TextBlock>
+            <Button x:Name="OcrRuntimeRefreshButton" Content="&#37325;&#26032;&#26816;&#27979; OCR &#29615;&#22659;" Width="154" Height="26" HorizontalAlignment="Left" Margin="3,5,0,0" FontSize="11" Style="{StaticResource DarkButton}" ToolTip="手动重新检测 CPU、GPU、PaddleOCR 与 CUDA 环境。"/>
             <TextBlock x:Name="OcrGpuRecommendationText" Text="如果指挥官是NVIDIA中高端显卡，强烈建议用GPU模式进行识图。CPU模式负载较高，且耗时是GPU模式的一倍以上。在CPU模式下长时间的识图任务可能会让您的设备遭到意想不到的意外，如果您坚持使用CPU模式识图，请务必开启过热保护模式。" TextWrapping="Wrap"
                        FontFamily="Microsoft YaHei UI" FontSize="11" FontWeight="Bold" Foreground="#FFD58A" Opacity="1" Margin="3,7,0,0"/>
             <TextBlock Text="GPU&#27169;&#24335;&#38656;&#35201;NVIDIA CUDA&#19982;Paddle GPU&#29615;&#22659;&#65292;&#22914;&#38656;&#20351;&#29992;GPU&#65292;&#35831;&#30830;&#20445;CUDA&#21644;PaddleOCR GPU&#29256;&#26412;&#21487;&#29992;&#12290;" TextWrapping="Wrap"
@@ -763,6 +1281,7 @@ public static class NativeWin {
                        Text="&#20013;&#20869;&#23384;&#27169;&#24335;&#65288;manifest &#23567;&#22359; OCR&#65289;&#24050;&#26242;&#26102;&#20572;&#29992;&#65307;&#24403;&#21069;&#40664;&#35748;&#20351;&#29992;&#22823;&#22270;&#30452;&#25509;&#35782;&#21035;&#65292;&#21518;&#32493;&#22914;&#38656;&#38477;&#20302;&#20869;&#23384;&#21344;&#29992;&#21487;&#37325;&#26032;&#21551;&#29992;&#12290;"
                        TextWrapping="Wrap" FontFamily="Microsoft YaHei UI" FontSize="10" Foreground="#A9C2D9" Opacity="0.78" Margin="3,4,0,0" Visibility="Collapsed"/>
           </StackPanel>
+          </ScrollViewer>
         </Border>
         <Button x:Name="ExecuteButton" Grid.Row="3" Height="62" Style="{StaticResource PrimaryButton}" Margin="0,20,0,0">
           <StackPanel>
@@ -805,7 +1324,15 @@ public static class NativeWin {
           </Button>
         </StackPanel>
         <StackPanel x:Name="OcrExecutePanel" Grid.Row="3" Margin="0,20,0,0" Visibility="Collapsed">
-          <TextBlock Text="选择要识别的全部战斗数据图像，请务必选择带有详细战果页的图像" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" Margin="4,0,0,8" TextWrapping="Wrap"/>
+          <StackPanel Orientation="Horizontal" Margin="4,0,0,8">
+            <TextBlock Text="选择要识别的全部战斗数据图像，请务必选择带有详细战果页的图像" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            <CheckBox x:Name="OcrForceDetailedResultsCheck" IsChecked="True" Style="{StaticResource DetailedResultModeCheck}" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="已勾选：强制按详细赛果页的战败贴图规则判胜。取消勾选：按文件名自动判断详细、简化或自动模式。"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="4,0,0,8">
+            <TextBlock Text="客户端区域" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <CheckBox x:Name="OcrChinaClientCheck" Content="国服（默认）" IsChecked="True" Style="{StaticResource DarkOptionCheck}" VerticalAlignment="Center" ToolTip="保持国服现有的战败贴图与识别规则。"/>
+            <CheckBox x:Name="OcrOverseasClientCheck" Content="国际服 / 港澳台" Style="{StaticResource DarkOptionCheck}" Margin="14,0,0,0" VerticalAlignment="Center" ToolTip="使用 DISCONNECTED 战败贴图识别；国际服与港澳台服暂共用此配置。"/>
+          </StackPanel>
           <TextBlock x:Name="OcrParameterWarningText" Text="请指挥官在执行识别前务必确认已正确设置相关参数" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#FFE45C" Margin="4,0,0,12" TextWrapping="Wrap"/>
           <Border x:Name="OcrUploadPanel" CornerRadius="12" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="14" Margin="0,0,0,12">
             <StackPanel>
@@ -899,12 +1426,135 @@ public static class NativeWin {
             </StackPanel>
           </Button>
         </StackPanel>
+
+        <StackPanel x:Name="ImageToolsPanel" Grid.Row="3" Margin="0,20,0,0" Visibility="Collapsed">
+          <TextBlock Text="图像工具" FontFamily="Microsoft YaHei UI" FontSize="17" FontWeight="Bold" Foreground="#D7E8F6" Margin="2,0,0,8"/>
+          <TextBlock Text="选择 1 至 4 张 PNG / JPG 图像" FontFamily="Microsoft YaHei UI" FontSize="12" Foreground="#D7E8F6" Margin="2,0,0,10"/>
+          <Border x:Name="ImageToolsUploadPanel" CornerRadius="12" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="14" Margin="0,0,0,12">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                <Grid Width="84" Height="84" Margin="0,0,14,0">
+                  <Button x:Name="ImageToolSlot1Button" Width="84" Height="84" Style="{StaticResource OcrSlotButton}">
+                    <Grid Width="84" Height="84">
+                      <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,84,84" RadiusX="8" RadiusY="8"/>
+                      </Grid.Clip>
+                      <Image x:Name="ImageToolSlot1EmptyImage" Stretch="UniformToFill" Opacity="0.96"/>
+                      <Image x:Name="ImageToolSlot1Image" Stretch="UniformToFill" Visibility="Collapsed"/>
+                    </Grid>
+                  </Button>
+                  <Button x:Name="ImageToolSlot1ClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
+                </Grid>
+                <Grid Width="84" Height="84" Margin="0,0,14,0">
+                  <Button x:Name="ImageToolSlot2Button" Width="84" Height="84" Style="{StaticResource OcrSlotButton}">
+                    <Grid Width="84" Height="84">
+                      <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,84,84" RadiusX="8" RadiusY="8"/>
+                      </Grid.Clip>
+                      <Image x:Name="ImageToolSlot2EmptyImage" Stretch="UniformToFill" Opacity="0.96"/>
+                      <Image x:Name="ImageToolSlot2Image" Stretch="UniformToFill" Visibility="Collapsed"/>
+                    </Grid>
+                  </Button>
+                  <Button x:Name="ImageToolSlot2ClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
+                </Grid>
+                <Grid Width="84" Height="84" Margin="0,0,14,0">
+                  <Button x:Name="ImageToolSlot3Button" Width="84" Height="84" Style="{StaticResource OcrSlotButton}">
+                    <Grid Width="84" Height="84">
+                      <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,84,84" RadiusX="8" RadiusY="8"/>
+                      </Grid.Clip>
+                      <Image x:Name="ImageToolSlot3EmptyImage" Stretch="UniformToFill" Opacity="0.96"/>
+                      <Image x:Name="ImageToolSlot3Image" Stretch="UniformToFill" Visibility="Collapsed"/>
+                    </Grid>
+                  </Button>
+                  <Button x:Name="ImageToolSlot3ClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
+                </Grid>
+                <Grid Width="84" Height="84">
+                  <Button x:Name="ImageToolSlot4Button" Width="84" Height="84" Style="{StaticResource OcrSlotButton}">
+                    <Grid Width="84" Height="84">
+                      <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,84,84" RadiusX="8" RadiusY="8"/>
+                      </Grid.Clip>
+                      <Image x:Name="ImageToolSlot4EmptyImage" Stretch="UniformToFill" Opacity="0.96"/>
+                      <Image x:Name="ImageToolSlot4Image" Stretch="UniformToFill" Visibility="Collapsed"/>
+                    </Grid>
+                  </Button>
+                  <Button x:Name="ImageToolSlot4ClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
+                </Grid>
+              </StackPanel>
+              <TextBlock x:Name="ImageToolSelectedCountText" Text="已选择 0 / 4 张图像" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#A9C2D9"/>
+            </StackPanel>
+          </Border>
+          <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="154"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="ImageToolCompressButton" Grid.Column="0" Height="46" Style="{StaticResource PrimaryButton}" Margin="0,0,10,0">
+              <TextBlock Text="压缩图像" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+            </Button>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="ImageToolCompressionLabel" Text="压缩等级" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" Margin="0,0,4,0" VerticalAlignment="Center"/>
+              <RadioButton x:Name="ImageToolCompressionHighRadio" Content="高清" GroupName="ImageToolCompressionMode" IsChecked="True" Style="{StaticResource DarkCompressionMode}" ToolTip="JPEG 质量 95，适合清晰分享与后续识图。"/>
+              <RadioButton x:Name="ImageToolCompressionDeepRadio" Content="深度" GroupName="ImageToolCompressionMode" Style="{StaticResource DarkCompressionMode}" ToolTip="JPEG 质量 78，适合普通发送；不建议作为 OCR 输入。"/>
+              <RadioButton x:Name="ImageToolCompressionExtremeRadio" Content="极限 10M" GroupName="ImageToolCompressionMode" Style="{StaticResource DarkCompressionMode}" ToolTip="自动压缩到约 10 MiB，必要时缩小分辨率；不建议作为 OCR 输入。"/>
+            </StackPanel>
+          </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="154"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="ImageToolStitchButton" Grid.Column="0" Height="46" Style="{StaticResource DarkButton}" Margin="0,0,10,0">
+              <TextBlock Text="拼接图像" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+            </Button>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <CheckBox x:Name="ImageToolVerticalCheck" Content="纵向" IsChecked="True" Style="{StaticResource DarkOptionCheck}" Margin="0"/>
+              <CheckBox x:Name="ImageToolHorizontalCheck" Content="横向" Style="{StaticResource DarkOptionCheck}" Margin="2,0,0,0"/>
+              <TextBlock x:Name="ImageToolGapLabel" Text="图像间距" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" Margin="6,0,3,0" VerticalAlignment="Center"/>
+              <TextBox x:Name="ImageToolGapBox" Text="0" Width="38" Height="28" TextAlignment="Center" VerticalContentAlignment="Center"
+                       FontFamily="Segoe UI" FontSize="12" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
+              <TextBlock x:Name="ImageToolGapUnitText" Text="像素" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" Margin="3,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Grid>
+          <Border x:Name="BattleAnnotationPanel" CornerRadius="12" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="14" Margin="0,12,0,0">
+            <StackPanel>
+              <TextBlock Text="玩家战果标记" FontFamily="Microsoft YaHei UI" FontSize="14" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,0,0,4"/>
+              <TextBlock Text="四张 GROUP 大拼图读取识别结果标记；仅选择一张双人详细战果图时可直接读取中间战果标记，无需 JSON / Excel" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#A9C2D9" TextWrapping="Wrap" Margin="0,0,0,10"/>
+              <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Grid Width="84" Height="84" Margin="0,0,12,0">
+                  <Button x:Name="BattleAnnotationDataButton" Width="84" Height="84" Style="{StaticResource OcrSlotButton}">
+                    <Grid Width="84" Height="84">
+                      <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,84,84" RadiusX="8" RadiusY="8"/>
+                      </Grid.Clip>
+                      <Image x:Name="BattleAnnotationDataEmptyImage" Stretch="UniformToFill" Opacity="0.96"/>
+                      <Image x:Name="BattleAnnotationDataSelectedImage" Stretch="UniformToFill" Visibility="Collapsed"/>
+                    </Grid>
+                  </Button>
+                  <Button x:Name="BattleAnnotationDataClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
+                </Grid>
+                <StackPanel VerticalAlignment="Center" Width="360">
+                  <TextBlock Text="识别结果数据（大拼图必需）" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6"/>
+                  <TextBlock Text="选择 JSON 或 Excel；单张双人详细战果图无需选择数据" FontFamily="Microsoft YaHei UI" FontSize="10" Foreground="#A9C2D9" TextWrapping="Wrap" Margin="0,4,0,3"/>
+                  <TextBlock x:Name="BattleAnnotationDataPathText" Text="单张详细战果图无需选择数据" FontFamily="Microsoft YaHei UI" FontSize="10" Foreground="#7EE6FF" TextTrimming="CharacterEllipsis" ToolTip="识别结果数据文件路径"/>
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="BattleAnnotationRunButton" Width="172" Height="46" Style="{StaticResource PrimaryButton}">
+                  <StackPanel>
+                    <TextBlock Text="标记玩家胜负" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="输出带标注的新图像" FontSize="10" Opacity="0.72" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                  </StackPanel>
+                </Button>
+                <CheckBox x:Name="BattleAnnotationGrayLoserCheck" Content="灰化失败妮姬队伍" Style="{StaticResource DarkOptionCheck}" IsChecked="True" Margin="16,0,0,0" VerticalAlignment="Center" ToolTip="仅灰化失败玩家信息卡中的妮姬阵容网格。"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
         <StackPanel x:Name="FrameOptionsPanel" Grid.Row="4" Margin="0,12,0,0">
           <TextBlock x:Name="FrameOptionsTitleText" Text="&#32972;&#26223;&#29256;&#24213;&#22270;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="4,0,0,6"/>
-          <UniformGrid x:Name="FrameOptionsGrid" Columns="4">
-            <CheckBox x:Name="MarianFrameCheck" Content="&#29595;&#20029;&#23433;" Style="{StaticResource DarkOptionCheck}"/>
-            <CheckBox x:Name="DoroFrameCheck" Content="Doro" Style="{StaticResource DarkOptionCheck}"/>
-            <CheckBox x:Name="CinderellaFrameCheck" Content="&#28784;&#22993;&#23064;" Style="{StaticResource DarkOptionCheck}"/>
+          <UniformGrid x:Name="FrameOptionsGrid" Columns="1">
             <CheckBox x:Name="CustomFrameCheck" Content="&#33258;&#23450;&#20041;" Style="{StaticResource DarkOptionCheck}"
                       ToolTipService.InitialShowDelay="120" ToolTipService.ShowDuration="12000">
               <CheckBox.ToolTip>
@@ -945,29 +1595,8 @@ public static class NativeWin {
       <TextBlock Text="Arena Capture Console" FontFamily="Segoe UI Semibold" FontSize="20" Foreground="#64E7FF" Margin="4,-4,0,0"/>
     </StackPanel>
 
-    <StackPanel x:Name="SiteLinksPanel" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="62,0,0,58">
-      <Button x:Name="SiteSkyxmoonButton" Style="{StaticResource SiteIconButton}" Margin="0,0,8,0" ToolTip="NIKKE &#31454;&#25216;&#22330;&#20805;&#33021;&#35745;&#31639;&#22120;">
-        <Image x:Name="SiteSkyxmoonIcon" Width="30" Height="30" Stretch="UniformToFill"/>
-      </Button>
-      <Button x:Name="SiteNikkeTopButton" Style="{StaticResource SiteIconButton}" Margin="0,0,8,0" ToolTip="NIKKE Arena Tools">
-        <Image x:Name="SiteNikkeTopIcon" Width="30" Height="30" Stretch="UniformToFill"/>
-      </Button>
-      <Button x:Name="SiteMerlotJjcButton" Style="{StaticResource SiteIconButton}" Margin="0,0,8,0" ToolTip="NIKKE &#29305;&#27530;&#31454;&#25216;&#22330;&#25915;&#30053;">
-        <Image x:Name="SiteMerlotJjcIcon" Width="30" Height="30" Stretch="UniformToFill"/>
-      </Button>
-      <Button x:Name="SiteGamekeeNikkeButton" Style="{StaticResource SiteIconButton}" Margin="0,0,8,0" ToolTip="妮姬图鉴">
-        <Image x:Name="SiteGamekeeNikkeIcon" Width="30" Height="30" Stretch="UniformToFill"/>
-      </Button>
-      <Button x:Name="SiteBilibiliGuseButton" Style="{StaticResource SiteIconButton}" Margin="0,0,8,0" ToolTip="古色夕阳PVP月刊">
-        <Image x:Name="SiteBilibiliGuseIcon" Width="30" Height="30" Stretch="UniformToFill"/>
-      </Button>
-      <Button x:Name="SiteBilibiliDeen33Button" Style="{StaticResource SiteIconButton}" ToolTip="deen33NIKKE竞技场半月谈">
-        <Image x:Name="SiteBilibiliDeen33Icon" Width="30" Height="30" Stretch="UniformToFill"/>
-      </Button>
-    </StackPanel>
-
     <TextBlock HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="62,0,0,28" FontFamily="Segoe UI" FontSize="12" Foreground="#B8D7EA">
-      <Hyperlink x:Name="SourceLink">Image source: Pixiewall</Hyperlink>
+      <Hyperlink x:Name="SourceLink">Image source: GPT 5.6Sol</Hyperlink>
     </TextBlock>
 
     <Border x:Name="MainPanel" Width="460" MaxHeight="690" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,44,58,44"
@@ -994,6 +1623,7 @@ public static class NativeWin {
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
           <RowDefinition Height="126"/>
         </Grid.RowDefinitions>
@@ -1011,11 +1641,20 @@ public static class NativeWin {
           </StackPanel>
         </Grid>
 
-        <Border x:Name="ProcessCard" Grid.Row="1" CornerRadius="16" BorderBrush="#355875" BorderThickness="1" Background="#73101A2A" Padding="16,12" Margin="0,0,0,16">
+        <Border x:Name="ProcessCard" Grid.Row="1" CornerRadius="16" BorderBrush="#355875" BorderThickness="1" Background="#73101A2A" Padding="16,12,16,14" Margin="0,0,0,16">
           <Grid>
             <StackPanel>
               <TextBlock Text="&#32988;&#21033;&#22899;&#31070;&#65306;&#26032;&#30340;&#24076;&#26395;" FontFamily="Microsoft YaHei UI" FontSize="12" Foreground="#A9C2D9"/>
               <TextBlock x:Name="ProcessStatusText" Text="Checking..." FontFamily="Microsoft YaHei UI" FontWeight="Bold" FontSize="18" Foreground="#FFD38A" Margin="0,4,0,0"/>
+              <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                <TextBlock x:Name="ServerModeLabel" Text="赛区选择" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#A9C2D9" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <ComboBox x:Name="ServerModeComboBox" Width="96" Height="27" SelectedIndex="0" Style="{StaticResource DarkServerModeComboBox}" ToolTip="选择截图任务使用的赛区逻辑。">
+                  <ComboBoxItem Tag="auto" Content="自动"/>
+                  <ComboBoxItem Tag="cn" Content="国服"/>
+                  <ComboBoxItem Tag="hmt" Content="港澳台"/>
+                  <ComboBoxItem Tag="global" Content="国际服"/>
+                </ComboBox>
+              </StackPanel>
             </StackPanel>
             <Border HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="12" BorderBrush="#FFD38A" BorderThickness="1" Padding="14,6" Background="#1AFFFFFF">
               <StackPanel>
@@ -1077,17 +1716,24 @@ public static class NativeWin {
           </StackPanel>
         </Button>
 
+        <Button x:Name="ImageToolsButton" Grid.Row="10" Height="52" Style="{StaticResource DarkButton}" Margin="0,0,0,20">
+          <StackPanel>
+            <TextBlock Text="&#22270;&#20687;&#24037;&#20855;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock Text="&#21387;&#32553; PNG &#25110;&#25353;&#26041;&#21521;&#25340;&#25509;&#22270;&#20687;" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+          </StackPanel>
+        </Button>
+
         <Button x:Name="SettingsButton" Grid.Row="2" Height="48" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
           <TextBlock Text="&#25130;&#22270;&#19982;&#22270;&#20687;&#35782;&#21035;&#21442;&#25968;&#35774;&#32622;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
         </Button>
 
-        <StackPanel Grid.Row="10">
+        <StackPanel Grid.Row="11">
           <TextBlock Text="&#39044;&#30041;&#21151;&#33021;" FontFamily="Microsoft YaHei UI" FontWeight="Bold" FontSize="12" Foreground="#7EE6FF" Margin="2,0,0,10"/>
           <Button x:Name="ReservedButton1" Height="42" Style="{StaticResource MutedButton}" Content="&#29305;&#27530;&#31454;&#25216;&#22330;&#20449;&#24687;" Margin="0,0,0,10"/>
           <Button x:Name="ReservedButton2" Height="42" Style="{StaticResource MutedButton}" Content="&#29609;&#23478;&#26723;&#26696;&#25209;&#37327;&#25130;&#22270;" Margin="0,0,0,10"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="11" VerticalAlignment="Bottom">
+        <StackPanel Grid.Row="12" VerticalAlignment="Bottom">
           <TextBlock Text="&#36816;&#34892;&#26085;&#24535;" FontFamily="Microsoft YaHei UI" FontWeight="Bold" FontSize="12" Foreground="#E8F7FF" Margin="2,0,0,8"/>
           <Border x:Name="LogCard" CornerRadius="16" BorderBrush="#365875" BorderThickness="1" Background="#B006101E" Padding="16,12">
             <TextBlock x:Name="LogText" Text="Idle." FontFamily="Consolas" FontSize="12" Foreground="#BBD0E1" TextWrapping="Wrap"/>
@@ -1096,6 +1742,12 @@ public static class NativeWin {
       </Grid>
       </ScrollViewer>
     </Border>
+
+    <Button x:Name="HelpButton" Content="&#24110;&#21161;" Width="52" Height="24"
+            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,12,0,0" Panel.ZIndex="20"
+            FontFamily="Microsoft YaHei UI" FontSize="11" FontWeight="Normal" Opacity="0.92"
+            Foreground="#DDF7FF" Background="#1E172C43" BorderBrush="#70A7EFFF"
+            Style="{StaticResource TinyThemeButton}" ToolTip="查看功能说明与使用声明"/>
   </Grid>
 </Window>
 "@
@@ -1128,6 +1780,9 @@ $SeasonExecutePanel = $Window.FindName("SeasonExecutePanel")
 $SeasonExecuteButton = $Window.FindName("SeasonExecuteButton")
 $OcrExecutePanel = $Window.FindName("OcrExecutePanel")
 $OcrParameterWarningText = $Window.FindName("OcrParameterWarningText")
+$OcrForceDetailedResultsCheck = $Window.FindName("OcrForceDetailedResultsCheck")
+$OcrChinaClientCheck = $Window.FindName("OcrChinaClientCheck")
+$OcrOverseasClientCheck = $Window.FindName("OcrOverseasClientCheck")
 $OcrSelectedPathText = $Window.FindName("OcrSelectedPathText")
 $OcrDebugCheck = $Window.FindName("OcrDebugCheck")
 $OcrSelectFileButton = $Window.FindName("OcrSelectFileButton")
@@ -1135,6 +1790,14 @@ $OcrExampleButton = $Window.FindName("OcrExampleButton")
 $OcrRunButton = $Window.FindName("OcrRunButton")
 $OcrOpenFolderButton = $Window.FindName("OcrOpenFolderButton")
 $OcrUploadPanel = $Window.FindName("OcrUploadPanel")
+$BattleAnnotationPanel = $Window.FindName("BattleAnnotationPanel")
+$BattleAnnotationDataButton = $Window.FindName("BattleAnnotationDataButton")
+$BattleAnnotationDataEmptyImage = $Window.FindName("BattleAnnotationDataEmptyImage")
+$BattleAnnotationDataSelectedImage = $Window.FindName("BattleAnnotationDataSelectedImage")
+$BattleAnnotationDataClearButton = $Window.FindName("BattleAnnotationDataClearButton")
+$BattleAnnotationDataPathText = $Window.FindName("BattleAnnotationDataPathText")
+$BattleAnnotationRunButton = $Window.FindName("BattleAnnotationRunButton")
+$BattleAnnotationGrayLoserCheck = $Window.FindName("BattleAnnotationGrayLoserCheck")
 $OcrSlotTop8Button = $Window.FindName("OcrSlotTop8Button")
 $OcrSlotGroup16Button = $Window.FindName("OcrSlotGroup16Button")
 $OcrSlotGroup32Button = $Window.FindName("OcrSlotGroup32Button")
@@ -1159,11 +1822,43 @@ $OcrStatusTop8 = $Window.FindName("OcrStatusTop8")
 $OcrStatusGroup16 = $Window.FindName("OcrStatusGroup16")
 $OcrStatusGroup32 = $Window.FindName("OcrStatusGroup32")
 $OcrStatusGroup64 = $Window.FindName("OcrStatusGroup64")
+$ImageToolsButton = $Window.FindName("ImageToolsButton")
+$ImageToolsPanel = $Window.FindName("ImageToolsPanel")
+$ImageToolsUploadPanel = $Window.FindName("ImageToolsUploadPanel")
+$ImageToolSelectedCountText = $Window.FindName("ImageToolSelectedCountText")
+$ImageToolCompressButton = $Window.FindName("ImageToolCompressButton")
+$ImageToolCompressionLabel = $Window.FindName("ImageToolCompressionLabel")
+$ImageToolCompressionHighRadio = $Window.FindName("ImageToolCompressionHighRadio")
+$ImageToolCompressionDeepRadio = $Window.FindName("ImageToolCompressionDeepRadio")
+$ImageToolCompressionExtremeRadio = $Window.FindName("ImageToolCompressionExtremeRadio")
+$ImageToolStitchButton = $Window.FindName("ImageToolStitchButton")
+$ImageToolVerticalCheck = $Window.FindName("ImageToolVerticalCheck")
+$ImageToolHorizontalCheck = $Window.FindName("ImageToolHorizontalCheck")
+$ImageToolGapLabel = $Window.FindName("ImageToolGapLabel")
+$ImageToolGapBox = $Window.FindName("ImageToolGapBox")
+$ImageToolGapUnitText = $Window.FindName("ImageToolGapUnitText")
+$ImageToolSlot1Button = $Window.FindName("ImageToolSlot1Button")
+$ImageToolSlot2Button = $Window.FindName("ImageToolSlot2Button")
+$ImageToolSlot3Button = $Window.FindName("ImageToolSlot3Button")
+$ImageToolSlot4Button = $Window.FindName("ImageToolSlot4Button")
+$ImageToolSlot1Image = $Window.FindName("ImageToolSlot1Image")
+$ImageToolSlot2Image = $Window.FindName("ImageToolSlot2Image")
+$ImageToolSlot3Image = $Window.FindName("ImageToolSlot3Image")
+$ImageToolSlot4Image = $Window.FindName("ImageToolSlot4Image")
+$ImageToolSlot1EmptyImage = $Window.FindName("ImageToolSlot1EmptyImage")
+$ImageToolSlot2EmptyImage = $Window.FindName("ImageToolSlot2EmptyImage")
+$ImageToolSlot3EmptyImage = $Window.FindName("ImageToolSlot3EmptyImage")
+$ImageToolSlot4EmptyImage = $Window.FindName("ImageToolSlot4EmptyImage")
+$ImageToolSlot1ClearButton = $Window.FindName("ImageToolSlot1ClearButton")
+$ImageToolSlot2ClearButton = $Window.FindName("ImageToolSlot2ClearButton")
+$ImageToolSlot3ClearButton = $Window.FindName("ImageToolSlot3ClearButton")
+$ImageToolSlot4ClearButton = $Window.FindName("ImageToolSlot4ClearButton")
 $BackButton = $Window.FindName("BackButton")
 $FolderButton = $Window.FindName("FolderButton")
 $SettingsButton = $Window.FindName("SettingsButton")
 $MoonThemeButton = $Window.FindName("MoonThemeButton")
 $DoroThemeButton = $Window.FindName("DoroThemeButton")
+$HelpButton = $Window.FindName("HelpButton")
 $SubPagePanel = $Window.FindName("SubPagePanel")
 $SubPageHelpText = $Window.FindName("SubPageHelpText")
 $BrandBlock = $Window.FindName("BrandBlock")
@@ -1171,6 +1866,8 @@ $MainFullscreenHintText = $Window.FindName("MainFullscreenHintText")
 $StatusText = $Window.FindName("StatusText")
 $HotkeyHintText = $Window.FindName("HotkeyHintText")
 $ProcessStatusText = $Window.FindName("ProcessStatusText")
+$ServerModeLabel = $Window.FindName("ServerModeLabel")
+$ServerModeComboBox = $Window.FindName("ServerModeComboBox")
 $LogText = $Window.FindName("LogText")
 $OverlayA = $Window.FindName("OverlayA")
 $OverlayB = $Window.FindName("OverlayB")
@@ -1180,19 +1877,6 @@ $LogCard = $Window.FindName("LogCard")
 $ReservedButton1 = $Window.FindName("ReservedButton1")
 $ReservedButton2 = $Window.FindName("ReservedButton2")
 $SourceLink = $Window.FindName("SourceLink")
-$SiteLinksPanel = $Window.FindName("SiteLinksPanel")
-$SiteSkyxmoonButton = $Window.FindName("SiteSkyxmoonButton")
-$SiteNikkeTopButton = $Window.FindName("SiteNikkeTopButton")
-$SiteMerlotJjcButton = $Window.FindName("SiteMerlotJjcButton")
-$SiteGamekeeNikkeButton = $Window.FindName("SiteGamekeeNikkeButton")
-$SiteBilibiliGuseButton = $Window.FindName("SiteBilibiliGuseButton")
-$SiteBilibiliDeen33Button = $Window.FindName("SiteBilibiliDeen33Button")
-$SiteSkyxmoonIcon = $Window.FindName("SiteSkyxmoonIcon")
-$SiteNikkeTopIcon = $Window.FindName("SiteNikkeTopIcon")
-$SiteMerlotJjcIcon = $Window.FindName("SiteMerlotJjcIcon")
-$SiteGamekeeNikkeIcon = $Window.FindName("SiteGamekeeNikkeIcon")
-$SiteBilibiliGuseIcon = $Window.FindName("SiteBilibiliGuseIcon")
-$SiteBilibiliDeen33Icon = $Window.FindName("SiteBilibiliDeen33Icon")
 $ExampleBorder = $Window.FindName("ExampleBorder")
 $SettingsPanel = $Window.FindName("SettingsPanel")
 $FrameOptionsPanel = $Window.FindName("FrameOptionsPanel")
@@ -1200,14 +1884,20 @@ $FrameOptionsTitleText = $Window.FindName("FrameOptionsTitleText")
 $FrameOptionsGrid = $Window.FindName("FrameOptionsGrid")
 $CaptureDelaySlider = $Window.FindName("CaptureDelaySlider")
 $CaptureDelayBox = $Window.FindName("CaptureDelayBox")
-$DetailDelaySlider = $Window.FindName("DetailDelaySlider")
-$DetailDelayBox = $Window.FindName("DetailDelayBox")
+$AvatarProfileDelaySlider = $Window.FindName("AvatarProfileDelaySlider")
+$AvatarProfileDelayBox = $Window.FindName("AvatarProfileDelayBox")
+$AvatarProfilePollCheck = $Window.FindName("AvatarProfilePollCheck")
+$BracketResultDelaySlider = $Window.FindName("BracketResultDelaySlider")
+$BracketResultDelayBox = $Window.FindName("BracketResultDelayBox")
+$DetailPageTimeoutSlider = $Window.FindName("DetailPageTimeoutSlider")
+$DetailPageTimeoutBox = $Window.FindName("DetailPageTimeoutBox")
 $OcrEcoCheck = $Window.FindName("OcrEcoCheck")
 $OcrBalancedCheck = $Window.FindName("OcrBalancedCheck")
 $OcrFullCheck = $Window.FindName("OcrFullCheck")
 $OcrExtremeCheck = $Window.FindName("OcrExtremeCheck")
 $OcrGpuCheck = $Window.FindName("OcrGpuCheck")
 $OcrGpuGuideLink = $Window.FindName("OcrGpuGuideLink")
+$OcrRuntimeRefreshButton = $Window.FindName("OcrRuntimeRefreshButton")
 $OcrGpuStatusText = $Window.FindName("OcrGpuStatusText")
 $OcrPerformanceWarningText = $Window.FindName("OcrPerformanceWarningText")
 $OcrGpuRecommendationText = $Window.FindName("OcrGpuRecommendationText")
@@ -1221,9 +1911,6 @@ $OcrMediumMemoryCheck = $Window.FindName("OcrMediumMemoryCheck")
 $OcrMediumMemoryTooltip = $Window.FindName("OcrMediumMemoryTooltip")
 $OcrMediumMemoryTooltipText = $Window.FindName("OcrMediumMemoryTooltipText")
 $OcrMediumMemoryDisabledText = $Window.FindName("OcrMediumMemoryDisabledText")
-$MarianFrameCheck = $Window.FindName("MarianFrameCheck")
-$DoroFrameCheck = $Window.FindName("DoroFrameCheck")
-$CinderellaFrameCheck = $Window.FindName("CinderellaFrameCheck")
 $CustomFrameCheck = $Window.FindName("CustomFrameCheck")
 $CustomFrameTooltipText = $Window.FindName("CustomFrameTooltipText")
 $SupportStatusCheck = $Window.FindName("SupportStatusCheck")
@@ -1250,21 +1937,28 @@ function New-Bitmap($Path) {
     return $bitmap
 }
 
-function Set-SiteIconSource($Image, $Path) {
-    if ($Image -and (Test-Path $Path)) {
-        $Image.Source = New-Bitmap $Path
-    }
-}
-
-Set-SiteIconSource $SiteSkyxmoonIcon $SiteSkyxmoonIconPath
-Set-SiteIconSource $SiteNikkeTopIcon $SiteNikkeTopIconPath
-Set-SiteIconSource $SiteMerlotJjcIcon $SiteMerlotJjcIconPath
-Set-SiteIconSource $SiteGamekeeNikkeIcon $SiteGamekeeNikkeIconPath
-Set-SiteIconSource $SiteBilibiliGuseIcon $SiteBilibiliGuseIconPath
-Set-SiteIconSource $SiteBilibiliDeen33Icon $SiteBilibiliDeen33IconPath
 if (Test-Path $AppIconPath) {
     $Window.Icon = New-Bitmap $AppIconPath
 }
+
+$script:TaskbarNativeIcon = $null
+function Set-WindowTaskbarIcon($TargetWindow) {
+    if (-not $TargetWindow -or -not (Test-Path $AppIconPath)) { return }
+
+    try {
+        $script:TaskbarNativeIcon = [System.Drawing.Icon]::new($AppIconPath)
+        $windowHandle = [System.Windows.Interop.WindowInteropHelper]::new($TargetWindow).Handle
+        if ($windowHandle -eq [IntPtr]::Zero) { return }
+
+        [NativeWin]::SendMessage($windowHandle, [NativeWin]::WM_SETICON, [IntPtr]::Zero, $script:TaskbarNativeIcon.Handle) | Out-Null
+        [NativeWin]::SendMessage($windowHandle, [NativeWin]::WM_SETICON, [IntPtr]::new(1), $script:TaskbarNativeIcon.Handle) | Out-Null
+    } catch {}
+}
+
+$Window.Add_SourceInitialized({
+    param($sender, $eventArgs)
+    Set-WindowTaskbarIcon $sender
+})
 
 function Set-Brush($Element, $Property, $Color) {
     if (-not $Element) { return }
@@ -1909,6 +2603,7 @@ function Update-ModeButtonStyles {
     Set-Style $SeasonCaptureButton $darkStyle
     Set-Style $NikkeNameListButton $darkStyle
     Set-Style $PostDataOcrButton $darkStyle
+    Set-Style $ImageToolsButton $darkStyle
 
     if ($CurrentTheme -eq "pink") {
         if ($CurrentCaptureMode -eq "support") { Set-Style $SupportButton $primaryStyle }
@@ -1916,6 +2611,7 @@ function Update-ModeButtonStyles {
         elseif ($CurrentCaptureMode -eq "top8") { Set-Style $Top8Button $primaryStyle }
         elseif ($CurrentCaptureMode -eq "season") { Set-Style $SeasonCaptureButton $primaryStyle }
         elseif ($CurrentCaptureMode -eq "ocr") { Set-Style $PostDataOcrButton $primaryStyle }
+        elseif ($CurrentCaptureMode -eq "image-tools") { Set-Style $ImageToolsButton $primaryStyle }
         elseif ($CurrentCaptureMode -eq "single") { Set-Style $ArenaButton $primaryStyle }
     } else {
         if ($CurrentCaptureMode -eq "support") { Set-Style $SupportButton $primaryStyle }
@@ -1923,6 +2619,7 @@ function Update-ModeButtonStyles {
         elseif ($CurrentCaptureMode -eq "top8") { Set-Style $Top8Button $primaryStyle }
         elseif ($CurrentCaptureMode -eq "season") { Set-Style $SeasonCaptureButton $primaryStyle }
         elseif ($CurrentCaptureMode -eq "ocr") { Set-Style $PostDataOcrButton $primaryStyle }
+        elseif ($CurrentCaptureMode -eq "image-tools") { Set-Style $ImageToolsButton $primaryStyle }
         elseif ($CurrentCaptureMode -eq "single") { Set-Style $ArenaButton $primaryStyle }
     }
 }
@@ -1981,6 +2678,7 @@ function Apply-Theme($Theme) {
         Set-Style $Top8PyramidButton "PinkDarkButton"
         Set-Style $SeasonExecuteButton "PinkPrimaryButton"
         Set-Style $OcrRunButton "PinkPrimaryButton"
+        Set-Style $BattleAnnotationRunButton "PinkPrimaryButton"
         Set-Style $OcrSelectFileButton "PinkDarkButton"
         Set-Style $OcrExampleButton "PinkDarkButton"
         Set-Style $OcrOpenFolderButton "PinkDarkButton"
@@ -1989,14 +2687,35 @@ function Apply-Theme($Theme) {
         }
         Set-Brush $OcrUploadPanel BorderBrush "#FFFFBCD5"
         Set-Brush $OcrUploadPanel Background "#74FFF6FA"
+        Set-Style $BattleAnnotationDataButton "OcrSlotButton"
+        Set-Style $BattleAnnotationGrayLoserCheck "PinkOptionCheck"
+        Set-Brush $BattleAnnotationPanel BorderBrush "#FFFFBCD5"
+        Set-Brush $BattleAnnotationPanel Background "#74FFF6FA"
+        Set-Style $ImageToolsButton "PinkDarkButton"
+        Set-Style $ImageToolCompressButton "PinkPrimaryButton"
+        Set-Brush $ImageToolCompressionLabel Foreground "#6D344B"
+        Set-Style $ImageToolCompressionHighRadio "PinkCompressionMode"
+        Set-Style $ImageToolCompressionDeepRadio "PinkCompressionMode"
+        Set-Style $ImageToolCompressionExtremeRadio "PinkCompressionMode"
+        Set-Style $ImageToolStitchButton "PinkDarkButton"
+        foreach ($slotButton in @($ImageToolSlot1Button, $ImageToolSlot2Button, $ImageToolSlot3Button, $ImageToolSlot4Button)) {
+            Set-Style $slotButton "OcrSlotButton"
+        }
+        Set-Brush $ImageToolsUploadPanel BorderBrush "#FFFFBCD5"
+        Set-Brush $ImageToolsUploadPanel Background "#74FFF6FA"
+        Set-Style $ImageToolVerticalCheck "PinkOptionCheck"
+        Set-Style $ImageToolHorizontalCheck "PinkOptionCheck"
+        Set-Brush $ImageToolGapLabel Foreground "#6D344B"
+        $ImageToolGapBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
+        $ImageToolGapBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
+        $ImageToolGapBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
+        Set-Brush $ImageToolGapUnitText Foreground "#6D344B"
         Set-Style $FolderButton "PinkDarkButton"
         Set-Style $SettingsButton "PinkDarkButton"
         Set-Style $BackButton "PinkDarkButton"
         Set-Style $ReservedButton1 "PinkMutedButton"
         Set-Style $ReservedButton2 "PinkMutedButton"
-        foreach ($option in @($MarianFrameCheck, $DoroFrameCheck, $CinderellaFrameCheck, $CustomFrameCheck)) {
-            Set-Style $option "PinkOptionCheck"
-        }
+        Set-Style $CustomFrameCheck "PinkOptionCheck"
         Set-Style $SupportStatusCheck "PinkOptionCheck"
         Set-Style $GroupSimpleDataCheck "PinkOptionCheck"
         Set-Style $GroupDetailedDataCheck "PinkOptionCheck"
@@ -2005,6 +2724,9 @@ function Apply-Theme($Theme) {
         Set-Style $OcrDebugCheck "PinkOptionCheck"
         Set-Style $LowMemoryCheck "PinkOptionCheck"
         Set-Style $OcrMediumMemoryCheck "PinkOptionCheck"
+        Set-Style $OcrForceDetailedResultsCheck "PinkDetailedResultModeCheck"
+        Set-Style $OcrChinaClientCheck "PinkOptionCheck"
+        Set-Style $OcrOverseasClientCheck "PinkOptionCheck"
         foreach ($option in @($OcrEcoCheck, $OcrBalancedCheck, $OcrFullCheck, $OcrExtremeCheck, $OcrGpuCheck, $OcrThermalSafeCheck, $OcrThermalPerformanceCheck)) {
             Set-Style $option "PinkOptionCheck"
         }
@@ -2023,16 +2745,21 @@ function Apply-Theme($Theme) {
         $MoonThemeButton.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFF8FC")
         $MoonThemeButton.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFA9C8")
         $MoonThemeButton.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#9B5572")
-        foreach ($siteButton in @($SiteSkyxmoonButton, $SiteNikkeTopButton, $SiteMerlotJjcButton, $SiteGamekeeNikkeButton, $SiteBilibiliGuseButton, $SiteBilibiliDeen33Button)) {
-            $siteButton.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#CCFFF8FC")
-            $siteButton.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
-        }
+        $HelpButton.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#EFFFF8FC")
+        $HelpButton.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFA9C8")
+        $HelpButton.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#9B5572")
         $CaptureDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
         $CaptureDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
         $CaptureDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
-        $DetailDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
-        $DetailDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
-        $DetailDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
+        $AvatarProfileDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
+        $AvatarProfileDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
+        $AvatarProfileDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
+        $BracketResultDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
+        $BracketResultDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
+        $BracketResultDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
+        $DetailPageTimeoutBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
+        $DetailPageTimeoutBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
+        $DetailPageTimeoutBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
         Set-Brush $OcrPerformanceWarningText Foreground "#B83D6A"
         Set-Brush $OcrGpuRecommendationText Foreground "#D4144C"
         Set-Brush $OcrGpuGuideLink Foreground "#B83D6A"
@@ -2040,11 +2767,13 @@ function Apply-Theme($Theme) {
         Set-Brush $MainFullscreenHintText Foreground "#D4144C"
         Set-Brush $SeasonButtonHintText Foreground "#B83D6A"
         Set-Brush $HotkeyHintText Foreground "#B83D6A"
+        Set-Brush $ServerModeLabel Foreground "#6D344B"
+        Set-Style $ServerModeComboBox "PinkServerModeComboBox"
         $Window.Resources["ScrollThumbBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#FFFF9FC5")
         $Window.Resources["ScrollTrackBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#66FFF8FC")
-        $SourceLink.NavigateUri = [Uri]::new($PinkSourceUrl)
+        $SourceLink.NavigateUri = $null
         $SourceLink.Inlines.Clear()
-        $SourceLink.Inlines.Add("Image source: Pixiewall Alice / Doro 5K")
+        $SourceLink.Inlines.Add("Image source: GPT 5.6Sol")
         Update-ModeButtonStyles
     } else {
         $BackgroundImage.Source = New-Bitmap $DarkBackgroundPath
@@ -2073,6 +2802,7 @@ function Apply-Theme($Theme) {
         Set-Style $Top8PyramidButton "DarkButton"
         Set-Style $SeasonExecuteButton "PrimaryButton"
         Set-Style $OcrRunButton "PrimaryButton"
+        Set-Style $BattleAnnotationRunButton "PrimaryButton"
         Set-Style $OcrSelectFileButton "DarkButton"
         Set-Style $OcrExampleButton "DarkButton"
         Set-Style $OcrOpenFolderButton "DarkButton"
@@ -2081,14 +2811,35 @@ function Apply-Theme($Theme) {
         }
         Set-Brush $OcrUploadPanel BorderBrush "#5EDCFF"
         Set-Brush $OcrUploadPanel Background "#44101A2A"
+        Set-Style $BattleAnnotationDataButton "OcrSlotButton"
+        Set-Style $BattleAnnotationGrayLoserCheck "DarkOptionCheck"
+        Set-Brush $BattleAnnotationPanel BorderBrush "#5EDCFF"
+        Set-Brush $BattleAnnotationPanel Background "#44101A2A"
+        Set-Style $ImageToolsButton "DarkButton"
+        Set-Style $ImageToolCompressButton "PrimaryButton"
+        Set-Brush $ImageToolCompressionLabel Foreground "#D7E8F6"
+        Set-Style $ImageToolCompressionHighRadio "DarkCompressionMode"
+        Set-Style $ImageToolCompressionDeepRadio "DarkCompressionMode"
+        Set-Style $ImageToolCompressionExtremeRadio "DarkCompressionMode"
+        Set-Style $ImageToolStitchButton "DarkButton"
+        foreach ($slotButton in @($ImageToolSlot1Button, $ImageToolSlot2Button, $ImageToolSlot3Button, $ImageToolSlot4Button)) {
+            Set-Style $slotButton "OcrSlotButton"
+        }
+        Set-Brush $ImageToolsUploadPanel BorderBrush "#5EDCFF"
+        Set-Brush $ImageToolsUploadPanel Background "#44101A2A"
+        Set-Style $ImageToolVerticalCheck "DarkOptionCheck"
+        Set-Style $ImageToolHorizontalCheck "DarkOptionCheck"
+        Set-Brush $ImageToolGapLabel Foreground "#D7E8F6"
+        $ImageToolGapBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
+        $ImageToolGapBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
+        $ImageToolGapBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
+        Set-Brush $ImageToolGapUnitText Foreground "#D7E8F6"
         Set-Style $FolderButton "DarkButton"
         Set-Style $SettingsButton "DarkButton"
         Set-Style $BackButton "DarkButton"
         Set-Style $ReservedButton1 "MutedButton"
         Set-Style $ReservedButton2 "MutedButton"
-        foreach ($option in @($MarianFrameCheck, $DoroFrameCheck, $CinderellaFrameCheck, $CustomFrameCheck)) {
-            Set-Style $option "DarkOptionCheck"
-        }
+        Set-Style $CustomFrameCheck "DarkOptionCheck"
         Set-Style $SupportStatusCheck "DarkOptionCheck"
         Set-Style $GroupSimpleDataCheck "DarkOptionCheck"
         Set-Style $GroupDetailedDataCheck "DarkOptionCheck"
@@ -2097,6 +2848,9 @@ function Apply-Theme($Theme) {
         Set-Style $OcrDebugCheck "DarkOptionCheck"
         Set-Style $LowMemoryCheck "DarkOptionCheck"
         Set-Style $OcrMediumMemoryCheck "DarkOptionCheck"
+        Set-Style $OcrForceDetailedResultsCheck "DetailedResultModeCheck"
+        Set-Style $OcrChinaClientCheck "DarkOptionCheck"
+        Set-Style $OcrOverseasClientCheck "DarkOptionCheck"
         foreach ($option in @($OcrEcoCheck, $OcrBalancedCheck, $OcrFullCheck, $OcrExtremeCheck, $OcrGpuCheck, $OcrThermalSafeCheck, $OcrThermalPerformanceCheck)) {
             Set-Style $option "DarkOptionCheck"
         }
@@ -2115,16 +2869,21 @@ function Apply-Theme($Theme) {
         $MoonThemeButton.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#243750")
         $MoonThemeButton.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#80E8FF")
         $MoonThemeButton.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#DDF7FF")
-        foreach ($siteButton in @($SiteSkyxmoonButton, $SiteNikkeTopButton, $SiteMerlotJjcButton, $SiteGamekeeNikkeButton, $SiteBilibiliGuseButton, $SiteBilibiliDeen33Button)) {
-            $siteButton.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#66101A2A")
-            $siteButton.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#6BDFFF")
-        }
+        $HelpButton.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#1E172C43")
+        $HelpButton.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#70A7EFFF")
+        $HelpButton.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#DDF7FF")
         $CaptureDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
         $CaptureDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
         $CaptureDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
-        $DetailDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
-        $DetailDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
-        $DetailDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
+        $AvatarProfileDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
+        $AvatarProfileDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
+        $AvatarProfileDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
+        $BracketResultDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
+        $BracketResultDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
+        $BracketResultDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
+        $DetailPageTimeoutBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
+        $DetailPageTimeoutBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
+        $DetailPageTimeoutBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
         Set-Brush $OcrPerformanceWarningText Foreground "#FFD58A"
         Set-Brush $OcrGpuRecommendationText Foreground "#FFE45C"
         Set-Brush $OcrGpuGuideLink Foreground "#64E7FF"
@@ -2132,11 +2891,13 @@ function Apply-Theme($Theme) {
         Set-Brush $MainFullscreenHintText Foreground "#FFE45C"
         Set-Brush $SeasonButtonHintText Foreground "#FFD58A"
         Set-Brush $HotkeyHintText Foreground "#FFD38A"
+        Set-Brush $ServerModeLabel Foreground "#A9C2D9"
+        Set-Style $ServerModeComboBox "DarkServerModeComboBox"
         $Window.Resources["ScrollThumbBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#6BDFFF")
         $Window.Resources["ScrollTrackBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#22324A")
-        $SourceLink.NavigateUri = [Uri]::new($DarkSourceUrl)
+        $SourceLink.NavigateUri = $null
         $SourceLink.Inlines.Clear()
-        $SourceLink.Inlines.Add("Image source: Pixiewall Rapi / Drake / Laplace")
+        $SourceLink.Inlines.Add("Image source: GPT 5.6Sol")
         Update-ModeButtonStyles
     }
 }
@@ -2183,6 +2944,7 @@ function Set-Running($Running) {
     $SeasonCaptureButton.IsEnabled = -not $Running
     $NikkeNameListButton.IsEnabled = -not $Running
     $PostDataOcrButton.IsEnabled = -not $Running
+    $ImageToolsButton.IsEnabled = -not $Running
     $ExecuteButton.IsEnabled = -not $Running
     $Group64Button.IsEnabled = -not $Running
     $Group32Button.IsEnabled = -not $Running
@@ -2203,7 +2965,28 @@ function Set-Running($Running) {
         $OcrSlotTop8ClearButton,
         $OcrSlotGroup16ClearButton,
         $OcrSlotGroup32ClearButton,
-        $OcrSlotGroup64ClearButton
+        $OcrSlotGroup64ClearButton,
+        $BattleAnnotationDataButton,
+        $BattleAnnotationDataClearButton,
+        $BattleAnnotationRunButton,
+        $BattleAnnotationGrayLoserCheck,
+        $ImageToolCompressButton,
+        $ImageToolCompressionHighRadio,
+        $ImageToolCompressionDeepRadio,
+        $ImageToolCompressionExtremeRadio,
+        $ImageToolStitchButton,
+        $ImageToolVerticalCheck,
+        $ImageToolHorizontalCheck,
+        $ImageToolGapBox,
+        $ImageToolSlot1Button,
+        $ImageToolSlot2Button,
+        $ImageToolSlot3Button,
+        $ImageToolSlot4Button,
+        $ImageToolSlot1ClearButton,
+        $ImageToolSlot2ClearButton,
+        $ImageToolSlot3ClearButton,
+        $ImageToolSlot4ClearButton,
+        $ServerModeComboBox
     )) {
         if ($control) { $control.IsEnabled = -not $Running }
     }
@@ -2228,14 +3011,67 @@ function Set-Running($Running) {
     }
 }
 
+function Get-NikkeServerRunningText([string]$ServerCode) {
+    switch ($ServerCode) {
+        "cn" { return "国服Running" }
+        "hmt" { return "港澳台服Running" }
+        "global" { return "国际服Running" }
+        default { return "Running" }
+    }
+}
+
+function Get-EffectiveNikkeServer {
+    switch ($script:ServerSelectionMode) {
+        "cn" { return "cn" }
+        "hmt" { return "hmt" }
+        "global" { return "global" }
+        default { return $script:DetectedNikkeServer }
+    }
+}
+
+function Set-ServerSelectionMode([string]$Mode) {
+    if ($Mode -notin @("auto", "cn", "hmt", "global") -or $script:ServerSelectionUpdating) { return }
+    $selectionIndices = @{ auto = 0; cn = 1; hmt = 2; global = 3 }
+    $script:ServerSelectionUpdating = $true
+    try {
+        $script:ServerSelectionMode = $Mode
+        if ($ServerModeComboBox -and $ServerModeComboBox.SelectedIndex -ne $selectionIndices[$Mode]) {
+            $ServerModeComboBox.SelectedIndex = $selectionIndices[$Mode]
+        }
+    } finally {
+        $script:ServerSelectionUpdating = $false
+    }
+    Update-Process-Status
+}
+
+function Update-CaptureViewportHint($WindowInfo) {
+    if (-not $MainFullscreenHintText) { return }
+    if ($WindowInfo -and [bool]$WindowInfo.IsWindowed) {
+        $MainFullscreenHintText.Text = "窗口模式仅支持：单人、应援、冠亚军截图"
+    } else {
+        $MainFullscreenHintText.Text = "请指挥官将NIKKE设置为全屏模式后再执行截图"
+    }
+}
+
 function Update-Process-Status {
+    $windowInfo = $null
     if ([NativeWin]::IsNikkeRunning()) {
-        $ProcessStatusText.Text = "Running"
+        $script:DetectedNikkeServer = [NativeWin]::GetNikkeServerCode()
+        $script:ActiveNikkeServer = Get-EffectiveNikkeServer
+        $windowInfo = [NativeWin]::GetGameWindowInfo($script:ActiveNikkeServer)
+        $ProcessStatusText.Text = Get-NikkeServerRunningText $script:ActiveNikkeServer
         $ProcessStatusText.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#68F2C2")
     } else {
+        $script:DetectedNikkeServer = "unknown"
+        $script:ActiveNikkeServer = "unknown"
         $ProcessStatusText.Text = "Not detected"
         $ProcessStatusText.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFD38A")
     }
+    Update-CaptureViewportHint $windowInfo
+}
+
+function Get-ActiveNikkeServer {
+    return $script:ActiveNikkeServer
 }
 
 $ExampleImage.Source = New-Bitmap $ExamplePath
@@ -2244,10 +3080,19 @@ $CaptureDelaySlider.Minimum = $DelayMinSeconds
 $CaptureDelaySlider.Maximum = 5
 $CaptureDelaySlider.Value = $CaptureDelaySeconds
 $CaptureDelayBox.Text = ("{0:0.00}" -f $CaptureDelaySeconds)
-$DetailDelaySlider.Minimum = $DetailDelayMinSeconds
-$DetailDelaySlider.Maximum = 5
-$DetailDelaySlider.Value = $DetailCaptureDelaySeconds
-$DetailDelayBox.Text = ("{0:0.00}" -f $DetailCaptureDelaySeconds)
+$AvatarProfileDelaySlider.Minimum = $DelayMinSeconds
+$AvatarProfileDelaySlider.Maximum = 5
+$AvatarProfileDelaySlider.Value = $AvatarProfileDelaySeconds
+$AvatarProfileDelayBox.Text = ("{0:0.00}" -f $AvatarProfileDelaySeconds)
+$AvatarProfilePollCheck.IsChecked = $AvatarProfilePollEnabled
+$BracketResultDelaySlider.Minimum = $DelayMinSeconds
+$BracketResultDelaySlider.Maximum = 5
+$BracketResultDelaySlider.Value = $BracketResultDelaySeconds
+$BracketResultDelayBox.Text = ("{0:0.00}" -f $BracketResultDelaySeconds)
+$DetailPageTimeoutSlider.Minimum = $DetailPageTimeoutMinSeconds
+$DetailPageTimeoutSlider.Maximum = $DetailPageTimeoutMaxSeconds
+$DetailPageTimeoutSlider.Value = $DetailPageTimeoutSeconds
+$DetailPageTimeoutBox.Text = ("{0:0}" -f $DetailPageTimeoutSeconds)
 New-Item -ItemType Directory -Force -Path $CustomFrameDir | Out-Null
 New-Item -ItemType Directory -Force -Path $SupportCustomFrameDir | Out-Null
 New-Item -ItemType Directory -Force -Path $GroupCustomFrameDir | Out-Null
@@ -2261,14 +3106,10 @@ $timer.Add_Tick({ Update-Process-Status })
 $timer.Start()
 
 $SourceLink.Add_RequestNavigate({
-    Start-Process $SourceLink.NavigateUri.AbsoluteUri
-})
-
-function Open-SiteUrl([string]$Url) {
-    if ($Url) {
-        Start-Process $Url
+    if ($SourceLink.NavigateUri) {
+        Start-Process $SourceLink.NavigateUri.AbsoluteUri
     }
-}
+})
 
 if ($OcrGpuGuideLink) {
     $OcrGpuGuideLink.Add_Click({
@@ -2281,15 +3122,9 @@ if ($OcrGpuGuideLink) {
     })
 }
 
-if ($SiteSkyxmoonButton) { $SiteSkyxmoonButton.Add_Click({ Open-SiteUrl $SiteSkyxmoonUrl }) }
-if ($SiteNikkeTopButton) { $SiteNikkeTopButton.Add_Click({ Open-SiteUrl $SiteNikkeTopUrl }) }
-if ($SiteMerlotJjcButton) { $SiteMerlotJjcButton.Add_Click({ Open-SiteUrl $SiteMerlotJjcUrl }) }
-if ($SiteGamekeeNikkeButton) { $SiteGamekeeNikkeButton.Add_Click({ Open-SiteUrl $SiteGamekeeNikkeUrl }) }
-if ($SiteBilibiliGuseButton) { $SiteBilibiliGuseButton.Add_Click({ Open-SiteUrl $SiteBilibiliGuseUrl }) }
-if ($SiteBilibiliDeen33Button) { $SiteBilibiliDeen33Button.Add_Click({ Open-SiteUrl $SiteBilibiliDeen33Url }) }
-
 $MoonThemeButton.Add_Click({ Apply-Theme "dark" })
 $DoroThemeButton.Add_Click({ Apply-Theme "pink" })
+$HelpButton.Add_Click({ Show-ProgramHelpDialog })
 
 function Set-JsonProperty($Object, [string]$Name, $Value) {
     if ($null -eq $Object) { return }
@@ -2318,7 +3153,6 @@ function Save-CaptureTimingSettings {
         $clickDelay = [Math]::Round([double]$script:CaptureDelaySeconds, 2)
         foreach ($key in @(
             "after_round_click_seconds",
-            "after_avatar_click_seconds",
             "after_support_avatar_click_seconds",
             "after_group_avatar_click_seconds",
             "after_group_tab_click_seconds",
@@ -2327,9 +3161,14 @@ function Save-CaptureTimingSettings {
         )) {
             Set-JsonProperty $configJson.timing $key $clickDelay
         }
-        Set-JsonProperty $configJson.timing "after_group_detail_click_seconds" ([Math]::Round([double]$script:DetailCaptureDelaySeconds, 2))
+        Set-JsonProperty $configJson.timing "after_avatar_click_seconds" ([Math]::Round([double]$script:AvatarProfileDelaySeconds, 2))
+        Set-JsonProperty $configJson.timing "profile_page_poll_enabled" ([bool]$script:AvatarProfilePollEnabled)
+        Set-JsonProperty $configJson.timing "after_bracket_result_click_seconds" ([Math]::Round([double]$script:BracketResultDelaySeconds, 2))
+        Set-JsonProperty $configJson.timing "detail_page_timeout_seconds" ([Math]::Round([double]$script:DetailPageTimeoutSeconds, 0))
         Set-JsonProperty $configJson.launcher_settings "ocr_performance_mode" ([string]$script:OcrPerformanceMode)
         Set-JsonProperty $configJson.launcher_settings "ocr_thermal_mode" ([string]$script:OcrThermalMode)
+        Set-JsonProperty $configJson.launcher_settings "ocr_roster_preflight_suppressed_month" ([string]$script:OcrRosterPreflightSuppressedMonth)
+        Set-JsonProperty $configJson.launcher_settings "capture_parameters_preflight_suppressed_month" ([string]$script:CaptureParametersPreflightSuppressedMonth)
 
         $json = $configJson | ConvertTo-Json -Depth 20
         $encoding = [Text.UTF8Encoding]::new($false)
@@ -2373,36 +3212,113 @@ $CaptureDelayBox.Add_KeyDown({
     }
 })
 
-function Set-DetailCaptureDelay($Value) {
+function Set-AvatarProfileDelay($Value) {
     $valueNumber = [double]$Value
-    $valueNumber = [Math]::Max($DetailDelayMinSeconds, [Math]::Min(5.0, $valueNumber))
+    $valueNumber = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, $valueNumber))
     $valueNumber = [Math]::Round($valueNumber, 2)
-    $script:DetailCaptureDelaySeconds = $valueNumber
-    if ([Math]::Abs($DetailDelaySlider.Value - $valueNumber) -gt 0.001) {
-        $DetailDelaySlider.Value = $valueNumber
+    $script:AvatarProfileDelaySeconds = $valueNumber
+    if ([Math]::Abs($AvatarProfileDelaySlider.Value - $valueNumber) -gt 0.001) {
+        $AvatarProfileDelaySlider.Value = $valueNumber
     }
-    $DetailDelayBox.Text = ("{0:0.00}" -f $valueNumber)
+    $AvatarProfileDelayBox.Text = ("{0:0.00}" -f $valueNumber)
     Save-CaptureTimingSettings
 }
 
-$DetailDelaySlider.Add_ValueChanged({
-    Set-DetailCaptureDelay $DetailDelaySlider.Value
+$AvatarProfileDelaySlider.Add_ValueChanged({
+    Set-AvatarProfileDelay $AvatarProfileDelaySlider.Value
 })
 
-function Commit-DetailDelayBox {
+function Commit-AvatarProfileDelayBox {
     $parsed = 0.0
-    if ([double]::TryParse($DetailDelayBox.Text, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
-        Set-DetailCaptureDelay $parsed
+    if ([double]::TryParse($AvatarProfileDelayBox.Text, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        Set-AvatarProfileDelay $parsed
     } else {
-        $DetailDelayBox.Text = ("{0:0.00}" -f $DetailCaptureDelaySeconds)
+        $AvatarProfileDelayBox.Text = ("{0:0.00}" -f $AvatarProfileDelaySeconds)
     }
 }
 
-$DetailDelayBox.Add_LostFocus({ Commit-DetailDelayBox })
-$DetailDelayBox.Add_KeyDown({
+$AvatarProfilePollCheck.Add_Checked({
+    $script:AvatarProfilePollEnabled = $true
+    Save-CaptureTimingSettings
+})
+$AvatarProfilePollCheck.Add_Unchecked({
+    $script:AvatarProfilePollEnabled = $false
+    Save-CaptureTimingSettings
+})
+
+$AvatarProfileDelayBox.Add_LostFocus({ Commit-AvatarProfileDelayBox })
+$AvatarProfileDelayBox.Add_KeyDown({
     param($sender, $eventArgs)
     if ($eventArgs.Key -eq [Windows.Input.Key]::Enter) {
-        Commit-DetailDelayBox
+        Commit-AvatarProfileDelayBox
+        $eventArgs.Handled = $true
+    }
+})
+
+function Set-BracketResultDelay($Value) {
+    $valueNumber = [double]$Value
+    $valueNumber = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, $valueNumber))
+    $valueNumber = [Math]::Round($valueNumber, 2)
+    $script:BracketResultDelaySeconds = $valueNumber
+    if ([Math]::Abs($BracketResultDelaySlider.Value - $valueNumber) -gt 0.001) {
+        $BracketResultDelaySlider.Value = $valueNumber
+    }
+    $BracketResultDelayBox.Text = ("{0:0.00}" -f $valueNumber)
+    Save-CaptureTimingSettings
+}
+
+$BracketResultDelaySlider.Add_ValueChanged({
+    Set-BracketResultDelay $BracketResultDelaySlider.Value
+})
+
+function Commit-BracketResultDelayBox {
+    $parsed = 0.0
+    if ([double]::TryParse($BracketResultDelayBox.Text, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        Set-BracketResultDelay $parsed
+    } else {
+        $BracketResultDelayBox.Text = ("{0:0.00}" -f $BracketResultDelaySeconds)
+    }
+}
+
+$BracketResultDelayBox.Add_LostFocus({ Commit-BracketResultDelayBox })
+$BracketResultDelayBox.Add_KeyDown({
+    param($sender, $eventArgs)
+    if ($eventArgs.Key -eq [Windows.Input.Key]::Enter) {
+        Commit-BracketResultDelayBox
+        $eventArgs.Handled = $true
+    }
+})
+
+function Set-DetailPageTimeout($Value) {
+    $valueNumber = [double]$Value
+    $valueNumber = [Math]::Max($DetailPageTimeoutMinSeconds, [Math]::Min($DetailPageTimeoutMaxSeconds, $valueNumber))
+    $valueNumber = [Math]::Round($valueNumber, 0)
+    $script:DetailPageTimeoutSeconds = $valueNumber
+    if ([Math]::Abs($DetailPageTimeoutSlider.Value - $valueNumber) -gt 0.001) {
+        $DetailPageTimeoutSlider.Value = $valueNumber
+    }
+    $DetailPageTimeoutBox.Text = ("{0:0}" -f $valueNumber)
+    Save-CaptureTimingSettings
+}
+
+$DetailPageTimeoutSlider.Add_ValueChanged({
+    Set-DetailPageTimeout $DetailPageTimeoutSlider.Value
+})
+
+function Commit-DetailPageTimeoutBox {
+    $parsed = 0.0
+    if ([double]::TryParse($DetailPageTimeoutBox.Text, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        Set-DetailPageTimeout $parsed
+    } else {
+        $DetailPageTimeoutBox.Text = ("{0:0}" -f $DetailPageTimeoutSeconds)
+    }
+}
+
+$DetailPageTimeoutBox.Add_LostFocus({ Commit-DetailPageTimeoutBox })
+$DetailPageTimeoutBox.Add_KeyDown({
+    param($sender, $eventArgs)
+    if ($eventArgs.Key -eq [Windows.Input.Key]::Enter) {
+        Commit-DetailPageTimeoutBox
         $eventArgs.Handled = $true
     }
 })
@@ -2419,15 +3335,75 @@ function Set-OcrPerformanceMode($Mode) {
     Save-CaptureTimingSettings
 }
 
+function Update-OcrRuntimeControls {
+    if (-not $OcrGpuCheck) { return }
+    $checkedAtText = if ($script:OcrRuntimeCheckedAt) { "上次检测：" + $script:OcrRuntimeCheckedAt } else { "当前会话检测" }
+    $OcrGpuCheck.IsEnabled = $OcrGpuAvailable
+    if ($OcrGpuAvailable) {
+        $OcrGpuCheck.Opacity = 1.0
+        $OcrGpuCheck.ToolTip = "GPU 模式可用；选择 GPU 后使用独立 GPU PaddleOCR 运行环境。"
+        if ($OcrGpuStatusText) { $OcrGpuStatusText.Text = "GPU 模式可用；$checkedAtText" }
+    } else {
+        $OcrGpuCheck.Opacity = 0.38
+        $OcrGpuCheck.ToolTip = "GPU 不可用：未找到可用的独立 GPU PaddleOCR 运行环境。"
+        if ($OcrGpuStatusText) { $OcrGpuStatusText.Text = "GPU 不可用；可点击【重新检测 OCR 环境】。$checkedAtText" }
+    }
+    if ($OcrRuntimeRefreshButton) {
+        $OcrRuntimeRefreshButton.ToolTip = "手动重新检测 CPU、GPU、PaddleOCR 与 CUDA 环境。"
+    }
+}
+
 function Get-OcrPerformanceConfig {
     return @{ UseGpu = ($OcrPerformanceMode -eq "gpu" -and $OcrGpuAvailable) }
 }
 
 function Get-ActiveOcrPythonExe($Config) {
-    if ($Config -and $Config.UseGpu -and $OcrGpuPythonExe) {
-        return $OcrGpuPythonExe
+    if ($Config -and $Config.UseGpu) {
+        if ($OcrGpuPythonExe -and (Test-Path -LiteralPath $OcrGpuPythonExe)) {
+            return $OcrGpuPythonExe
+        }
+        if ($script:OcrRuntimeCacheState -eq "cached") {
+            Invalidate-OcrRuntimeCache "cached GPU runtime path is no longer available"
+            Update-OcrRuntimeControls
+        }
+        return $null
     }
-    return $OcrPythonExe
+    if ($OcrPythonExe -and (Test-Path -LiteralPath $OcrPythonExe)) {
+        return $OcrPythonExe
+    }
+    if ($script:OcrRuntimeCacheState -eq "cached") {
+        Invalidate-OcrRuntimeCache "cached CPU runtime path is no longer available"
+        Update-OcrRuntimeControls
+    }
+    return $null
+}
+
+function Test-OcrRuntimeFailureText([string]$Text) {
+    if (-not $Text) { return $false }
+    return $Text -match "ModuleNotFoundError|ImportError|No module named|DLL load failed|paddleocr|paddle.*not found"
+}
+
+function Refresh-OcrRuntimeEnvironment {
+    if ($OcrRuntimeRefreshButton) {
+        $OcrRuntimeRefreshButton.IsEnabled = $false
+        $OcrRuntimeRefreshButton.Content = "正在检测..."
+    }
+    try {
+        Initialize-OcrRuntimes $true
+        Update-OcrRuntimeControls
+        Set-OcrPerformanceMode $script:OcrPerformanceMode
+        $message = if ($OcrPythonExe) {
+            if ($OcrGpuAvailable) { "OCR 环境检测完成：CPU 与 GPU 模式均可用。" } else { "OCR 环境检测完成：CPU 模式可用，未检测到可用的 GPU 模式。" }
+        } else {
+            "未检测到可用的 PaddleOCR 环境，请检查完整版运行环境。"
+        }
+        Show-TopMessage $message "OCR 环境检测" ([System.Windows.MessageBoxImage]::Information)
+    } finally {
+        if ($OcrRuntimeRefreshButton) {
+            $OcrRuntimeRefreshButton.IsEnabled = $true
+            $OcrRuntimeRefreshButton.Content = "重新检测 OCR 环境"
+        }
+    }
 }
 
 function Apply-OcrProcessEnvironment($ProcessStartInfo, $Config) {
@@ -2493,18 +3469,10 @@ $OcrBalancedCheck.Add_Click({ Set-OcrPerformanceMode "cpu" })
 $OcrFullCheck.Add_Click({ Set-OcrPerformanceMode "cpu" })
 $OcrExtremeCheck.Add_Click({ Set-OcrPerformanceMode "cpu" })
 $OcrGpuCheck.Add_Click({ Set-OcrPerformanceMode "gpu" })
+$OcrRuntimeRefreshButton.Add_Click({ Refresh-OcrRuntimeEnvironment })
 $OcrThermalSafeCheck.Add_Click({ Set-OcrThermalMode "safe" $true })
 $OcrThermalPerformanceCheck.Add_Click({ Set-OcrThermalMode "performance" $false })
-$OcrGpuCheck.IsEnabled = $OcrGpuAvailable
-if ($OcrGpuAvailable) {
-    $OcrGpuCheck.Opacity = 1.0
-    $OcrGpuCheck.ToolTip = "GPU 模式可用；选择 GPU 后使用独立 GPU PaddleOCR 运行环境。"
-    $OcrGpuStatusText.Text = "GPU 模式可用；选择 GPU 后使用独立 GPU PaddleOCR 运行环境。"
-} else {
-    $OcrGpuCheck.Opacity = 0.38
-    $OcrGpuCheck.ToolTip = "GPU 不可用：未找到可用的独立 GPU PaddleOCR 运行环境。"
-    $OcrGpuStatusText.Text = "GPU 不可用：未找到可用的独立 GPU PaddleOCR 运行环境。"
-}
+Update-OcrRuntimeControls
 Set-OcrPerformanceMode $ConfiguredOcrPerformanceMode
 Set-OcrThermalMode $ConfiguredOcrThermalMode $true
 $script:SettingsInitialized = $true
@@ -2600,7 +3568,56 @@ function Test-AutoOcrExportRequested {
     return $false
 }
 
-function Add-OcrRecognitionOptionArguments([string]$Arguments) {
+function Get-OcrClientProfile {
+    try {
+        if ($OcrOverseasClientCheck -and [bool]$OcrOverseasClientCheck.IsChecked) {
+            return "overseas"
+        }
+    } catch {}
+    return "cn"
+}
+
+function Set-OcrClientProfile([string]$Profile) {
+    $useOverseas = ($Profile -eq "overseas")
+    if ($OcrChinaClientCheck) {
+        $OcrChinaClientCheck.IsChecked = -not $useOverseas
+    }
+    if ($OcrOverseasClientCheck) {
+        $OcrOverseasClientCheck.IsChecked = $useOverseas
+    }
+}
+
+function Confirm-OcrInputClientProfile([string[]]$ImagePaths) {
+    $hasChinaMarker = $false
+    $hasOverseasMarker = $false
+    foreach ($path in @($ImagePaths)) {
+        if (-not $path) { continue }
+        $fileName = [IO.Path]::GetFileName([string]$path)
+        if ($fileName -match "国服") { $hasChinaMarker = $true }
+        if ($fileName -match "国际服|港澳台") { $hasOverseasMarker = $true }
+    }
+
+    $profile = Get-OcrClientProfile
+    $message = $null
+    if ($profile -eq "cn" -and $hasOverseasMarker) {
+        $message = "指挥官选择的似乎是国际服的图像，是否继续执行分析？或选择对应的赛区进行识别。"
+    } elseif ($profile -eq "overseas" -and $hasChinaMarker) {
+        $message = "指挥官选择的似乎是国服的图像，是否继续执行分析？或选择对应的赛区进行识别。"
+    }
+    if (-not $message) { return $true }
+
+    try {
+        return Show-StyledConfirmation $message "赛区确认" "继续执行分析" "Warning"
+    } catch {
+        return $true
+    }
+}
+
+function Add-OcrRecognitionOptionArguments(
+    [string]$Arguments,
+    [bool]$IncludeDetailedResultOverride = $false,
+    [bool]$IncludeClientProfile = $false
+) {
     try {
         if ($OcrPowerCheck -and -not [bool]$OcrPowerCheck.IsChecked) {
             $Arguments += " --no-power"
@@ -2611,6 +3628,12 @@ function Add-OcrRecognitionOptionArguments([string]$Arguments) {
         if ($OcrStatLevelCheck -and -not [bool]$OcrStatLevelCheck.IsChecked) {
             $Arguments += " --no-stat-levels"
         }
+        if ($IncludeDetailedResultOverride -and $OcrForceDetailedResultsCheck -and [bool]$OcrForceDetailedResultsCheck.IsChecked) {
+            $Arguments += " --force-detailed-results"
+        }
+        if ($IncludeClientProfile -and (Get-OcrClientProfile) -eq "overseas") {
+            $Arguments += " --client-profile overseas"
+        }
     } catch {}
     return $Arguments
 }
@@ -2618,18 +3641,16 @@ function Add-OcrRecognitionOptionArguments([string]$Arguments) {
 $ExportOcrDataCheck.IsChecked = $false
 $ExportOcrDataCheck.IsEnabled = $false
 $ExportOcrDataCheck.Opacity = 0.45
-
-function Clear-OtherFrameChecks($Selected) {
-    foreach ($option in @($MarianFrameCheck, $DoroFrameCheck, $CinderellaFrameCheck, $CustomFrameCheck)) {
-        if ($option -ne $Selected) { $option.IsChecked = $false }
-    }
+if ($OcrForceDetailedResultsCheck) {
+    $OcrForceDetailedResultsCheck.IsChecked = $true
 }
+Set-OcrClientProfile "cn"
 
-foreach ($option in @($MarianFrameCheck, $DoroFrameCheck, $CinderellaFrameCheck, $CustomFrameCheck)) {
-    $option.Add_Click({
-        param($sender, $eventArgs)
-        if ($sender.IsChecked) { Clear-OtherFrameChecks $sender }
-    })
+if ($OcrChinaClientCheck) {
+    $OcrChinaClientCheck.Add_Click({ Set-OcrClientProfile "cn" })
+}
+if ($OcrOverseasClientCheck) {
+    $OcrOverseasClientCheck.Add_Click({ Set-OcrClientProfile "overseas" })
 }
 
 $GroupSimpleDataCheck.Add_Click({
@@ -2665,33 +3686,15 @@ function Get-CustomFramePath {
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
     if ($file) { return $file.FullName }
-    if ($CurrentCaptureMode -eq "support") { return (Resolve-ImageVariant $SupportMarianFramePath) }
-    if ($CurrentCaptureMode -eq "group" -or $CurrentCaptureMode -eq "top8" -or $CurrentCaptureMode -eq "season") { return (Resolve-ImageVariant $GroupMarianFramePath) }
-    return (Resolve-ImageVariant $MarianFramePath)
+    return $null
 }
 
 function Get-SelectedFramePath {
-    if ($CurrentCaptureMode -eq "support") {
-        if ($MarianFrameCheck.IsChecked) { return (Resolve-ImageVariant $SupportMarianFramePath) }
-        if ($DoroFrameCheck.IsChecked) { return (Resolve-ImageVariant $SupportDoroFramePath) }
-        if ($CinderellaFrameCheck.IsChecked) { return (Resolve-ImageVariant $SupportCinderellaFramePath) }
-    } elseif ($CurrentCaptureMode -eq "group" -or $CurrentCaptureMode -eq "top8" -or $CurrentCaptureMode -eq "season") {
-        if ($MarianFrameCheck.IsChecked) { return (Resolve-ImageVariant $GroupMarianFramePath) }
-        if ($DoroFrameCheck.IsChecked) { return (Resolve-ImageVariant $GroupDoroFramePath) }
-        if ($CinderellaFrameCheck.IsChecked) { return (Resolve-ImageVariant $GroupCinderellaFramePath) }
-    } else {
-        if ($MarianFrameCheck.IsChecked) { return (Resolve-ImageVariant $MarianFramePath) }
-        if ($DoroFrameCheck.IsChecked) { return (Resolve-ImageVariant $DoroFramePath) }
-        if ($CinderellaFrameCheck.IsChecked) { return (Resolve-ImageVariant $CinderellaFramePath) }
-    }
     if ($CustomFrameCheck.IsChecked) { return Get-CustomFramePath }
     return $null
 }
 
 function Get-SelectedFrameLabel {
-    if ($MarianFrameCheck.IsChecked) { return "玛丽安" }
-    if ($DoroFrameCheck.IsChecked) { return "Doro" }
-    if ($CinderellaFrameCheck.IsChecked) { return "灰姑娘" }
     if ($CustomFrameCheck.IsChecked) { return "自定义底图" }
     return $null
 }
@@ -2819,9 +3822,7 @@ function Set-FrameBackgroundOptionsVisible([bool]$Visible) {
         }
     }
     if (-not $Visible) {
-        foreach ($option in @($MarianFrameCheck, $DoroFrameCheck, $CinderellaFrameCheck, $CustomFrameCheck)) {
-            if ($option) { $option.IsChecked = $false }
-        }
+        if ($CustomFrameCheck) { $CustomFrameCheck.IsChecked = $false }
     }
 }
 
@@ -2849,6 +3850,7 @@ function Set-SubPageMode($Mode) {
     $script:CurrentCaptureMode = $Mode
     $OcrExecutePanel.Visibility = "Collapsed"
     $SeasonExecutePanel.Visibility = "Collapsed"
+    $ImageToolsPanel.Visibility = "Collapsed"
     $SubPageHelpText.Visibility = "Visible"
     Set-FrameBackgroundOptionsVisible $true
     if ($Mode -eq "support") {
@@ -2954,6 +3956,25 @@ function Set-SubPageMode($Mode) {
         $ExportOcrDataCheck.IsChecked = $false
         Update-OcrSelectedPath
         Update-OcrSeasonSlotStatuses
+    } elseif ($Mode -eq "image-tools") {
+        $SubPageHelpText.Text = "图像工具"
+        $SubPageHelpText.Visibility = "Collapsed"
+        $ExampleBorder.Visibility = "Collapsed"
+        $SettingsPanel.Visibility = "Collapsed"
+        $ExecuteButton.Visibility = "Collapsed"
+        $GroupExecutePanel.Visibility = "Collapsed"
+        $Top8ExecutePanel.Visibility = "Collapsed"
+        $ImageToolsPanel.Visibility = "Visible"
+        $FrameOptionsPanel.Visibility = "Collapsed"
+        $SupportStatusCheck.Visibility = "Collapsed"
+        $SupportStatusCheck.IsChecked = $false
+        $GroupPostDataPanel.Visibility = "Collapsed"
+        $GroupSimpleDataCheck.IsChecked = $false
+        $GroupDetailedDataCheck.IsChecked = $false
+        $GroupAllDataCheck.IsChecked = $false
+        $ExportOcrDataCheck.IsChecked = $false
+        Update-ImageToolSlotVisuals
+        Update-BattleAnnotationDataVisual
     } else {
         $SubPageHelpText.Text = $TextArenaHelp
         $ExampleImage.Source = New-Bitmap $ExamplePath
@@ -2978,13 +3999,11 @@ function Set-SubPageMode($Mode) {
 function Show-SubPage {
     $SubPagePanel.Visibility = "Visible"
     $BrandBlock.Visibility = "Collapsed"
-    if ($SiteLinksPanel) { $SiteLinksPanel.Visibility = "Collapsed" }
 }
 
 function Hide-SubPage {
     $SubPagePanel.Visibility = "Collapsed"
     $BrandBlock.Visibility = "Visible"
-    if ($SiteLinksPanel) { $SiteLinksPanel.Visibility = "Visible" }
 }
 
 $ArenaButton.Add_Click({
@@ -3027,6 +4046,11 @@ $BackButton.Add_Click({
 
 $FolderButton.Add_Click({
     Start-Process -FilePath $OutputRoot
+})
+
+$ImageToolsButton.Add_Click({
+    Set-SubPageMode "image-tools"
+    Show-SubPage
 })
 
 $SettingsButton.Add_Click({
@@ -4036,12 +5060,37 @@ function Warn-LowMemoryForSeason {
 }
 
 function Test-GameReadyForCapture {
-    if ([NativeWin]::IsNikkeRunning()) { return $true }
+    if ([NativeWin]::IsNikkeRunning()) {
+        Update-Process-Status
+        return $true
+    }
 
     Update-Process-Status
     Append-Log $TextGameMissingMessage
     Show-TopMessage $TextGameMissingMessage $TextGameMissingTitle ([System.Windows.MessageBoxImage]::Warning)
     return $false
+}
+
+function Test-WindowedCaptureSupported($GroupSize, [bool]$Top8Pyramid) {
+    if ($CurrentCaptureMode -in @("single", "support")) { return $true }
+    return $CurrentCaptureMode -eq "top8" -and -not $Top8Pyramid -and ([int]$GroupSize -eq 2)
+}
+
+function Get-UsableCaptureWindowInfo([string]$ServerCode, $GroupSize, [bool]$Top8Pyramid) {
+    $windowInfo = [NativeWin]::GetGameWindowInfo($ServerCode)
+    if (-not $windowInfo) {
+        $message = "无法读取NIKKE游戏窗口，请确认客户端未最小化后重试。"
+        Append-Log $message
+        Show-TopMessage $message $TextCaptureFailureTitle ([System.Windows.MessageBoxImage]::Warning)
+        return $null
+    }
+    if ([bool]$windowInfo.IsWindowed -and -not (Test-WindowedCaptureSupported $GroupSize $Top8Pyramid)) {
+        $message = "当前为窗口模式。此功能仅支持全屏模式，请切换至全屏后重试。`n`n窗口模式仅支持单人阵容、应援双方阵容和冠军争霸赛冠亚军截图。"
+        Append-Log $message
+        Show-TopMessage $message $TextSettingHint ([System.Windows.MessageBoxImage]::Information)
+        return $null
+    }
+    return $windowInfo
 }
 
 function Stop-ActiveCapture {
@@ -4108,6 +5157,62 @@ function Test-OcrSlotDuplicateFileName([string]$SlotKey, [string]$Path) {
         }
     }
     return $false
+}
+
+function Get-OcrSlotBatchTargets([string]$SlotKey) {
+    $slotOrder = @("top8", "group16", "group32", "group64")
+    $anchorIndex = [Array]::IndexOf($slotOrder, $SlotKey)
+    if ($anchorIndex -lt 0) { return @() }
+
+    $targets = @($SlotKey)
+    for ($index = $anchorIndex + 1; $index -lt $slotOrder.Count; $index++) {
+        $key = $slotOrder[$index]
+        if (-not $script:OcrSeasonImageSlots[$key]) {
+            $targets += $key
+        }
+    }
+    return $targets
+}
+
+function Set-OcrSlotBatchSelection([string]$SlotKey, [string[]]$Paths) {
+    if (-not $SlotKey -or -not $script:OcrSeasonImageSlots.ContainsKey($SlotKey) -or -not $Paths -or $Paths.Count -lt 2) {
+        return $false
+    }
+
+    $targets = @(Get-OcrSlotBatchTargets $SlotKey)
+    if ($Paths.Count -gt $targets.Count) {
+        Show-TopMessage ("本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。" -f $Paths.Count, $targets.Count) "卡槽数量不足" ([System.Windows.MessageBoxImage]::Warning)
+        return $false
+    }
+
+    $targetSet = @{}
+    foreach ($key in $targets) { $targetSet[$key] = $true }
+    $usedNames = @{}
+    foreach ($key in $script:OcrSeasonImageSlots.Keys) {
+        if ($targetSet.ContainsKey($key)) { continue }
+        $existing = $script:OcrSeasonImageSlots[$key]
+        if ($existing) { $usedNames[[IO.Path]::GetFileName($existing).ToLowerInvariant()] = $true }
+    }
+
+    foreach ($path in $Paths) {
+        $extension = [IO.Path]::GetExtension($path).ToLowerInvariant()
+        if ($extension -notin @(".png", ".jpg", ".jpeg")) {
+            Show-TopMessage "只能选择 PNG 或 JPG 格式的图像文件。" "文件格式不支持" ([System.Windows.MessageBoxImage]::Warning)
+            return $false
+        }
+        $fileName = [IO.Path]::GetFileName($path).ToLowerInvariant()
+        if ($usedNames.ContainsKey($fileName)) {
+            Show-TopMessage "4个卡槽不得同时选择同名文件，请指挥官选择另一张图像。" "文件重复" ([System.Windows.MessageBoxImage]::Warning)
+            return $false
+        }
+        $usedNames[$fileName] = $true
+    }
+
+    for ($index = 0; $index -lt $Paths.Count; $index++) {
+        $script:OcrSeasonImageSlots[$targets[$index]] = $Paths[$index]
+    }
+    $script:SelectedOcrImagePath = $Paths[0]
+    return $true
 }
 
 function Get-OcrSlotControls($SlotKey) {
@@ -4197,12 +5302,20 @@ function Select-OcrImage([string]$SlotKey = $null) {
     $dialog.Title = "选择赛季全部战斗数据图像"
     $dialog.Filter = "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
     $dialog.CheckFileExists = $true
-    $dialog.Multiselect = $false
+    $dialog.Multiselect = [bool]$SlotKey
     $dialog.InitialDirectory = Get-OutputDateFolder
     if (-not (Test-Path $dialog.InitialDirectory)) {
         $dialog.InitialDirectory = $OutputRoot
     }
     if ($dialog.ShowDialog($Window)) {
+        $selectedPaths = @($dialog.FileNames)
+        if ($SlotKey -and $selectedPaths.Count -gt 1) {
+            if (Set-OcrSlotBatchSelection $SlotKey $selectedPaths) {
+                Update-OcrSelectedPath
+                Update-OcrSeasonSlotStatuses
+            }
+            return
+        }
         $extension = [IO.Path]::GetExtension($dialog.FileName).ToLowerInvariant()
         if ($extension -notin @(".png", ".jpg", ".jpeg")) {
             Show-TopMessage "只能选择 PNG 或 JPG 格式的图像文件。" "文件格式不支持" ([System.Windows.MessageBoxImage]::Warning)
@@ -4273,7 +5386,1099 @@ function Get-OcrSeasonSelectedImagePaths {
     return $paths
 }
 
+function Update-BattleAnnotationDataVisual {
+    Initialize-OcrSlotEmptyImage $BattleAnnotationDataEmptyImage
+    $dataPath = $script:SelectedBattleAnnotationDataPath
+    if ($dataPath -and (Test-Path $dataPath)) {
+        if ($BattleAnnotationDataSelectedImage) {
+            if (Test-Path $OcrSlotSelectedImagePath) {
+                $BattleAnnotationDataSelectedImage.Source = New-Bitmap $OcrSlotSelectedImagePath
+            }
+            $BattleAnnotationDataSelectedImage.Visibility = "Visible"
+        }
+        if ($BattleAnnotationDataEmptyImage) { $BattleAnnotationDataEmptyImage.Visibility = "Collapsed" }
+        if ($BattleAnnotationDataClearButton) { $BattleAnnotationDataClearButton.Visibility = "Visible" }
+        if ($BattleAnnotationDataPathText) {
+            $BattleAnnotationDataPathText.Text = Split-Path -Leaf $dataPath
+            $BattleAnnotationDataPathText.ToolTip = $dataPath
+        }
+    } else {
+        if ($BattleAnnotationDataSelectedImage) {
+            $BattleAnnotationDataSelectedImage.Source = $null
+            $BattleAnnotationDataSelectedImage.Visibility = "Collapsed"
+        }
+        if ($BattleAnnotationDataEmptyImage) { $BattleAnnotationDataEmptyImage.Visibility = "Visible" }
+        if ($BattleAnnotationDataClearButton) { $BattleAnnotationDataClearButton.Visibility = "Collapsed" }
+        if ($BattleAnnotationDataPathText) {
+            $BattleAnnotationDataPathText.Text = "单张详细战果图无需选择数据"
+            $BattleAnnotationDataPathText.ToolTip = "识别结果数据文件路径"
+        }
+    }
+}
+
+function Set-BattleAnnotationDataPath([string]$Path) {
+    $script:SelectedBattleAnnotationDataPath = $Path
+    Update-BattleAnnotationDataVisual
+}
+
+function Select-BattleAnnotationData {
+    $dialog = New-Object Microsoft.Win32.OpenFileDialog
+    $dialog.Title = "选择识别结果数据"
+    $dialog.Filter = "识别结果 JSON / Excel (*.json;*.xlsx)|*.json;*.xlsx"
+    $dialog.CheckFileExists = $true
+    $dialog.Multiselect = $false
+    $dialog.InitialDirectory = if ($script:OcrProgressOutputFolder -and (Test-Path $script:OcrProgressOutputFolder)) {
+        $script:OcrProgressOutputFolder
+    } else {
+        Get-OutputDateFolder
+    }
+    if (-not (Test-Path $dialog.InitialDirectory)) { $dialog.InitialDirectory = $OutputRoot }
+    if ($dialog.ShowDialog($Window)) {
+        $extension = [IO.Path]::GetExtension($dialog.FileName).ToLowerInvariant()
+        if ($extension -notin @(".json", ".xlsx")) {
+            Show-ImageToolMessage "请只选择识别导出的 JSON 或 Excel 文件。" "玩家战果标记" "Warning"
+            return
+        }
+        Set-BattleAnnotationDataPath $dialog.FileName
+    }
+}
+
+function Clear-BattleAnnotationData {
+    Set-BattleAnnotationDataPath $null
+}
+
+function Start-BattleAnnotation {
+    $paths = @(Get-ImageToolSelectedPaths | Where-Object { $_ -and (Test-Path $_) })
+    if ($paths.Count -eq 0) {
+        Show-ImageToolMessage "请先在图像工具的四个卡槽选择需要标记的详细战果图像。" "玩家战果标记" "Warning"
+        return
+    }
+    $profile = Get-OcrClientProfile
+    $grayLoser = [bool]$BattleAnnotationGrayLoserCheck.IsChecked
+    if (-not $script:SelectedBattleAnnotationDataPath -or -not (Test-Path $script:SelectedBattleAnnotationDataPath)) {
+        if ($paths.Count -ne 1) {
+            Show-ImageToolMessage "未选择识别结果数据时，只能选择 1 张带详细战果页的双人对局图。四张 GROUP 大拼图标记仍需要 JSON 或 Excel。" "玩家战果标记" "Warning"
+            return
+        }
+        Start-ImageToolOperation -Operation "annotate-direct" -InputPaths $paths -GrayLoser $grayLoser -ClientProfile $profile
+        return
+    }
+    Start-ImageToolOperation -Operation "annotate" -InputPaths $paths -DataFile $script:SelectedBattleAnnotationDataPath -GrayLoser $grayLoser -ClientProfile $profile
+}
+
+
+$script:ImageToolProcess = $null
+$script:ImageToolTimer = $null
+$script:ImageToolProgressWindow = $null
+$script:ImageToolDirectionUpdating = $false
+
+function Get-ImageToolSlotControls($SlotKey) {
+    switch ($SlotKey) {
+        "slot1" { return @{ Image = $ImageToolSlot1Image; Empty = $ImageToolSlot1EmptyImage; Clear = $ImageToolSlot1ClearButton } }
+        "slot2" { return @{ Image = $ImageToolSlot2Image; Empty = $ImageToolSlot2EmptyImage; Clear = $ImageToolSlot2ClearButton } }
+        "slot3" { return @{ Image = $ImageToolSlot3Image; Empty = $ImageToolSlot3EmptyImage; Clear = $ImageToolSlot3ClearButton } }
+        "slot4" { return @{ Image = $ImageToolSlot4Image; Empty = $ImageToolSlot4EmptyImage; Clear = $ImageToolSlot4ClearButton } }
+    }
+    return @{ Image = $null; Empty = $null; Clear = $null }
+}
+
+function Set-ImageToolSlotVisual($SlotKey, $Path) {
+    $controls = Get-ImageToolSlotControls $SlotKey
+    $image = $controls.Image
+    $empty = $controls.Empty
+    $clear = $controls.Clear
+    Initialize-OcrSlotEmptyImage $empty
+    if ($Path -and (Test-Path $Path)) {
+        if ($image) {
+            $selectedVisualPath = if (Test-Path $OcrSlotSelectedImagePath) { $OcrSlotSelectedImagePath } else { $Path }
+            $image.Source = New-Bitmap $selectedVisualPath
+            $image.Visibility = "Visible"
+        }
+        if ($empty) { $empty.Visibility = "Collapsed" }
+        if ($clear) { $clear.Visibility = "Visible" }
+    } else {
+        if ($image) {
+            $image.Source = $null
+            $image.Visibility = "Collapsed"
+        }
+        if ($empty) { $empty.Visibility = "Visible" }
+        if ($clear) { $clear.Visibility = "Collapsed" }
+    }
+}
+
+function Update-ImageToolSlotVisuals {
+    foreach ($slotKey in @("slot1", "slot2", "slot3", "slot4")) {
+        Set-ImageToolSlotVisual $slotKey $script:ImageToolSlots[$slotKey]
+    }
+    if ($ImageToolSelectedCountText) {
+        $count = @($script:ImageToolSlots.Values | Where-Object { $_ -and (Test-Path $_) }).Count
+        $ImageToolSelectedCountText.Text = ("已选择 {0} / 4 张图像" -f $count)
+    }
+}
+
+function Test-ImageToolDuplicateFileName([string]$SlotKey, [string]$Path) {
+    $candidateName = [IO.Path]::GetFileName($Path)
+    foreach ($key in $script:ImageToolSlots.Keys) {
+        if ($key -eq $SlotKey) { continue }
+        $existingPath = $script:ImageToolSlots[$key]
+        if ($existingPath -and ([IO.Path]::GetFileName($existingPath) -ieq $candidateName)) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Get-ImageToolBatchTargets([string]$SlotKey) {
+    $slotOrder = @("slot1", "slot2", "slot3", "slot4")
+    $anchorIndex = [Array]::IndexOf($slotOrder, $SlotKey)
+    if ($anchorIndex -lt 0) { return @() }
+
+    $targets = @($SlotKey)
+    for ($index = $anchorIndex + 1; $index -lt $slotOrder.Count; $index++) {
+        $key = $slotOrder[$index]
+        if (-not $script:ImageToolSlots[$key]) {
+            $targets += $key
+        }
+    }
+    return $targets
+}
+
+function Set-ImageToolBatchSelection([string]$SlotKey, [string[]]$Paths) {
+    if (-not $SlotKey -or -not $script:ImageToolSlots.ContainsKey($SlotKey) -or -not $Paths -or $Paths.Count -lt 2) {
+        return $false
+    }
+
+    $targets = @(Get-ImageToolBatchTargets $SlotKey)
+    if ($Paths.Count -gt $targets.Count) {
+        Show-ImageToolMessage ("本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。" -f $Paths.Count, $targets.Count) "卡槽数量不足" "Warning"
+        return $false
+    }
+
+    $targetSet = @{}
+    foreach ($key in $targets) { $targetSet[$key] = $true }
+    $usedNames = @{}
+    foreach ($key in $script:ImageToolSlots.Keys) {
+        if ($targetSet.ContainsKey($key)) { continue }
+        $existing = $script:ImageToolSlots[$key]
+        if ($existing) { $usedNames[[IO.Path]::GetFileName($existing).ToLowerInvariant()] = $true }
+    }
+
+    foreach ($path in $Paths) {
+        $extension = [IO.Path]::GetExtension($path).ToLowerInvariant()
+        if ($extension -notin @(".png", ".jpg", ".jpeg")) {
+            Show-ImageToolMessage "只能选择 PNG 或 JPG 格式的图像文件。" "文件格式不支持" "Warning"
+            return $false
+        }
+        $fileName = [IO.Path]::GetFileName($path).ToLowerInvariant()
+        if ($usedNames.ContainsKey($fileName)) {
+            Show-ImageToolMessage "4个卡槽不得同时选择同名文件，请指挥官选择另一张图像。" "文件重复" "Warning"
+            return $false
+        }
+        $usedNames[$fileName] = $true
+    }
+
+    for ($index = 0; $index -lt $Paths.Count; $index++) {
+        $script:ImageToolSlots[$targets[$index]] = $Paths[$index]
+    }
+    return $true
+}
+
+function Select-ImageToolImage([string]$SlotKey) {
+    if (-not $SlotKey -or -not $script:ImageToolSlots.ContainsKey($SlotKey)) { return }
+    $dialog = New-Object Microsoft.Win32.OpenFileDialog
+    $dialog.Title = "选择要处理的图像"
+    $dialog.Filter = "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+    $dialog.CheckFileExists = $true
+    $dialog.Multiselect = $true
+    $dialog.InitialDirectory = Get-OutputDateFolder
+    if (-not (Test-Path $dialog.InitialDirectory)) {
+        $dialog.InitialDirectory = $OutputRoot
+    }
+    if ($dialog.ShowDialog($Window)) {
+        $selectedPaths = @($dialog.FileNames)
+        if ($selectedPaths.Count -gt 1) {
+            if (Set-ImageToolBatchSelection $SlotKey $selectedPaths) {
+                Update-ImageToolSlotVisuals
+            }
+            return
+        }
+        if (Test-ImageToolDuplicateFileName $SlotKey $dialog.FileName) {
+            Show-ImageToolMessage "4个卡槽不得同时选择同名文件，请指挥官选择另一张图像。" "文件重复" "Warning"
+            return
+        }
+        $script:ImageToolSlots[$SlotKey] = $dialog.FileName
+        Update-ImageToolSlotVisuals
+    }
+}
+
+function Clear-ImageToolSlot([string]$SlotKey) {
+    if (-not $SlotKey -or -not $script:ImageToolSlots.ContainsKey($SlotKey)) { return }
+    $script:ImageToolSlots[$SlotKey] = $null
+    Update-ImageToolSlotVisuals
+}
+
+function Get-ImageToolSelectedPaths {
+    $paths = @()
+    foreach ($slotKey in @("slot1", "slot2", "slot3", "slot4")) {
+        $path = $script:ImageToolSlots[$slotKey]
+        if ($path -and (Test-Path $path)) { $paths += $path }
+    }
+    return $paths
+}
+
+function Get-ImageToolGap {
+    $gap = 0
+    if (-not [int]::TryParse([string]$ImageToolGapBox.Text, [ref]$gap) -or $gap -lt 0 -or $gap -gt 5000) {
+        Show-ImageToolMessage "图像间距需为 0 到 5000 的整数像素。" "图像工具" "Warning"
+        return $null
+    }
+    return $gap
+}
+
+function Get-ImageToolCompressionMode {
+    if ($ImageToolCompressionExtremeRadio -and [bool]$ImageToolCompressionExtremeRadio.IsChecked) { return "extreme" }
+    if ($ImageToolCompressionDeepRadio -and [bool]$ImageToolCompressionDeepRadio.IsChecked) { return "deep" }
+    return "high"
+}
+
+function Set-ImageToolDirection([string]$Direction) {
+    if ($script:ImageToolDirectionUpdating) { return }
+    $script:ImageToolDirectionUpdating = $true
+    try {
+        $ImageToolVerticalCheck.IsChecked = ($Direction -eq "vertical")
+        $ImageToolHorizontalCheck.IsChecked = ($Direction -eq "horizontal")
+    } finally {
+        $script:ImageToolDirectionUpdating = $false
+    }
+}
+
+function Show-ImageToolProgressWindow([string]$Message) {
+    $progressWindow = New-Object Windows.Window
+    $progressWindow.Title = "正在处理图像"
+    $progressWindow.Width = 410
+    $progressWindow.Height = 166
+    $progressWindow.ResizeMode = "NoResize"
+    $progressWindow.WindowStyle = "None"
+    $progressWindow.AllowsTransparency = $true
+    $progressWindow.Background = [Windows.Media.Brushes]::Transparent
+    $progressWindow.WindowStartupLocation = "CenterOwner"
+    $progressWindow.ShowInTaskbar = $false
+    $progressWindow.Topmost = $false
+    try { $progressWindow.Owner = $Window } catch {}
+
+    $isPink = ($script:CurrentTheme -eq "pink")
+    $panelBackgroundColor = if ($isPink) { "#F4FFF8FC" } else { "#F20B1424" }
+    $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
+    $titleColor = if ($isPink) { "#6D344B" } else { "#F7FBFF" }
+    $detailColor = if ($isPink) { "#8A5B6E" } else { "#BBD0E1" }
+    $border = New-Object Windows.Controls.Border
+    $border.Padding = [Windows.Thickness]::new(22)
+    $border.CornerRadius = [Windows.CornerRadius]::new(10)
+    $border.BorderThickness = [Windows.Thickness]::new(1)
+    $border.Background = New-WpfBrush $panelBackgroundColor
+    $border.BorderBrush = New-WpfBrush $panelBorderColor
+    $progressWindow.Content = $border
+
+    $stack = New-Object Windows.Controls.StackPanel
+    $border.Child = $stack
+    $title = New-Object Windows.Controls.TextBlock
+    $title.Text = "正在处理图像"
+    $title.FontFamily = "Microsoft YaHei UI"
+    $title.FontSize = 18
+    $title.FontWeight = "Bold"
+    $title.Foreground = New-WpfBrush $titleColor
+    $title.Margin = [Windows.Thickness]::new(0, 0, 0, 8)
+    $stack.Children.Add($title) | Out-Null
+
+    $detail = New-Object Windows.Controls.TextBlock
+    $detail.Text = $Message
+    $detail.FontFamily = "Microsoft YaHei UI"
+    $detail.FontSize = 12
+    $detail.TextWrapping = "Wrap"
+    $detail.Foreground = New-WpfBrush $detailColor
+    $detail.Margin = [Windows.Thickness]::new(0, 0, 0, 14)
+    $stack.Children.Add($detail) | Out-Null
+
+    $bar = New-Object Windows.Controls.ProgressBar
+    $bar.Height = 7
+    $bar.IsIndeterminate = $true
+    $stack.Children.Add($bar) | Out-Null
+    $script:ImageToolProgressWindow = $progressWindow
+    $progressWindow.Show()
+}
+
+function Close-ImageToolProgressWindow {
+    if ($script:ImageToolProgressWindow) {
+        try { $script:ImageToolProgressWindow.Close() } catch {}
+    }
+    $script:ImageToolProgressWindow = $null
+}
+
+function Show-ImageToolMessage([string]$Message, [string]$Title = "图像工具", [string]$Severity = "Information") {
+    $isPink = ($script:CurrentTheme -eq "pink")
+    $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
+    $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
+    $titleColor = if ($isPink) { "#6D344B" } else { "#F7FBFF" }
+    $bodyColor = if ($isPink) { "#805065" } else { "#D7E8F6" }
+    $accentColor = if ($isPink) { "#FFFFBCD5" } else { "#29C7FF" }
+    if ($Severity -eq "Warning") {
+        $accentColor = if ($isPink) { "#FFE7A4" } else { "#FFD38A" }
+    } elseif ($Severity -eq "Error") {
+        $accentColor = if ($isPink) { "#FF9DB3" } else { "#FF7D9C" }
+    }
+
+    $dialog = New-Object Windows.Window
+    $dialog.Title = $Title
+    $dialog.Width = 470
+    $dialog.MinHeight = 190
+    $dialog.SizeToContent = "Height"
+    $dialog.ResizeMode = "NoResize"
+    $dialog.WindowStyle = "None"
+    $dialog.AllowsTransparency = $true
+    $dialog.Background = [Windows.Media.Brushes]::Transparent
+    $dialog.WindowStartupLocation = "CenterOwner"
+    $dialog.ShowInTaskbar = $false
+    try { $dialog.Owner = $Window } catch {}
+
+    $border = New-Object Windows.Controls.Border
+    $border.Padding = [Windows.Thickness]::new(22)
+    $border.CornerRadius = [Windows.CornerRadius]::new(10)
+    $border.BorderThickness = [Windows.Thickness]::new(1)
+    $border.Background = New-WpfBrush $panelBackgroundColor
+    $border.BorderBrush = New-WpfBrush $panelBorderColor
+    $shadow = New-Object Windows.Media.Effects.DropShadowEffect
+    $shadow.Color = [Windows.Media.Colors]::Black
+    $shadow.BlurRadius = 20
+    $shadow.ShadowDepth = 7
+    $shadow.Opacity = 0.35
+    $border.Effect = $shadow
+    $dialog.Content = $border
+
+    $layout = New-Object Windows.Controls.Grid
+    [void]$layout.RowDefinitions.Add((New-Object Windows.Controls.RowDefinition))
+    [void]$layout.RowDefinitions.Add((New-Object Windows.Controls.RowDefinition))
+    [void]$layout.RowDefinitions.Add((New-Object Windows.Controls.RowDefinition))
+    $layout.RowDefinitions[0].Height = "Auto"
+    $layout.RowDefinitions[1].Height = "Auto"
+    $layout.RowDefinitions[2].Height = "Auto"
+    $border.Child = $layout
+
+    $header = New-Object Windows.Controls.DockPanel
+    [Windows.Controls.Grid]::SetRow($header, 0)
+    $layout.Children.Add($header) | Out-Null
+    $closeButton = New-Object Windows.Controls.Button
+    $closeButton.Content = "×"
+    $closeButton.Width = 28
+    $closeButton.Height = 28
+    $closeButton.FontSize = 18
+    $closeButton.FontWeight = "Bold"
+    $closeButton.Foreground = New-WpfBrush $titleColor
+    $closeButton.Background = [Windows.Media.Brushes]::Transparent
+    $closeButton.BorderThickness = [Windows.Thickness]::new(0)
+    [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
+    $header.Children.Add($closeButton) | Out-Null
+    $headerText = New-Object Windows.Controls.TextBlock
+    $headerText.Text = $Title
+    $headerText.FontFamily = "Microsoft YaHei UI"
+    $headerText.FontSize = 18
+    $headerText.FontWeight = "Bold"
+    $headerText.Foreground = New-WpfBrush $titleColor
+    $headerText.VerticalAlignment = "Center"
+    $header.Children.Add($headerText) | Out-Null
+
+    $body = New-Object Windows.Controls.TextBlock
+    $body.Text = $Message
+    $body.FontFamily = "Microsoft YaHei UI"
+    $body.FontSize = 13
+    $body.Foreground = New-WpfBrush $bodyColor
+    $body.TextWrapping = "Wrap"
+    $body.Margin = [Windows.Thickness]::new(0, 15, 0, 18)
+    [Windows.Controls.Grid]::SetRow($body, 1)
+    $layout.Children.Add($body) | Out-Null
+
+    $buttonPanel = New-Object Windows.Controls.StackPanel
+    $buttonPanel.Orientation = "Horizontal"
+    $buttonPanel.HorizontalAlignment = "Right"
+    [Windows.Controls.Grid]::SetRow($buttonPanel, 2)
+    $layout.Children.Add($buttonPanel) | Out-Null
+    $confirmButton = New-Object Windows.Controls.Button
+    $confirmButton.Content = "确定"
+    $confirmButton.Width = 104
+    $confirmButton.Height = 34
+    $confirmButton.FontFamily = "Microsoft YaHei UI"
+    $confirmButton.FontWeight = "Bold"
+    $confirmButton.Foreground = New-WpfBrush "#06151F"
+    $confirmButton.Background = New-WpfBrush $accentColor
+    $confirmButton.BorderBrush = New-WpfBrush $accentColor
+    $confirmButton.IsDefault = $true
+    $buttonPanel.Children.Add($confirmButton) | Out-Null
+
+    $closeButton.Tag = $dialog
+    $confirmButton.Tag = $dialog
+    $closeDialog = {
+        param($sender, $eventArgs)
+        if ($sender.Tag) { $sender.Tag.Close() }
+    }
+    $closeButton.Add_Click($closeDialog)
+    $confirmButton.Add_Click($closeDialog)
+    $dialog.ShowDialog() | Out-Null
+}
+
+function Show-StyledConfirmation(
+    [string]$Message,
+    [string]$Title,
+    [string]$ConfirmText = "继续",
+    [string]$Severity = "Warning"
+) {
+    $isPink = ($script:CurrentTheme -eq "pink")
+    $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
+    $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
+    $titleColor = if ($isPink) { "#6D344B" } else { "#F7FBFF" }
+    $bodyColor = if ($isPink) { "#805065" } else { "#D7E8F6" }
+    $primaryColor = if ($isPink) { "#FFFFBBD3" } else { "#20C7FF" }
+    $primaryBorder = if ($isPink) { "#FFFFF7FB" } else { "#C8F8FF" }
+    $primaryForeground = if ($isPink) { "#5A2439" } else { "#06151F" }
+    if ($Severity -eq "Error") {
+        $primaryColor = if ($isPink) { "#FF9DB3" } else { "#FF7D9C" }
+    }
+
+    $dialog = New-Object Windows.Window
+    $dialog.Title = $Title
+    $dialog.Width = 430
+    $dialog.SizeToContent = "Height"
+    $dialog.ResizeMode = "NoResize"
+    $dialog.WindowStyle = "None"
+    $dialog.AllowsTransparency = $true
+    $dialog.Background = [Windows.Media.Brushes]::Transparent
+    $dialog.WindowStartupLocation = "CenterOwner"
+    $dialog.ShowInTaskbar = $false
+    try { $dialog.Owner = $Window } catch {}
+
+    $border = New-Object Windows.Controls.Border
+    $border.Padding = [Windows.Thickness]::new(18)
+    $border.CornerRadius = [Windows.CornerRadius]::new(10)
+    $border.BorderThickness = [Windows.Thickness]::new(1)
+    $border.Background = New-WpfBrush $panelBackgroundColor
+    $border.BorderBrush = New-WpfBrush $panelBorderColor
+    $shadow = New-Object Windows.Media.Effects.DropShadowEffect
+    $shadow.Color = [Windows.Media.Colors]::Black
+    $shadow.BlurRadius = 20
+    $shadow.ShadowDepth = 7
+    $shadow.Opacity = 0.35
+    $border.Effect = $shadow
+    $dialog.Content = $border
+
+    $layout = New-Object Windows.Controls.Grid
+    [void]$layout.RowDefinitions.Add((New-Object Windows.Controls.RowDefinition))
+    [void]$layout.RowDefinitions.Add((New-Object Windows.Controls.RowDefinition))
+    [void]$layout.RowDefinitions.Add((New-Object Windows.Controls.RowDefinition))
+    $layout.RowDefinitions[0].Height = "Auto"
+    $layout.RowDefinitions[1].Height = "Auto"
+    $layout.RowDefinitions[2].Height = "Auto"
+    $border.Child = $layout
+
+    $header = New-Object Windows.Controls.DockPanel
+    [Windows.Controls.Grid]::SetRow($header, 0)
+    $layout.Children.Add($header) | Out-Null
+    $closeButton = New-Object Windows.Controls.Button
+    $closeButton.Content = "×"
+    $closeButton.Width = 28
+    $closeButton.Height = 28
+    $closeButton.FontSize = 18
+    $closeButton.FontWeight = "Bold"
+    $closeButton.Foreground = New-WpfBrush $titleColor
+    $closeButton.Background = [Windows.Media.Brushes]::Transparent
+    $closeButton.BorderThickness = [Windows.Thickness]::new(0)
+    $closeButton.IsCancel = $true
+    [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
+    $header.Children.Add($closeButton) | Out-Null
+    $headerText = New-Object Windows.Controls.TextBlock
+    $headerText.Text = $Title
+    $headerText.FontFamily = "Microsoft YaHei UI"
+    $headerText.FontSize = 18
+    $headerText.FontWeight = "Bold"
+    $headerText.Foreground = New-WpfBrush $titleColor
+    $headerText.VerticalAlignment = "Center"
+    $header.Children.Add($headerText) | Out-Null
+
+    $body = New-Object Windows.Controls.TextBlock
+    $body.Text = $Message
+    $body.FontFamily = "Microsoft YaHei UI"
+    $body.FontSize = 13
+    $body.Foreground = New-WpfBrush $bodyColor
+    $body.TextWrapping = "Wrap"
+    $body.Margin = [Windows.Thickness]::new(0, 10, 0, 16)
+    [Windows.Controls.Grid]::SetRow($body, 1)
+    $layout.Children.Add($body) | Out-Null
+
+    $buttonPanel = New-Object Windows.Controls.StackPanel
+    $buttonPanel.Orientation = "Horizontal"
+    $buttonPanel.HorizontalAlignment = "Right"
+    [Windows.Controls.Grid]::SetRow($buttonPanel, 2)
+    $layout.Children.Add($buttonPanel) | Out-Null
+    $confirmButton = New-Object Windows.Controls.Button
+    $confirmButton.Content = $ConfirmText
+    $confirmButton.Width = 128
+    $confirmButton.Height = 34
+    $confirmButton.FontFamily = "Microsoft YaHei UI"
+    $confirmButton.FontWeight = "Bold"
+    $confirmButton.Foreground = New-WpfBrush $primaryForeground
+    $confirmButton.Background = New-WpfBrush $primaryColor
+    $confirmButton.BorderBrush = New-WpfBrush $primaryBorder
+    $confirmButton.IsDefault = $true
+    $buttonPanel.Children.Add($confirmButton) | Out-Null
+
+    $closeButton.Tag = $dialog
+    $confirmButton.Tag = $dialog
+    $cancelDialog = {
+        param($sender, $eventArgs)
+        if ($sender.Tag) { $sender.Tag.DialogResult = $false }
+    }
+    $confirmDialog = {
+        param($sender, $eventArgs)
+        if ($sender.Tag) { $sender.Tag.DialogResult = $true }
+    }
+    $closeButton.Add_Click($cancelDialog)
+    $confirmButton.Add_Click($confirmDialog)
+    return ([bool]$dialog.ShowDialog())
+}
+
+function Get-CurrentPreflightMonth {
+    return (Get-Date).ToString("yyyy-MM")
+}
+
+function Show-MonthlyPreflightDialog(
+    [string]$Title,
+    [string]$Message,
+    [string]$SecondaryText,
+    [string]$PrimaryText
+) {
+    $isPink = ($script:CurrentTheme -eq "pink")
+    $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
+    $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
+    $titleColor = if ($isPink) { "#6D344B" } else { "#F7FBFF" }
+    $bodyColor = if ($isPink) { "#805065" } else { "#D7E8F6" }
+    $secondaryColor = if ($isPink) { "#FFF4D8E4" } else { "#1B294158" }
+    $secondaryBorder = if ($isPink) { "#FFC87992" } else { "#6C9AC0" }
+    $primaryColor = if ($isPink) { "#FFFFBBD3" } else { "#20C7FF" }
+    $primaryBorder = if ($isPink) { "#FFFFF7FB" } else { "#C8F8FF" }
+    $primaryForeground = if ($isPink) { "#5A2439" } else { "#06151F" }
+
+    $dialog = New-Object Windows.Window
+    $dialog.Title = $Title
+    $dialog.Width = 520
+    $dialog.SizeToContent = "Height"
+    $dialog.ResizeMode = "NoResize"
+    $dialog.WindowStyle = "None"
+    $dialog.AllowsTransparency = $true
+    $dialog.Background = [Windows.Media.Brushes]::Transparent
+    $dialog.WindowStartupLocation = "CenterOwner"
+    $dialog.ShowInTaskbar = $false
+    try { $dialog.Owner = $Window } catch {}
+
+    $border = New-Object Windows.Controls.Border
+    $border.Padding = [Windows.Thickness]::new(22)
+    $border.CornerRadius = [Windows.CornerRadius]::new(10)
+    $border.BorderThickness = [Windows.Thickness]::new(1)
+    $border.Background = New-WpfBrush $panelBackgroundColor
+    $border.BorderBrush = New-WpfBrush $panelBorderColor
+    $shadow = New-Object Windows.Media.Effects.DropShadowEffect
+    $shadow.Color = [Windows.Media.Colors]::Black
+    $shadow.BlurRadius = 20
+    $shadow.ShadowDepth = 7
+    $shadow.Opacity = 0.35
+    $border.Effect = $shadow
+    $dialog.Content = $border
+
+    $layout = New-Object Windows.Controls.Grid
+    foreach ($height in @("Auto", "Auto", "Auto", "Auto")) {
+        $row = New-Object Windows.Controls.RowDefinition
+        $row.Height = $height
+        [void]$layout.RowDefinitions.Add($row)
+    }
+    $border.Child = $layout
+
+    $header = New-Object Windows.Controls.DockPanel
+    [Windows.Controls.Grid]::SetRow($header, 0)
+    $layout.Children.Add($header) | Out-Null
+    $closeButton = New-Object Windows.Controls.Button
+    $closeButton.Content = "×"
+    $closeButton.Width = 28
+    $closeButton.Height = 28
+    $closeButton.FontSize = 18
+    $closeButton.FontWeight = "Bold"
+    $closeButton.Foreground = New-WpfBrush $titleColor
+    $closeButton.Background = [Windows.Media.Brushes]::Transparent
+    $closeButton.BorderThickness = [Windows.Thickness]::new(0)
+    $closeButton.IsCancel = $true
+    [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
+    $header.Children.Add($closeButton) | Out-Null
+    $headerText = New-Object Windows.Controls.TextBlock
+    $headerText.Text = $Title
+    $headerText.FontFamily = "Microsoft YaHei UI"
+    $headerText.FontSize = 18
+    $headerText.FontWeight = "Bold"
+    $headerText.Foreground = New-WpfBrush $titleColor
+    $headerText.VerticalAlignment = "Center"
+    $header.Children.Add($headerText) | Out-Null
+
+    $body = New-Object Windows.Controls.TextBlock
+    $body.Text = $Message
+    $body.FontFamily = "Microsoft YaHei UI"
+    $body.FontSize = 13
+    $body.Foreground = New-WpfBrush $bodyColor
+    $body.TextWrapping = "Wrap"
+    $body.Margin = [Windows.Thickness]::new(0, 12, 0, 12)
+    [Windows.Controls.Grid]::SetRow($body, 1)
+    $layout.Children.Add($body) | Out-Null
+
+    $suppressCheck = New-Object Windows.Controls.CheckBox
+    $suppressCheck.Content = "本月不再提醒本消息"
+    $suppressCheck.FontFamily = "Microsoft YaHei UI"
+    $suppressCheck.FontSize = 12
+    $suppressCheck.Foreground = New-WpfBrush $bodyColor
+    $suppressCheck.Margin = [Windows.Thickness]::new(0, 0, 0, 16)
+    [Windows.Controls.Grid]::SetRow($suppressCheck, 2)
+    $layout.Children.Add($suppressCheck) | Out-Null
+    $dialog.Resources["monthlyPreflightSuppressCheck"] = $suppressCheck
+
+    $buttonPanel = New-Object Windows.Controls.StackPanel
+    $buttonPanel.Orientation = "Horizontal"
+    $buttonPanel.HorizontalAlignment = "Right"
+    [Windows.Controls.Grid]::SetRow($buttonPanel, 3)
+    $layout.Children.Add($buttonPanel) | Out-Null
+    $secondaryButton = New-Object Windows.Controls.Button
+    $secondaryButton.Content = $SecondaryText
+    $secondaryButton.Width = 164
+    $secondaryButton.Height = 36
+    $secondaryButton.FontFamily = "Microsoft YaHei UI"
+    $secondaryButton.FontWeight = "Bold"
+    $secondaryButton.Foreground = New-WpfBrush $titleColor
+    $secondaryButton.Background = New-WpfBrush $secondaryColor
+    $secondaryButton.BorderBrush = New-WpfBrush $secondaryBorder
+    $secondaryButton.Margin = [Windows.Thickness]::new(0, 0, 10, 0)
+    $buttonPanel.Children.Add($secondaryButton) | Out-Null
+    $primaryButton = New-Object Windows.Controls.Button
+    $primaryButton.Content = $PrimaryText
+    $primaryButton.Width = 144
+    $primaryButton.Height = 36
+    $primaryButton.FontFamily = "Microsoft YaHei UI"
+    $primaryButton.FontWeight = "Bold"
+    $primaryButton.Foreground = New-WpfBrush $primaryForeground
+    $primaryButton.Background = New-WpfBrush $primaryColor
+    $primaryButton.BorderBrush = New-WpfBrush $primaryBorder
+    $primaryButton.IsDefault = $true
+    $buttonPanel.Children.Add($primaryButton) | Out-Null
+
+    $dialog.Tag = [pscustomobject]@{ Action = "cancel"; Suppress = $false }
+    foreach ($button in @($closeButton, $secondaryButton, $primaryButton)) {
+        $button.Tag = $dialog
+    }
+    $closeButton.Add_Click({
+        param($sender, $eventArgs)
+        if ($sender.Tag) { $sender.Tag.Close() }
+    })
+    $secondaryButton.Add_Click({
+        param($sender, $eventArgs)
+        $owner = $sender.Tag
+        if ($owner) {
+            $owner.Tag = [pscustomobject]@{ Action = "secondary"; Suppress = [bool]$owner.Resources["monthlyPreflightSuppressCheck"].IsChecked }
+            $owner.Close()
+        }
+    })
+    $primaryButton.Add_Click({
+        param($sender, $eventArgs)
+        $owner = $sender.Tag
+        if ($owner) {
+            $owner.Tag = [pscustomobject]@{ Action = "primary"; Suppress = [bool]$owner.Resources["monthlyPreflightSuppressCheck"].IsChecked }
+            $owner.Close()
+        }
+    })
+    $dialog.ShowDialog() | Out-Null
+    return $dialog.Tag
+}
+
+function Show-ProgramHelpDialog {
+    $isPink = ($script:CurrentTheme -eq "pink")
+    $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
+    $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
+    $titleColor = if ($isPink) { "#6D344B" } else { "#F7FBFF" }
+    $bodyColor = if ($isPink) { "#805065" } else { "#D7E8F6" }
+    $sectionColor = if ($isPink) { "#B83D6A" } else { "#64E7FF" }
+    $primaryColor = if ($isPink) { "#FFFFBBD3" } else { "#20C7FF" }
+    $primaryBorder = if ($isPink) { "#FFFFF7FB" } else { "#C8F8FF" }
+    $primaryForeground = if ($isPink) { "#5A2439" } else { "#06151F" }
+
+    $availableHeight = [Math]::Max(420, [int][Windows.SystemParameters]::WorkArea.Height - 40)
+    $dialog = New-Object Windows.Window
+    $dialog.Title = "帮助"
+    $dialog.Width = 650
+    $dialog.Height = [Math]::Min(680, $availableHeight)
+    $dialog.MinHeight = 420
+    $dialog.ResizeMode = "NoResize"
+    $dialog.WindowStyle = "None"
+    $dialog.AllowsTransparency = $true
+    $dialog.Background = [Windows.Media.Brushes]::Transparent
+    $dialog.WindowStartupLocation = "CenterOwner"
+    $dialog.ShowInTaskbar = $false
+    try { $dialog.Owner = $Window } catch {}
+
+    $border = New-Object Windows.Controls.Border
+    $border.Padding = [Windows.Thickness]::new(22)
+    $border.CornerRadius = [Windows.CornerRadius]::new(12)
+    $border.BorderThickness = [Windows.Thickness]::new(1)
+    $border.Background = New-WpfBrush $panelBackgroundColor
+    $border.BorderBrush = New-WpfBrush $panelBorderColor
+    $shadow = New-Object Windows.Media.Effects.DropShadowEffect
+    $shadow.Color = [Windows.Media.Colors]::Black
+    $shadow.BlurRadius = 22
+    $shadow.ShadowDepth = 7
+    $shadow.Opacity = 0.35
+    $border.Effect = $shadow
+    $dialog.Content = $border
+
+    $layout = New-Object Windows.Controls.Grid
+    foreach ($height in @("Auto", "*", "Auto")) {
+        $row = New-Object Windows.Controls.RowDefinition
+        $row.Height = $height
+        [void]$layout.RowDefinitions.Add($row)
+    }
+    $border.Child = $layout
+
+    $header = New-Object Windows.Controls.DockPanel
+    [Windows.Controls.Grid]::SetRow($header, 0)
+    $layout.Children.Add($header) | Out-Null
+    $closeButton = New-Object Windows.Controls.Button
+    $closeButton.Content = "×"
+    $closeButton.Width = 30
+    $closeButton.Height = 30
+    $closeButton.FontSize = 19
+    $closeButton.FontWeight = "Bold"
+    $closeButton.Foreground = New-WpfBrush $titleColor
+    $closeButton.Background = [Windows.Media.Brushes]::Transparent
+    $closeButton.BorderThickness = [Windows.Thickness]::new(0)
+    $closeButton.IsCancel = $true
+    [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
+    $header.Children.Add($closeButton) | Out-Null
+    $headerText = New-Object Windows.Controls.TextBlock
+    $headerText.Text = "NIKKE C ARENA Tool 帮助"
+    $headerText.FontFamily = "Microsoft YaHei UI"
+    $headerText.FontSize = 19
+    $headerText.FontWeight = "Bold"
+    $headerText.Foreground = New-WpfBrush $titleColor
+    $headerText.VerticalAlignment = "Center"
+    $header.Children.Add($headerText) | Out-Null
+
+    $scrollViewer = New-Object Windows.Controls.ScrollViewer
+    $scrollViewer.VerticalScrollBarVisibility = "Auto"
+    $scrollViewer.HorizontalScrollBarVisibility = "Disabled"
+    $scrollViewer.Margin = [Windows.Thickness]::new(0, 14, 0, 14)
+    [Windows.Controls.Grid]::SetRow($scrollViewer, 1)
+    $layout.Children.Add($scrollViewer) | Out-Null
+    $content = New-Object Windows.Controls.StackPanel
+    $scrollViewer.Content = $content
+
+    $addSection = {
+        param([string]$Heading, [string]$Message)
+        $headingBlock = New-Object Windows.Controls.TextBlock
+        $headingBlock.Text = $Heading
+        $headingBlock.FontFamily = "Microsoft YaHei UI"
+        $headingBlock.FontSize = 14
+        $headingBlock.FontWeight = "Bold"
+        $headingBlock.Foreground = New-WpfBrush $sectionColor
+        $headingBlock.Margin = [Windows.Thickness]::new(0, 0, 0, 5)
+        $content.Children.Add($headingBlock) | Out-Null
+
+        $bodyBlock = New-Object Windows.Controls.TextBlock
+        $bodyBlock.Text = $Message
+        $bodyBlock.FontFamily = "Microsoft YaHei UI"
+        $bodyBlock.FontSize = 12
+        $bodyBlock.LineHeight = 20
+        $bodyBlock.Foreground = New-WpfBrush $bodyColor
+        $bodyBlock.TextWrapping = "Wrap"
+        $bodyBlock.Margin = [Windows.Thickness]::new(0, 0, 0, 16)
+        $content.Children.Add($bodyBlock) | Out-Null
+    }
+
+    & $addSection "功能简介" @"
+本工具用于整理 C ARENA 截图与对局资料：
+- 自动化截图、跨分辨率拼接和赛区适配。
+- 图像压缩、拼接、战果标记与截图文件管理。
+- 本地 OCR 识别用户选入的战斗图像，并导出可供分析的数据。
+"@
+    & $addSection "运行方式" @"
+本工具通过可见屏幕画面截图、图像像素识别，以及 Windows 标准鼠标键盘输入完成操作。
+本工具不读取、写入或扫描游戏内存；不注入 DLL；不 Hook 游戏进程；不附加调试器；不修改游戏文件、网络通信或客户端数据。
+"@
+    & $addSection "开发初心" @"
+本工具仅为方便玩家整理、交流 NIKKE C ARENA 竞技场截图、阵容与对局心得而开发，不提供影响游戏公平性或破坏游戏客户端的功能。
+"@
+    & $addSection "使用与风险提示" @"
+- 请自行确认使用行为符合所在地法律法规、游戏平台规则及游戏运营规则。
+- 截图、识别、拼接和自动化结果可能受网络、游戏版本、分辨率或界面变化影响，重要数据请自行复核。
+- 本工具按现状提供；因使用、操作失误、设备环境或第三方服务变化造成的损失与争议，使用者应自行承担相应责任。
+"@
+    & $addSection "禁止用途" @"
+严禁将本工具、其代码、安装包或衍生成果用于读取或篡改他人数据、规避安全机制、制作外挂、侵犯计算机信息系统，或任何其他违法违规用途。
+用户自行修改、二次分发或违规使用本工具及其衍生成果所产生的后果，由相关行为人自行承担。
+"@
+
+    $buttonPanel = New-Object Windows.Controls.StackPanel
+    $buttonPanel.Orientation = "Horizontal"
+    $buttonPanel.HorizontalAlignment = "Right"
+    [Windows.Controls.Grid]::SetRow($buttonPanel, 2)
+    $layout.Children.Add($buttonPanel) | Out-Null
+    $doneButton = New-Object Windows.Controls.Button
+    $doneButton.Content = "我已了解"
+    $doneButton.Width = 112
+    $doneButton.Height = 36
+    $doneButton.FontFamily = "Microsoft YaHei UI"
+    $doneButton.FontWeight = "Bold"
+    $doneButton.Foreground = New-WpfBrush $primaryForeground
+    $doneButton.Background = New-WpfBrush $primaryColor
+    $doneButton.BorderBrush = New-WpfBrush $primaryBorder
+    $doneButton.IsDefault = $true
+    $buttonPanel.Children.Add($doneButton) | Out-Null
+
+    foreach ($button in @($closeButton, $doneButton)) { $button.Tag = $dialog }
+    $closeDialog = {
+        param($sender, $eventArgs)
+        if ($sender.Tag) { $sender.Tag.Close() }
+    }
+    $closeButton.Add_Click($closeDialog)
+    $doneButton.Add_Click($closeDialog)
+    $dialog.ShowDialog() | Out-Null
+}
+
+function Confirm-OcrRosterPreflight {
+    $month = Get-CurrentPreflightMonth
+    if ($script:OcrRosterPreflightSuppressedMonth -eq $month) { return $true }
+    $updateTime = if (Test-Path $NikkeNameListPath) {
+        (Get-Item -LiteralPath $NikkeNameListPath).LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
+    } else {
+        "尚未创建"
+    }
+    $message = "当前妮姬名单更新时间：$updateTime`n`n请指挥官确认近期是否有新加入的妮姬和珍藏品。若有，请登记妮姬名单后再进行识别。"
+    $decision = Show-MonthlyPreflightDialog "识别前检查" $message "前往更新妮姬名单" "继续执行识别"
+    if ($decision.Suppress) {
+        $script:OcrRosterPreflightSuppressedMonth = $month
+        Save-CaptureTimingSettings
+    }
+    if ($decision.Action -eq "secondary") {
+        Show-NikkeNameManager
+        return $false
+    }
+    return ($decision.Action -eq "primary")
+}
+
+function Confirm-CaptureParametersPreflight {
+    $month = Get-CurrentPreflightMonth
+    if ($script:CaptureParametersPreflightSuppressedMonth -eq $month) { return $true }
+    $message = "请指挥官确认已设置好截图参数"
+    $decision = Show-MonthlyPreflightDialog "截图前检查" $message "前往参数设置" "继续执行截图"
+    if ($decision.Suppress) {
+        $script:CaptureParametersPreflightSuppressedMonth = $month
+        Save-CaptureTimingSettings
+    }
+    if ($decision.Action -eq "secondary") {
+        Set-SubPageMode "settings"
+        Show-SubPage
+        return $false
+    }
+    return ($decision.Action -eq "primary")
+}
+
+function Complete-ImageToolProcess {
+    $process = $script:ImageToolProcess
+    $operation = $script:ImageToolOperation
+    $outputFolder = $script:ImageToolOutputFolder
+    $script:ImageToolProcess = $null
+    $script:ImageToolOperation = $null
+    $script:ImageToolOutputFolder = $null
+    $stdout = ""
+    $stderr = ""
+    try {
+        $stdout = $process.StandardOutput.ReadToEnd()
+        $stderr = $process.StandardError.ReadToEnd()
+        $exitCode = $process.ExitCode
+    } finally {
+        try { $process.Dispose() } catch {}
+        Close-ImageToolProgressWindow
+        Set-Running $false
+    }
+
+    if ($exitCode -ne 0) {
+        $message = if ($stderr.Trim()) { $stderr.Trim() } else { "图像处理失败，请检查所选图像后重试。" }
+        try {
+            $payload = $message | ConvertFrom-Json
+            if ($payload.error) { $message = [string]$payload.error }
+        } catch {}
+        Append-Log ("Image tool failed: " + $message)
+        Show-ImageToolMessage $message "图像工具" "Error"
+        return
+    }
+
+    try {
+        $result = $stdout.Trim() | ConvertFrom-Json
+        $outputCount = @($result.outputs).Count
+        $actionText = switch ($operation) {
+            "compress" { "图像压缩" }
+            "stitch" { "图像拼接" }
+            "annotate" { "玩家战果标记" }
+            "annotate-direct" { "玩家战果标记" }
+            default { "图像处理" }
+        }
+        Append-Log ("Image tool {0} completed: {1} file(s) -> {2}" -f $actionText, $outputCount, $outputFolder)
+        $annotationSummary = ""
+        if ($operation -eq "annotate") {
+            $annotationSummary = ("{0}已标记 {1} 场对局、{2} 位玩家，晋级赛 GROUP 标记 {3} 个。" -f [Environment]::NewLine, [int]$result.annotated_matches, [int]$result.annotated_players, [int]$result.group_labels)
+            if ([int]$result.skipped_matches -gt 0) {
+                $annotationSummary += ("{0}有 {1} 场对局未匹配到对应位置或胜负记录不完整。" -f [Environment]::NewLine, [int]$result.skipped_matches)
+            }
+            if ($result.warnings -and @($result.warnings).Count -gt 0) {
+                $annotationSummary += ("{0}" + (@($result.warnings) -join [Environment]::NewLine))
+            }
+        } elseif ($operation -eq "annotate-direct") {
+            $winnerText = if ($result.winner -eq "attacker") { "左侧玩家" } else { "右侧玩家" }
+            $annotationSummary = ("{0}已从中间详细战果页判断胜负：{1}获胜，已标记 2 位玩家。" -f [Environment]::NewLine, $winnerText)
+        }
+        $message = ("{0}完成，指挥官，已生成 {1} 个文件。{2}{3}{2}{4}" -f $actionText, $outputCount, [Environment]::NewLine, $annotationSummary, $outputFolder)
+        $title = if ($operation -in @("annotate", "annotate-direct")) { "玩家战果标记" } else { "图像工具" }
+        Show-ImageToolMessage $message $title "Information"
+    } catch {
+        Append-Log ("Image tool result parsing failed: " + $_.Exception.Message)
+        Show-ImageToolMessage "图像已处理完成，但无法读取输出信息。请打开截图文件夹查看结果。" "图像工具" "Warning"
+    }
+}
+
+function Start-ImageToolOperation(
+    [string]$Operation,
+    [string[]]$InputPaths = $null,
+    [string]$DataFile = $null,
+    [bool]$GrayLoser = $false,
+    [string]$ClientProfile = "cn"
+) {
+    if ($script:ImageToolProcess -and -not $script:ImageToolProcess.HasExited) {
+        Show-ImageToolMessage "图像工具正在处理中，请等待当前任务完成。" "图像工具" "Information"
+        return
+    }
+    if (-not $PythonExe -or -not (Test-Path $ImageToolsPath)) {
+        Show-ImageToolMessage "未找到图像处理运行环境，请重新安装工具。" "图像工具" "Error"
+        return
+    }
+
+    $paths = if ($InputPaths -and $InputPaths.Count -gt 0) {
+        @($InputPaths | Where-Object { $_ -and (Test-Path $_) })
+    } else {
+        @(Get-ImageToolSelectedPaths)
+    }
+    if ($paths.Count -eq 0) {
+        Show-ImageToolMessage "请至少选择一张 PNG 或 JPG 图像。" "图像工具" "Warning"
+        return
+    }
+
+    $outputFolder = Get-OutputDateFolder
+    $quote = [string][char]34
+    $arguments = @(($quote + $ImageToolsPath + $quote), $Operation, "--output-dir", ($quote + $outputFolder + $quote))
+    $message = ""
+    if ($Operation -eq "compress") {
+        $nonPng = @($paths | Where-Object { [IO.Path]::GetExtension($_).ToLowerInvariant() -ne ".png" })
+        if ($nonPng.Count -gt 0) {
+            Show-ImageToolMessage "压缩图像仅支持 PNG 截图，请移除 JPG 图像后重试。" "图像工具" "Warning"
+            return
+        }
+        $compressionMode = Get-ImageToolCompressionMode
+        $arguments += @("--mode", $compressionMode)
+        $compressionLabel = switch ($compressionMode) {
+            "deep" { "深度压缩"; break }
+            "extreme" { "极限压缩（约 10 MiB）"; break }
+            default { "高清压缩" }
+        }
+        $message = ("正在进行{0}，请稍候" -f $compressionLabel)
+    } elseif ($Operation -eq "stitch") {
+        if ($paths.Count -lt 2) {
+            Show-ImageToolMessage "拼接图像至少需要选择 2 张图像。" "图像工具" "Warning"
+            return
+        }
+        $gap = Get-ImageToolGap
+        if ($null -eq $gap) { return }
+        $direction = if ([bool]$ImageToolHorizontalCheck.IsChecked) { "horizontal" } else { "vertical" }
+        $arguments += @("--direction", $direction, "--gap", $gap)
+        $message = "正在拼接所选图像，请稍候"
+    } elseif ($Operation -eq "annotate") {
+        if (-not $DataFile -or -not (Test-Path $DataFile)) {
+            Show-ImageToolMessage "未找到识别结果数据文件，请重新选择 JSON 或 Excel。" "玩家战果标记" "Warning"
+            return
+        }
+        $dataExtension = [IO.Path]::GetExtension($DataFile).ToLowerInvariant()
+        if ($dataExtension -notin @(".json", ".xlsx")) {
+            Show-ImageToolMessage "玩家战果标记仅支持识别导出的 JSON 或 Excel 文件。" "玩家战果标记" "Warning"
+            return
+        }
+        $arguments += @("--data-file", ($quote + $DataFile + $quote), "--client-profile", $ClientProfile)
+        if ($GrayLoser) { $arguments += "--gray-loser" }
+        $message = "正在标记详细战果图中的玩家胜负，请稍候"
+    } elseif ($Operation -eq "annotate-direct") {
+        if ($paths.Count -ne 1) {
+            Show-ImageToolMessage "单张详细战果自动标记仅支持选择 1 张图像。" "玩家战果标记" "Warning"
+            return
+        }
+        $arguments += @("--client-profile", $ClientProfile)
+        if ($GrayLoser) { $arguments += "--gray-loser" }
+        $message = "正在读取中间详细战果并标记玩家胜负，请稍候"
+    } else {
+        Show-ImageToolMessage "不支持的图像工具操作。" "图像工具" "Error"
+        return
+    }
+    foreach ($path in $paths) {
+        $arguments += ($quote + $path + $quote)
+    }
+
+    $script:ImageToolOperation = $Operation
+    $script:ImageToolOutputFolder = $outputFolder
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $PythonExe
+    $psi.Arguments = ($arguments -join " ")
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
+    $psi.StandardErrorEncoding = [Text.Encoding]::UTF8
+    $psi.EnvironmentVariables["PYTHONUTF8"] = "1"
+    $psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8"
+
+    try {
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $psi
+        if (-not $process.Start()) { throw "无法启动图像处理进程。" }
+        $script:ImageToolProcess = $process
+        Set-Running $true
+        Set-Log $message
+        Show-ImageToolProgressWindow $message
+
+        $timer = New-Object Windows.Threading.DispatcherTimer
+        $timer.Interval = [TimeSpan]::FromMilliseconds(250)
+        $timer.Add_Tick({
+            if (-not $script:ImageToolProcess) { return }
+            if (-not $script:ImageToolProcess.HasExited) { return }
+            $script:ImageToolTimer.Stop()
+            $script:ImageToolTimer = $null
+            Complete-ImageToolProcess
+        })
+        $script:ImageToolTimer = $timer
+        $timer.Start()
+    } catch {
+        Close-ImageToolProgressWindow
+        Set-Running $false
+        $script:ImageToolProcess = $null
+        Append-Log ("Image tool launch failed: " + $_.Exception.Message)
+        Show-ImageToolMessage ("无法启动图像处理：" + $_.Exception.Message) "图像工具" "Error"
+    }
+}
+
 function Start-OcrRecognition {
+    if (-not (Confirm-OcrRosterPreflight)) { return }
     Set-Running $true
     Set-Log "Preparing OCR recognition..."
     Refresh-Ui
@@ -4327,10 +6532,16 @@ function Start-OcrRecognition {
             Append-Log "Please select an existing post-battle data image."
             return
         }
+        $ocrInputPaths = if ($useSeasonMode) { $seasonImagePaths } else { @($activeSingleImagePath) }
+        if (-not (Confirm-OcrInputClientProfile $ocrInputPaths)) {
+            Append-Log "OCR canceled by client profile confirmation."
+            return
+        }
         $performance = Get-OcrPerformanceConfig
         $activeOcrPythonExe = Get-ActiveOcrPythonExe $performance
         if (-not $activeOcrPythonExe) {
             Append-Log "No active Python runtime with PaddleOCR was found."
+            Show-TopMessage "OCR 运行环境不可用。请打开【截图与图像识别参数设置】，点击【重新检测 OCR 环境】。" "OCR 环境" Warning
             return
         }
         $script:ActiveOcrPythonExe = $activeOcrPythonExe
@@ -4340,6 +6551,7 @@ function Start-OcrRecognition {
             return
         }
         $ocrOutputFolder = Get-OutputDateFolder
+        $ocrStartedAt = Get-Date
         $script:OcrProgressOutputFolder = $ocrOutputFolder
         $selectedOcrLeaf = if ($useSeasonMode) { "四卡槽战斗图像" } else { Split-Path -Leaf $activeSingleImagePath }
         $ocrRunLogPath = New-OcrRunLogFilePath
@@ -4391,7 +6603,7 @@ function Start-OcrRecognition {
         if ($performance.UseGpu) {
             $arguments += " --use-gpu"
         }
-        $arguments = Add-OcrRecognitionOptionArguments $arguments
+        $arguments = Add-OcrRecognitionOptionArguments $arguments $true $true
         $arguments += " --progress-file `"$progressFile`""
         $arguments += " --thermal-mode $($thermal.Mode) --control-file `"$controlFile`" --cooldown-sleep $cooldownText"
         Initialize-OcrRunLog $ocrRunLogPath "Manual OCR recognition" $arguments
@@ -4471,12 +6683,24 @@ function Start-OcrRecognition {
             } else {
                 Append-Log "OCR export completed."
             }
+            $latestAnnotationData = Get-ChildItem -LiteralPath $ocrOutputFolder -Filter "*_result.json" -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.LastWriteTime -ge $ocrStartedAt.AddSeconds(-2) } |
+                Sort-Object LastWriteTime |
+                Select-Object -Last 1
+            if ($latestAnnotationData) {
+                Set-BattleAnnotationDataPath $latestAnnotationData.FullName
+                Append-Log ("Battle annotation data selected: " + $latestAnnotationData.Name)
+            }
             Update-OcrProgressWindow ("已导出 JSON / Excel：" + $selectedOcrLeaf)
             $completed = $true
         } else {
             $text = @($capturedLines.ToArray() | Where-Object { $_ }) | Select-Object -Last 8
             Append-Log ("OCR failed:`n" + ($text -join "`n"))
             Add-OcrRunLogLine $ocrRunLogPath ("[launcher] OCR failed with exit code {0}." -f $proc.ExitCode)
+            if (Test-OcrRuntimeFailureText ($text -join "`n")) {
+                Invalidate-OcrRuntimeCache "OCR child process reported a runtime import failure."
+                Update-OcrRuntimeControls
+            }
             Update-OcrProgressWindow ("OCR 失败：" + $selectedOcrLeaf)
         }
     } catch {
@@ -4661,12 +6885,23 @@ function Invoke-AutoOcrExport($ImagePath, $StageCode, $LayoutCode, $PercentStart
 }
 
 function Start-Capture($GroupSize, $Top8Pyramid = $false) {
+    if (-not (Confirm-CaptureParametersPreflight)) { return }
     $captureLogPath = New-CaptureDiagnosticsLog $CurrentCaptureMode
     Add-CaptureDiagnosticsLog $captureLogPath ("mode={0}; elevated={1}; script_dir={2}" -f $CurrentCaptureMode, ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator), $ScriptDir)
     if (-not (Test-GameReadyForCapture)) {
         Add-CaptureDiagnosticsLog $captureLogPath "NIKKE process was not detected before capture."
         return
     }
+    $serverCode = Get-ActiveNikkeServer
+    Add-CaptureDiagnosticsLog $captureLogPath ("server_mode={0}; effective_server={1}; detected_server={2}" -f $script:ServerSelectionMode, $serverCode, $script:DetectedNikkeServer)
+    $groupSizeValue = if ($null -ne $GroupSize) { [int]$GroupSize } else { $null }
+    $captureWindowInfo = Get-UsableCaptureWindowInfo $serverCode $groupSizeValue $Top8Pyramid
+    if (-not $captureWindowInfo) {
+        Add-CaptureDiagnosticsLog $captureLogPath "Capture was blocked because the current game window is unavailable or unsupported in windowed mode."
+        return
+    }
+    $isWindowedCapture = [bool]$captureWindowInfo.IsWindowed
+    Add-CaptureDiagnosticsLog $captureLogPath ("game_client=({0},{1}) {2}x{3}; windowed={4}; hwnd={5}" -f $captureWindowInfo.ClientLeft, $captureWindowInfo.ClientTop, $captureWindowInfo.ClientWidth, $captureWindowInfo.ClientHeight, $isWindowedCapture, $captureWindowInfo.Handle.ToInt64())
 
     $autoOcrRequested = Test-AutoOcrExportRequested
     if ($autoOcrRequested -and -not [bool]$GroupDetailedDataCheck.IsChecked) {
@@ -4699,7 +6934,6 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
     $completed = $false
     $autoOcrCompleted = $true
     $script:StopRequested = $false
-    $groupSizeValue = if ($null -ne $GroupSize) { [int]$GroupSize } else { $null }
     $selectedFrame = Get-SelectedFramePath
     $dateFolder = Join-Path $OutputRoot (Get-Date -Format "yyyy-MM-dd")
     New-Item -ItemType Directory -Force -Path $dateFolder | Out-Null
@@ -4712,11 +6946,14 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
         Add-CaptureDiagnosticsLog $captureLogPath "Focusing NIKKE game window."
         Start-Sleep -Milliseconds 250
 
-        if (-not [NativeWin]::FocusGame()) {
+        if (-not [NativeWin]::FocusGame($serverCode)) {
             Append-Log "Game window was not found."
-            Add-CaptureDiagnosticsLog $captureLogPath "FocusGame failed: NIKKE process exists but no visible game window was found."
+            Add-CaptureDiagnosticsLog $captureLogPath ("FocusGame failed for effective server: {0}" -f $serverCode)
             return
         }
+        $captureWindowInfo = Get-UsableCaptureWindowInfo $serverCode $groupSizeValue $Top8Pyramid
+        if (-not $captureWindowInfo) { return }
+        $isWindowedCapture = [bool]$captureWindowInfo.IsWindowed
 
         Start-Sleep -Milliseconds 1000
         if ($CurrentCaptureMode -eq "group") {
@@ -4737,22 +6974,41 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
         if ($frameLabel) { $fileStem = "{0}-{1}" -f $fileStem, $frameLabel }
         $resolutionLabel = Get-CurrentDisplayResolutionLabel
         if ($resolutionLabel) { $fileStem = "{0}-{1}" -f $fileStem, $resolutionLabel }
+        $serverFileSuffix = switch ($serverCode) {
+            "cn" { "国服"; break }
+            "global" { "国际服"; break }
+            "hmt" { "港澳台"; break }
+            default { "" }
+        }
+        if ($serverFileSuffix) { $fileStem = "{0}-{1}" -f $fileStem, $serverFileSuffix }
         $output = Get-UniqueOutputPath $dateFolder ("{0}.png" -f $fileStem)
         Append-Log "Running arena capture..."
 
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $delayArg = $CaptureDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
-        $detailDelayArg = $DetailCaptureDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
-        if (Test-Path $RoundWorkerExe) {
+        $avatarProfileDelayArg = $AvatarProfileDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
+        $bracketResultDelayArg = $BracketResultDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
+        $detailPageTimeoutArg = $DetailPageTimeoutSeconds.ToString("0", [Globalization.CultureInfo]::InvariantCulture)
+        # The packaged CN worker predates profile-page polling. When that option
+        # is enabled, run the shared Python worker so every server uses the same
+        # scale-aware probe until the next worker rebuild.
+        $useRoundWorkerExe = (Test-Path $RoundWorkerExe) -and ($serverCode -notin @("global", "hmt")) -and (-not $AvatarProfilePollEnabled) -and (-not $isWindowedCapture)
+        if ($useRoundWorkerExe) {
             $psi.FileName = $RoundWorkerExe
-            $arguments = "--output `"$output`" --click-delay $delayArg --detail-click-delay $detailDelayArg --quiet"
+            $arguments = "--output `"$output`" --click-delay $delayArg --detail-page-min-wait 0.70 --detail-page-timeout $detailPageTimeoutArg --quiet"
         } else {
             if (-not $PythonExe) {
                 Append-Log "No usable Python with Pillow was found."
                 return
             }
             $psi.FileName = $PythonExe
-            $arguments = "`"$StitcherPath`" --output `"$output`" --click-delay $delayArg --detail-click-delay $detailDelayArg --quiet"
+            $arguments = "`"$StitcherPath`" --output `"$output`" --click-delay $delayArg --avatar-profile-delay $avatarProfileDelayArg --bracket-result-delay $bracketResultDelayArg --detail-page-min-wait 0.70 --detail-page-timeout $detailPageTimeoutArg --quiet"
+        }
+        if ($serverCode -in @("global", "hmt")) {
+            $arguments += " --server $serverCode"
+        }
+        if ($isWindowedCapture) {
+            $arguments += " --window-handle $($captureWindowInfo.Handle.ToInt64())"
         }
         Append-Log ("Worker: " + $psi.FileName)
         if ($CurrentCaptureMode -eq "group") {
@@ -4838,6 +7094,9 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
 
         if ($script:StopRequested) {
             Append-Log "Stopped."
+        } elseif ($proc.ExitCode -eq 42 -or $stdout -match "NIKKE_DETAIL_PAGE_TIMEOUT") {
+            Append-Log "Capture paused because the detailed battle record page did not become ready."
+            Show-TopMessage $TextDetailPageTimeoutMessage $TextDetailPageTimeoutTitle ([System.Windows.MessageBoxImage]::Warning)
         } elseif ($proc.ExitCode -eq 0) {
             $name = Split-Path -Leaf $output
             if ($CurrentCaptureMode -eq "season") {
@@ -4894,6 +7153,7 @@ function Start-Capture($GroupSize, $Top8Pyramid = $false) {
         } else {
             $text = (($stdout + "`n" + $stderr) -split "`r?`n" | Where-Object { $_ }) | Select-Object -Last 4
             Append-Log ("Capture failed:`n" + ($text -join "`n"))
+            Show-TopMessage ($TextCaptureFailureMessage + "`n" + $captureLogPath) $TextCaptureFailureTitle ([System.Windows.MessageBoxImage]::Error)
         }
     } catch {
         Append-Log ("Failed: " + $_.Exception.Message)
@@ -4930,6 +7190,37 @@ if ($OcrSlotTop8ClearButton) { $OcrSlotTop8ClearButton.Add_Click({ Clear-OcrSeas
 if ($OcrSlotGroup16ClearButton) { $OcrSlotGroup16ClearButton.Add_Click({ Clear-OcrSeasonSlot "group16" }) }
 if ($OcrSlotGroup32ClearButton) { $OcrSlotGroup32ClearButton.Add_Click({ Clear-OcrSeasonSlot "group32" }) }
 if ($OcrSlotGroup64ClearButton) { $OcrSlotGroup64ClearButton.Add_Click({ Clear-OcrSeasonSlot "group64" }) }
+if ($BattleAnnotationDataButton) { $BattleAnnotationDataButton.Add_Click({ Select-BattleAnnotationData }) }
+if ($BattleAnnotationDataClearButton) { $BattleAnnotationDataClearButton.Add_Click({ Clear-BattleAnnotationData }) }
+if ($BattleAnnotationRunButton) { $BattleAnnotationRunButton.Add_Click({ Start-BattleAnnotation }) }
+if ($ServerModeComboBox) {
+    $ServerModeComboBox.Add_SelectionChanged({
+        if ($script:ServerSelectionUpdating) { return }
+        $selectedServerItem = $ServerModeComboBox.SelectedItem
+        if ($selectedServerItem -and $selectedServerItem.Tag) {
+            Set-ServerSelectionMode ([string]$selectedServerItem.Tag)
+        }
+    })
+}
+if ($ImageToolSlot1Button) { $ImageToolSlot1Button.Add_Click({ Select-ImageToolImage "slot1" }) }
+if ($ImageToolSlot2Button) { $ImageToolSlot2Button.Add_Click({ Select-ImageToolImage "slot2" }) }
+if ($ImageToolSlot3Button) { $ImageToolSlot3Button.Add_Click({ Select-ImageToolImage "slot3" }) }
+if ($ImageToolSlot4Button) { $ImageToolSlot4Button.Add_Click({ Select-ImageToolImage "slot4" }) }
+if ($ImageToolSlot1ClearButton) { $ImageToolSlot1ClearButton.Add_Click({ Clear-ImageToolSlot "slot1" }) }
+if ($ImageToolSlot2ClearButton) { $ImageToolSlot2ClearButton.Add_Click({ Clear-ImageToolSlot "slot2" }) }
+if ($ImageToolSlot3ClearButton) { $ImageToolSlot3ClearButton.Add_Click({ Clear-ImageToolSlot "slot3" }) }
+if ($ImageToolSlot4ClearButton) { $ImageToolSlot4ClearButton.Add_Click({ Clear-ImageToolSlot "slot4" }) }
+if ($ImageToolVerticalCheck) {
+    $ImageToolVerticalCheck.Add_Checked({ Set-ImageToolDirection "vertical" })
+    $ImageToolVerticalCheck.Add_Unchecked({ if (-not [bool]$ImageToolHorizontalCheck.IsChecked) { Set-ImageToolDirection "horizontal" } })
+}
+if ($ImageToolHorizontalCheck) {
+    $ImageToolHorizontalCheck.Add_Checked({ Set-ImageToolDirection "horizontal" })
+    $ImageToolHorizontalCheck.Add_Unchecked({ if (-not [bool]$ImageToolVerticalCheck.IsChecked) { Set-ImageToolDirection "vertical" } })
+}
+if ($ImageToolCompressButton) { $ImageToolCompressButton.Add_Click({ Start-ImageToolOperation "compress" }) }
+if ($ImageToolStitchButton) { $ImageToolStitchButton.Add_Click({ Start-ImageToolOperation "stitch" }) }
+Update-BattleAnnotationDataVisual
 if ($OcrExampleButton) {
     $OcrExampleButton.Add_Click({
         $script:SelectedOcrImagePath = $OcrExamplePath
@@ -4946,6 +7237,26 @@ if ($OcrOpenFolderButton) {
 }
 
 if ($Check) {
+    $serverTitleChecks = @(
+        @("胜利女神：妮姬", "hmt"),
+        @("nikke.exe", "cn"),
+        @("NIKKE", "global")
+    )
+    foreach ($serverTitleCheck in $serverTitleChecks) {
+        if ([NativeWin]::GetNikkeServerCodeFromTitle($serverTitleCheck[0]) -ne $serverTitleCheck[1]) {
+            throw "NIKKE server title detection check failed"
+        }
+    }
+    foreach ($manualServerCheck in @(@("cn", "cn"), @("hmt", "hmt"), @("global", "global"))) {
+        Set-ServerSelectionMode $manualServerCheck[0]
+        if ((Get-EffectiveNikkeServer) -ne $manualServerCheck[1]) {
+            throw "manual server override check failed"
+        }
+    }
+    Set-ServerSelectionMode "auto"
+    if (-not $ServerModeComboBox -or $ServerModeComboBox.SelectedIndex -ne 0) {
+        throw "server mode default selection check failed"
+    }
     Set-SubPageMode "season"
     if ($SeasonExecutePanel.Visibility -ne "Visible" -or
         $FrameOptionsPanel.Visibility -ne "Visible" -or
@@ -4956,6 +7267,27 @@ if ($Check) {
         $GroupDetailedDataCheck.IsEnabled -ne $false) {
         throw "season capture page check failed"
     }
+    Set-SubPageMode "ocr"
+    if ($OcrExecutePanel.Visibility -ne "Visible" -or
+        -not $OcrForceDetailedResultsCheck -or
+        [bool]$OcrForceDetailedResultsCheck.IsChecked -ne $true) {
+        throw "manual OCR detailed result mode check failed"
+    }
+    Set-SubPageMode "image-tools"
+    if ($ImageToolsPanel.Visibility -ne "Visible" -or
+        $ImageToolVerticalCheck.IsChecked -ne $true -or
+        $ImageToolHorizontalCheck.IsChecked -eq $true -or
+        $ImageToolGapBox.Text -ne "0" -or
+        -not $ImageToolCompressionHighRadio -or
+        [bool]$ImageToolCompressionHighRadio.IsChecked -ne $true -or
+        -not $BattleAnnotationDataButton -or
+        -not $BattleAnnotationRunButton -or
+        $BattleAnnotationDataPathText.Text -ne "单张详细战果图无需选择数据" -or
+        [bool]$BattleAnnotationGrayLoserCheck.IsChecked -ne $true) {
+        throw "image tools page check failed"
+    }
+    Apply-Theme "pink"
+    Apply-Theme "dark"
     Write-Output "gui check ok"
     return
 }

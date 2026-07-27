@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NIKKE OCR 左侧四 Block 标注工具</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <header>
+      <h1>OCR 左侧四 Block 标注工具</h1>
+      <p>仅显示大图最左侧从上至下的 4 个样本 block：G1M1、G1M3、G5M1、G5M3。保留所有元素类别，导出坐标仍以原始整图为准。</p>
+    </header>
+
+    <section class="panel">
+      <h2>分辨率与底图</h2>
+      <label class="field-label">分辨率
+        <select id="resolutionSelect"></select>
+      </label>
+      <label class="file-import">
+        更替当前分辨率底图
+        <input id="backgroundFile" type="file" accept="image/png,image/jpeg,image/webp" />
+      </label>
+      <p id="backgroundHint" class="hint">未选择本地底图时显示空白画布；选择完整 64进32 大图后，工具仅裁出左侧四个样本 block 供标注。</p>
+    </section>
+
+    <section class="panel">
+      <h2>显示与联动</h2>
+      <div id="groupButtons" class="group-buttons"></div>
+      <div class="toggles">
+        <label><input id="onlyActive" type="checkbox" checked /> 只显示当前颜色</label>
+        <label><input id="showLabels" type="checkbox" /> 显示标签</label>
+        <label><input id="showLocked" type="checkbox" checked /> 显示锁定框</label>
+        <label><input id="syncDetailRows" type="checkbox" checked /> 联动当前 block 的赛果页 5 行</label>
+        <label><input id="syncRosterRows" type="checkbox" checked /> 联动当前 block 的阵容页 5 行</label>
+        <label><input id="syncCollectionRows" type="checkbox" checked /> 联动当前 block 的藏品同列 5 行</label>
+        <label><input id="syncCollectionRowSlots" type="checkbox" /> 联动当前藏品行的 5 个卡槽</label>
+        <label><input id="syncSameAcrossBlocks" type="checkbox" /> 同名识别框跨 4 个样本 block 联动</label>
+        <label class="field-label">同名框联动范围
+          <select id="syncBlockScope">
+            <option value="all">4 个样本 block</option>
+            <option value="row8">当前样本行（2 block）</option>
+          </select>
+        </label>
+        <label><input id="syncBlockTransforms" type="checkbox" /> block 移动/缩放跨样本联动</label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>block 间距</h2>
+      <div class="number-grid">
+        <label>GROUP 间距 <input id="outerGapInput" type="number" step="1" /></label>
+        <label>对局横距 <input id="matchColumnGapInput" type="number" step="1" /></label>
+        <label>对局纵距 <input id="matchRowGapInput" type="number" step="1" /></label>
+        <label>步进 <input id="gapStepInput" type="number" min="1" step="1" value="2" /></label>
+      </div>
+      <div class="button-grid compact">
+        <button id="applyGaps">应用间距</button>
+        <button id="rebuildBlocks">重排 block</button>
+        <button id="outerGapMinus">GROUP -</button>
+        <button id="outerGapPlus">GROUP +</button>
+        <button id="columnGapMinus">横距 -</button>
+        <button id="columnGapPlus">横距 +</button>
+        <button id="rowGapMinusBlock">纵距 -</button>
+        <button id="rowGapPlusBlock">纵距 +</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>操作</h2>
+      <div class="button-grid">
+        <button id="undoStep">撤销上一步</button>
+        <button id="resetDefault">重置当前分辨率默认值</button>
+        <button id="resetActiveGroup">重置当前类别</button>
+        <button id="addBox">新增框</button>
+        <button id="duplicateBox">复制框</button>
+        <button id="deleteBox">删除框</button>
+        <button id="lockBox">锁定/解锁</button>
+        <button id="saveJson" class="primary">保存四 Block JSON</button>
+        <button id="savePng">保存预览图</button>
+      </div>
+      <div class="annotation-tools">
+        <button id="collectionMode" class="collection-action">进入藏品标注模式</button>
+        <button id="previousBox" title="上一个未锁定框（[）">上一格</button>
+        <button id="nextBox" title="下一个未锁定框（]）">下一格</button>
+        <div id="annotationProgress" class="annotation-progress"></div>
+      </div>
+      <div class="row-gap-controls">
+        <label>行距步进 <input id="rowGapStep" type="number" min="1" step="1" value="2" /></label>
+        <button id="rowGapMinus">行距 -</button>
+        <button id="rowGapPlus">行距 +</button>
+      </div>
+      <label class="file-import">
+        导入四 Block JSON
+        <input id="importJson" type="file" accept="application/json,.json" />
+      </label>
+    </section>
+
+    <section class="panel inspector">
+      <h2>当前框</h2>
+      <div id="selectedHint" class="hint">未选择框</div>
+      <label>标签 <input id="labelInput" type="text" /></label>
+      <div class="number-grid">
+        <label>X <input id="xInput" type="number" step="1" /></label>
+        <label>Y <input id="yInput" type="number" step="1" /></label>
+        <label>W <input id="wInput" type="number" step="1" /></label>
+        <label>H <input id="hInput" type="number" step="1" /></label>
+      </div>
+      <label>备注 <textarea id="noteInput" rows="3"></textarea></label>
+      <p class="hint">方向键微调 1px，Shift + 方向键微调 10px。S 锁定后自动跳到下一格；[ / ] 切换上/下一未锁定框。拖动 block 时会同步移动/缩放该 block 内的所有识别框。</p>
+    </section>
+  </aside>
+
+  <main class="workspace">
+    <div class="topbar">
+      <div class="zoom-controls">
+        <button data-zoom="fit">适应窗口</button>
+        <button data-zoom="0.15">15%</button>
+        <button data-zoom="0.25">25%</button>
+        <button data-zoom="0.35">35%</button>
+        <button data-zoom="0.5">50%</button>
+        <button data-zoom="1">100%</button>
+        <button data-zoom="1.5">150%</button>
+        <button data-zoom="2">200%</button>
+        <button data-zoom="3">300%</button>
+        <span id="zoomLabel">100%</span>
+      </div>
+      <div id="metaLine" class="meta-line"></div>
+    </div>
+    <div id="viewport" class="viewport">
+      <div id="stage" class="stage">
+        <img id="baseImage" alt="OCR full image base" draggable="false" />
+        <div id="emptyCanvas" class="empty-canvas">请选择当前分辨率底图</div>
+        <div id="overlay" class="overlay"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./regions_data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

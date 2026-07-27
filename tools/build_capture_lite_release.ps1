@@ -58,9 +58,9 @@ try {
         "run_capture_lite.bat",
         "nikke_capture_lite_launcher.ps1",
         "nikke_round_stitcher.py",
+        "nikke_image_tools.py",
         "nikke_character_capture.py",
-        "nikke_character_capture_config.json",
-        "group_custom_backgrounds\pixiewall-a1cg6q-3840x2160.jpg"
+        "nikke_character_capture_config.json"
     )) {
         Copy-RequiredFile $file
     }

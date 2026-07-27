@@ -87,14 +87,15 @@ try {
         "nikke_gui_bootstrap.ps1",
         "nikke_gui_launcher.ps1",
         "nikke_round_stitcher.py",
+        "nikke_image_tools.py",
         "nikke_character_capture.py",
         "nikke_character_capture_config.json",
         "setup_gpu_runtime.bat",
         "setup_gpu_runtime_cn.bat",
+        "setup_gpu_runtime_aliyun.bat",
         "setup_gpu_runtime.ps1",
         "GPU_OCR_RUNTIME_SETUP_GUIDE.md",
-        "GPU_OCR_RUNTIME_SETUP_GUIDE.pdf",
-        "group_custom_backgrounds\pixiewall-a1cg6q-3840x2160.jpg"
+        "GPU_OCR_RUNTIME_SETUP_GUIDE.pdf"
     )) {
         Copy-RequiredFile $file
     }

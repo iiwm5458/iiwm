@@ -292,8 +292,46 @@ class ArenaOCRRecognizer:
         self._nickname_readers[language] = reader
         return reader
 
-    def recognize_nickname_candidates(self, image: Image.Image, region_name: str = "") -> list[tuple[str, float, str]]:
-        """Read one nickname row with Chinese, Japanese and Korean recognizers.
+    def detect_nickname_text_boxes(self, image: Image.Image) -> list[list[tuple[float, float]]]:
+        """Locate text on a nickname band without recognizing its contents.
+
+        PaddleOCR 2.x cannot reliably run ``ocr(..., rec=False)`` because its
+        internal NumPy truth check raises on a detected-box array. Calling the
+        detector directly avoids that compatibility issue and lets the overseas
+        nickname path crop away nearby UI before recognition.
+        """
+        if self.engine_name != "paddleocr":
+            return []
+
+        reader = self._get_nickname_reader("japan") or self.reader
+        detector = getattr(reader, "text_detector", None)
+        if detector is None:
+            return []
+
+        import numpy as np
+
+        try:
+            raw = detector(np.array(image.convert("RGB")))
+            boxes = raw[0] if isinstance(raw, tuple) else raw
+            if boxes is None:
+                return []
+            result: list[list[tuple[float, float]]] = []
+            for box in boxes:
+                points = [(float(point[0]), float(point[1])) for point in box]
+                if len(points) >= 4:
+                    result.append(points)
+            return result
+        except Exception:
+            return []
+
+    def recognize_nickname_candidates(
+        self,
+        image: Image.Image,
+        region_name: str = "",
+        languages: tuple[str, ...] = ("ch", "japan", "korean"),
+        include_detected_chinese: bool = True,
+    ) -> list[tuple[str, float, str]]:
+        """Read one nickname row with the requested offline recognizers.
 
         The extra language models are recognition-only and loaded lazily. They
         are used solely for nickname rows, so normal lineup OCR keeps its
@@ -306,10 +344,11 @@ class ArenaOCRRecognizer:
 
         # Keep detection-based Chinese results as a fallback for unusually
         # spaced names, then add recognition-only readings for all languages.
-        for item in self.recognize_region(image, region_name):
-            candidates.append((item.text, item.confidence, "ch"))
+        if include_detected_chinese:
+            for item in self.recognize_region(image, region_name):
+                candidates.append((item.text, item.confidence, "ch"))
 
-        for language in ("ch", "japan", "korean"):
+        for language in languages:
             reader = self._get_nickname_reader(language)
             if reader is None:
                 continue

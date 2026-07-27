@@ -15,13 +15,25 @@ battle-image OCR exports. The repository contains both supported products:
 Installers are published through GitHub Releases, rather than committed to the
 Git repository:
 
-- Full edition: `NIKKE_Arena_Tool_Setup_0.1.5.exe`
-- Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.0.exe`
+- Full edition: `NIKKE_Arena_Tool_Setup_0.1.15.exe`
+- Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.7.exe`
+
+## Repository Scope
+
+This repository keeps the application source, installer and update-patch
+scripts, required visual resources, OCR parsing logic, and the small offline
+model/template files needed to reproduce a release. It deliberately excludes
+personal screenshots, OCR results, diagnostics, recovery copies, local Python
+runtimes, built installers, and GPU/CUDA runtime components.
+
+The full edition provides optional GPU setup scripts and documentation only.
+Users configure any NVIDIA/CUDA/Paddle GPU environment themselves.
 
 ## Getting Started
 
 End users should install a Release package. Developers and contributors should
-read [PROJECT_DEVELOPER_HANDOFF_20260711.md](PROJECT_DEVELOPER_HANDOFF_20260711.md)
+read [PROJECT_HANDOFF_20260727.md](PROJECT_HANDOFF_20260727.md) and
+[PROJECT_DEVELOPER_HANDOFF_20260711.md](PROJECT_DEVELOPER_HANDOFF_20260711.md)
 before changing code, rebuilding portable runtimes, or creating a release.
 
 The game should be in fullscreen mode. Screenshot actions send input to the
