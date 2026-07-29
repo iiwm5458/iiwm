@@ -15,8 +15,8 @@ battle-image OCR exports. The repository contains both supported products:
 Installers are published through GitHub Releases, rather than committed to the
 Git repository:
 
-- Full edition: `NIKKE_Arena_Tool_Setup_0.1.15.exe`
-- Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.7.exe`
+- Full edition: `NIKKE_Arena_Tool_Setup_0.1.16.exe`
+- Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.8.exe`
 
 ## Repository Scope
 
@@ -73,7 +73,7 @@ licenses and rightsholders' terms.
 - **完整版 `NIKKE C ARENA Tool`：** 自动截图、拼图、图像工具、本地 CPU OCR、可选的用户自行配置 GPU OCR、Excel/JSON 导出与妮姬名单维护。
 - **轻量版 `NIKKE C ARENA 截图工具 轻量版`：** 自动截图、拼图与图像工具；战斗图像识别页仅用于展示完整版能力。
 
-当前发布版本：完整版 `0.1.15`，轻量版 `0.1.7`。安装包与升级补丁通过 GitHub Releases 发布，不直接提交到 Git 仓库。
+当前发布版本：完整版 `0.1.16`，轻量版 `0.1.8`。安装包与升级补丁通过 GitHub Releases 发布，不直接提交到 Git 仓库。
 
 ## 开发与封装
 

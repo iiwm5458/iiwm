@@ -73,8 +73,6 @@
                    "profile_page_poll_enabled":  true,
                    "profile_page_timeout_seconds":  10,
                    "profile_page_poll_interval_seconds":  0.35,
-                   "after_season_back_to_arena_seconds":  1.0,
-                   "after_season_top8_entry_click_seconds":  1.2,
                    "after_outpost_click_seconds":  0.8,
                    "after_profile_close_seconds":  0.4,
                    "after_escape_seconds":  0.45

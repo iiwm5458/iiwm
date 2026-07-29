@@ -54,8 +54,25 @@ EXPECTED_SEASON_BLOCKS = {
     "top8_pyramid": 7,
 }
 
-SOURCE_PROFILE_3840 = "3840x2160"
+SOURCE_PROFILE_1920_1080 = "1920x1080"
+SOURCE_PROFILE_1920_1200 = "1920x1200"
+SOURCE_PROFILE_1920_1440 = "1920x1440"
+SOURCE_PROFILE_2560_1080 = "2560x1080"
+SOURCE_PROFILE_2560_1440 = "2560x1440"
 SOURCE_PROFILE_2560_1600 = "2560x1600"
+SOURCE_PROFILE_3440_1440 = "3440x1440"
+SOURCE_PROFILE_3840 = "3840x2160"
+SOURCE_PROFILE_BY_RESOLUTION = {
+    SOURCE_PROFILE_1920_1080: SOURCE_PROFILE_1920_1080,
+    SOURCE_PROFILE_1920_1200: SOURCE_PROFILE_1920_1200,
+    SOURCE_PROFILE_1920_1440: SOURCE_PROFILE_1920_1440,
+    SOURCE_PROFILE_2560_1080: SOURCE_PROFILE_2560_1080,
+    SOURCE_PROFILE_2560_1440: SOURCE_PROFILE_2560_1440,
+    SOURCE_PROFILE_2560_1600: SOURCE_PROFILE_2560_1600,
+    SOURCE_PROFILE_3440_1440: SOURCE_PROFILE_3440_1440,
+    SOURCE_PROFILE_3840: SOURCE_PROFILE_3840,
+}
+SOURCE_PROFILE_PRIORITY = tuple(reversed(tuple(SOURCE_PROFILE_BY_RESOLUTION)))
 SOURCE_SERVER_LABELS = (
     ("\u6e2f\u6fb3\u53f0", "\u6e2f\u6fb3\u53f0"),
     ("\u56fd\u9645\u670d", "\u56fd\u9645\u670d"),
@@ -214,11 +231,11 @@ def source_profile_from_path(path: Path | str | None) -> str:
     if not path:
         return ""
     text = str(path).lower()
-    if re.search(r"3840\s*[x×]\s*2160", text) or ("3840" in text and "2160" in text):
-        return SOURCE_PROFILE_3840
-    if re.search(r"2560\s*[x×]\s*1600", text) or ("2560" in text and "1600" in text):
-        return SOURCE_PROFILE_2560_1600
-    return ""
+    match = SOURCE_RESOLUTION_RE.search(text)
+    if not match:
+        return ""
+    resolution = f"{int(match.group(1))}x{int(match.group(2))}"
+    return SOURCE_PROFILE_BY_RESOLUTION.get(resolution, "")
 
 
 def source_profile_from_args(args: argparse.Namespace) -> str:
@@ -231,10 +248,9 @@ def source_profile_from_args(args: argparse.Namespace) -> str:
         args.season_top8_image,
     ]
     profiles = {source_profile_from_path(path) for path in paths}
-    if SOURCE_PROFILE_3840 in profiles:
-        return SOURCE_PROFILE_3840
-    if SOURCE_PROFILE_2560_1600 in profiles:
-        return SOURCE_PROFILE_2560_1600
+    for profile in SOURCE_PROFILE_PRIORITY:
+        if profile in profiles:
+            return profile
     return ""
 
 

@@ -14,6 +14,28 @@ function Require-Path([string]$RelativePath) {
     return $path
 }
 
+function Reset-ReleaseLauncherSettings {
+    param([string]$Root)
+
+    $configPath = Join-Path $Root "nikke_round_config.json"
+    $config = Get-Content -LiteralPath $configPath -Raw -Encoding utf8 | ConvertFrom-Json
+    if (-not $config.launcher_settings) {
+        $config | Add-Member -NotePropertyName launcher_settings -NotePropertyValue ([pscustomobject]@{})
+    }
+    foreach ($propertyName in @("ocr_runtime_cache", "ocr_roster_preflight_suppressed_month", "capture_parameters_preflight_suppressed_month")) {
+        if ($config.launcher_settings.PSObject.Properties.Name -contains $propertyName) {
+            [void]$config.launcher_settings.PSObject.Properties.Remove($propertyName)
+        }
+    }
+    $config.launcher_settings.ocr_performance_mode = "cpu"
+    $config.launcher_settings.ocr_thermal_mode = "safe"
+    [IO.File]::WriteAllText(
+        $configPath,
+        (($config | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
+        [Text.UTF8Encoding]::new($false)
+    )
+}
+
 $required = @(
     "run_gui.bat",
     "nikke_gui_bootstrap.ps1",
@@ -70,5 +92,6 @@ try {
 
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ReleaseRoot "nikke_gui_bootstrap.ps1") -Check
 if ($LASTEXITCODE -ne 0) { throw "GUI release validation failed" }
+Reset-ReleaseLauncherSettings $ReleaseRoot
 
 Write-Host "release verification ok: $ReleaseRoot"

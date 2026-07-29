@@ -336,6 +336,7 @@ $ConfiguredOcrThermalMode = "safe"
 $ConfiguredOcrRuntimeCache = $null
 $ConfiguredOcrRosterPreflightSuppressedMonth = ""
 $ConfiguredCaptureParametersPreflightSuppressedMonth = ""
+$ConfiguredBattleAnnotationLabelSize = "small"
 try {
     if (Test-Path $RoundConfigPath) {
         $configJson = Get-Content -LiteralPath $RoundConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -370,6 +371,9 @@ try {
             if ($configJson.launcher_settings.PSObject.Properties["capture_parameters_preflight_suppressed_month"] -and $null -ne $configJson.launcher_settings.capture_parameters_preflight_suppressed_month) {
                 $ConfiguredCaptureParametersPreflightSuppressedMonth = [string]$configJson.launcher_settings.capture_parameters_preflight_suppressed_month
             }
+            if ($configJson.launcher_settings.PSObject.Properties["battle_annotation_label_size"] -and $null -ne $configJson.launcher_settings.battle_annotation_label_size) {
+                $ConfiguredBattleAnnotationLabelSize = [string]$configJson.launcher_settings.battle_annotation_label_size
+            }
         }
     }
 } catch {}
@@ -389,6 +393,7 @@ if ($null -ne $ConfiguredAvatarProfileDelaySeconds) {
 $AvatarProfilePollEnabled = [bool]$ConfiguredAvatarProfilePollEnabled
 $OcrRosterPreflightSuppressedMonth = $ConfiguredOcrRosterPreflightSuppressedMonth
 $CaptureParametersPreflightSuppressedMonth = $ConfiguredCaptureParametersPreflightSuppressedMonth
+$script:BattleAnnotationLabelSize = if ($ConfiguredBattleAnnotationLabelSize -in @("small", "medium", "large")) { $ConfiguredBattleAnnotationLabelSize } else { "small" }
 if ($null -ne $ConfiguredBracketResultDelaySeconds) {
     $BracketResultDelaySeconds = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, [double]$ConfiguredBracketResultDelaySeconds))
 } else {
@@ -1549,6 +1554,12 @@ try {
                 </Button>
                 <CheckBox x:Name="BattleAnnotationGrayLoserCheck" Content="灰化失败妮姬队伍" Style="{StaticResource DarkOptionCheck}" IsChecked="True" Margin="16,0,0,0" VerticalAlignment="Center" ToolTip="仅灰化失败玩家信息卡中的妮姬阵容网格。"/>
               </StackPanel>
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                <TextBlock Text="胜负像素文字大小" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#A9C2D9" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                <RadioButton x:Name="BattleAnnotationLabelSmallRadio" Content="小" GroupName="BattleAnnotationLabelSize" IsChecked="True" Style="{StaticResource DarkCompressionMode}" ToolTip="沿用当前 WIN / LOSE 像素标记尺寸。"/>
+                <RadioButton x:Name="BattleAnnotationLabelMediumRadio" Content="中" GroupName="BattleAnnotationLabelSize" Style="{StaticResource DarkCompressionMode}" ToolTip="使用固定中号 WIN / LOSE 像素标记。"/>
+                <RadioButton x:Name="BattleAnnotationLabelLargeRadio" Content="大" GroupName="BattleAnnotationLabelSize" Style="{StaticResource DarkCompressionMode}" ToolTip="使用固定大号、加粗的 WIN / LOSE 像素标记。"/>
+              </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -1798,6 +1809,9 @@ $BattleAnnotationDataClearButton = $Window.FindName("BattleAnnotationDataClearBu
 $BattleAnnotationDataPathText = $Window.FindName("BattleAnnotationDataPathText")
 $BattleAnnotationRunButton = $Window.FindName("BattleAnnotationRunButton")
 $BattleAnnotationGrayLoserCheck = $Window.FindName("BattleAnnotationGrayLoserCheck")
+$BattleAnnotationLabelSmallRadio = $Window.FindName("BattleAnnotationLabelSmallRadio")
+$BattleAnnotationLabelMediumRadio = $Window.FindName("BattleAnnotationLabelMediumRadio")
+$BattleAnnotationLabelLargeRadio = $Window.FindName("BattleAnnotationLabelLargeRadio")
 $OcrSlotTop8Button = $Window.FindName("OcrSlotTop8Button")
 $OcrSlotGroup16Button = $Window.FindName("OcrSlotGroup16Button")
 $OcrSlotGroup32Button = $Window.FindName("OcrSlotGroup32Button")
@@ -2689,6 +2703,9 @@ function Apply-Theme($Theme) {
         Set-Brush $OcrUploadPanel Background "#74FFF6FA"
         Set-Style $BattleAnnotationDataButton "OcrSlotButton"
         Set-Style $BattleAnnotationGrayLoserCheck "PinkOptionCheck"
+        foreach ($option in @($BattleAnnotationLabelSmallRadio, $BattleAnnotationLabelMediumRadio, $BattleAnnotationLabelLargeRadio)) {
+            Set-Style $option "PinkCompressionMode"
+        }
         Set-Brush $BattleAnnotationPanel BorderBrush "#FFFFBCD5"
         Set-Brush $BattleAnnotationPanel Background "#74FFF6FA"
         Set-Style $ImageToolsButton "PinkDarkButton"
@@ -2813,6 +2830,9 @@ function Apply-Theme($Theme) {
         Set-Brush $OcrUploadPanel Background "#44101A2A"
         Set-Style $BattleAnnotationDataButton "OcrSlotButton"
         Set-Style $BattleAnnotationGrayLoserCheck "DarkOptionCheck"
+        foreach ($option in @($BattleAnnotationLabelSmallRadio, $BattleAnnotationLabelMediumRadio, $BattleAnnotationLabelLargeRadio)) {
+            Set-Style $option "DarkCompressionMode"
+        }
         Set-Brush $BattleAnnotationPanel BorderBrush "#5EDCFF"
         Set-Brush $BattleAnnotationPanel Background "#44101A2A"
         Set-Style $ImageToolsButton "DarkButton"
@@ -3169,6 +3189,7 @@ function Save-CaptureTimingSettings {
         Set-JsonProperty $configJson.launcher_settings "ocr_thermal_mode" ([string]$script:OcrThermalMode)
         Set-JsonProperty $configJson.launcher_settings "ocr_roster_preflight_suppressed_month" ([string]$script:OcrRosterPreflightSuppressedMonth)
         Set-JsonProperty $configJson.launcher_settings "capture_parameters_preflight_suppressed_month" ([string]$script:CaptureParametersPreflightSuppressedMonth)
+        Set-JsonProperty $configJson.launcher_settings "battle_annotation_label_size" ([string]$script:BattleAnnotationLabelSize)
 
         $json = $configJson | ConvertTo-Json -Depth 20
         $encoding = [Text.UTF8Encoding]::new($false)
@@ -5447,6 +5468,15 @@ function Clear-BattleAnnotationData {
     Set-BattleAnnotationDataPath $null
 }
 
+function Set-BattleAnnotationLabelSize([string]$Size, [bool]$Persist = $true) {
+    if ($Size -notin @("small", "medium", "large")) { $Size = "small" }
+    $script:BattleAnnotationLabelSize = $Size
+    if ($BattleAnnotationLabelSmallRadio) { $BattleAnnotationLabelSmallRadio.IsChecked = ($Size -eq "small") }
+    if ($BattleAnnotationLabelMediumRadio) { $BattleAnnotationLabelMediumRadio.IsChecked = ($Size -eq "medium") }
+    if ($BattleAnnotationLabelLargeRadio) { $BattleAnnotationLabelLargeRadio.IsChecked = ($Size -eq "large") }
+    if ($Persist) { Save-CaptureTimingSettings }
+}
+
 function Start-BattleAnnotation {
     $paths = @(Get-ImageToolSelectedPaths | Where-Object { $_ -and (Test-Path $_) })
     if ($paths.Count -eq 0) {
@@ -5455,15 +5485,16 @@ function Start-BattleAnnotation {
     }
     $profile = Get-OcrClientProfile
     $grayLoser = [bool]$BattleAnnotationGrayLoserCheck.IsChecked
+    $labelSize = [string]$script:BattleAnnotationLabelSize
     if (-not $script:SelectedBattleAnnotationDataPath -or -not (Test-Path $script:SelectedBattleAnnotationDataPath)) {
         if ($paths.Count -ne 1) {
             Show-ImageToolMessage "未选择识别结果数据时，只能选择 1 张带详细战果页的双人对局图。四张 GROUP 大拼图标记仍需要 JSON 或 Excel。" "玩家战果标记" "Warning"
             return
         }
-        Start-ImageToolOperation -Operation "annotate-direct" -InputPaths $paths -GrayLoser $grayLoser -ClientProfile $profile
+        Start-ImageToolOperation -Operation "annotate-direct" -InputPaths $paths -GrayLoser $grayLoser -ClientProfile $profile -LabelSize $labelSize
         return
     }
-    Start-ImageToolOperation -Operation "annotate" -InputPaths $paths -DataFile $script:SelectedBattleAnnotationDataPath -GrayLoser $grayLoser -ClientProfile $profile
+    Start-ImageToolOperation -Operation "annotate" -InputPaths $paths -DataFile $script:SelectedBattleAnnotationDataPath -GrayLoser $grayLoser -ClientProfile $profile -LabelSize $labelSize
 }
 
 
@@ -6223,6 +6254,27 @@ function Show-ProgramHelpDialog {
 用户自行修改、二次分发或违规使用本工具及其衍生成果所产生的后果，由相关行为人自行承担。
 "@
 
+    $releaseLinkBlock = New-Object Windows.Controls.TextBlock
+    $releaseLinkBlock.FontFamily = "Microsoft YaHei UI"
+    $releaseLinkBlock.FontSize = 12
+    $releaseLinkBlock.Foreground = New-WpfBrush $bodyColor
+    $releaseLinkBlock.TextWrapping = "Wrap"
+    $releaseLinkBlock.Margin = [Windows.Thickness]::new(0, 0, 0, 4)
+    $releaseLinkBlock.Inlines.Add("GitHub 发布页：") | Out-Null
+    $releaseLink = New-Object Windows.Documents.Hyperlink
+    $releaseLink.NavigateUri = [Uri]"https://github.com/iiwm5458/iiwm/releases"
+    $releaseLink.Foreground = New-WpfBrush $sectionColor
+    $releaseLink.TextDecorations = [Windows.TextDecorations]::Underline
+    $releaseLink.Cursor = [Windows.Input.Cursors]::Hand
+    $releaseLink.Inlines.Add("https://github.com/iiwm5458/iiwm/releases") | Out-Null
+    $releaseLink.Add_RequestNavigate({
+        param($sender, $eventArgs)
+        Start-Process -FilePath $eventArgs.Uri.AbsoluteUri
+        $eventArgs.Handled = $true
+    })
+    $releaseLinkBlock.Inlines.Add($releaseLink) | Out-Null
+    $content.Children.Add($releaseLinkBlock) | Out-Null
+
     $buttonPanel = New-Object Windows.Controls.StackPanel
     $buttonPanel.Orientation = "Horizontal"
     $buttonPanel.HorizontalAlignment = "Right"
@@ -6356,7 +6408,8 @@ function Start-ImageToolOperation(
     [string[]]$InputPaths = $null,
     [string]$DataFile = $null,
     [bool]$GrayLoser = $false,
-    [string]$ClientProfile = "cn"
+    [string]$ClientProfile = "cn",
+    [string]$LabelSize = "small"
 ) {
     if ($script:ImageToolProcess -and -not $script:ImageToolProcess.HasExited) {
         Show-ImageToolMessage "图像工具正在处理中，请等待当前任务完成。" "图像工具" "Information"
@@ -6415,7 +6468,8 @@ function Start-ImageToolOperation(
             Show-ImageToolMessage "玩家战果标记仅支持识别导出的 JSON 或 Excel 文件。" "玩家战果标记" "Warning"
             return
         }
-        $arguments += @("--data-file", ($quote + $DataFile + $quote), "--client-profile", $ClientProfile)
+        if ($LabelSize -notin @("small", "medium", "large")) { $LabelSize = "small" }
+        $arguments += @("--data-file", ($quote + $DataFile + $quote), "--client-profile", $ClientProfile, "--label-size", $LabelSize)
         if ($GrayLoser) { $arguments += "--gray-loser" }
         $message = "正在标记详细战果图中的玩家胜负，请稍候"
     } elseif ($Operation -eq "annotate-direct") {
@@ -6423,7 +6477,8 @@ function Start-ImageToolOperation(
             Show-ImageToolMessage "单张详细战果自动标记仅支持选择 1 张图像。" "玩家战果标记" "Warning"
             return
         }
-        $arguments += @("--client-profile", $ClientProfile)
+        if ($LabelSize -notin @("small", "medium", "large")) { $LabelSize = "small" }
+        $arguments += @("--client-profile", $ClientProfile, "--label-size", $LabelSize)
         if ($GrayLoser) { $arguments += "--gray-loser" }
         $message = "正在读取中间详细战果并标记玩家胜负，请稍候"
     } else {
@@ -7193,6 +7248,9 @@ if ($OcrSlotGroup64ClearButton) { $OcrSlotGroup64ClearButton.Add_Click({ Clear-O
 if ($BattleAnnotationDataButton) { $BattleAnnotationDataButton.Add_Click({ Select-BattleAnnotationData }) }
 if ($BattleAnnotationDataClearButton) { $BattleAnnotationDataClearButton.Add_Click({ Clear-BattleAnnotationData }) }
 if ($BattleAnnotationRunButton) { $BattleAnnotationRunButton.Add_Click({ Start-BattleAnnotation }) }
+if ($BattleAnnotationLabelSmallRadio) { $BattleAnnotationLabelSmallRadio.Add_Click({ Set-BattleAnnotationLabelSize "small" }) }
+if ($BattleAnnotationLabelMediumRadio) { $BattleAnnotationLabelMediumRadio.Add_Click({ Set-BattleAnnotationLabelSize "medium" }) }
+if ($BattleAnnotationLabelLargeRadio) { $BattleAnnotationLabelLargeRadio.Add_Click({ Set-BattleAnnotationLabelSize "large" }) }
 if ($ServerModeComboBox) {
     $ServerModeComboBox.Add_SelectionChanged({
         if ($script:ServerSelectionUpdating) { return }
@@ -7221,6 +7279,7 @@ if ($ImageToolHorizontalCheck) {
 if ($ImageToolCompressButton) { $ImageToolCompressButton.Add_Click({ Start-ImageToolOperation "compress" }) }
 if ($ImageToolStitchButton) { $ImageToolStitchButton.Add_Click({ Start-ImageToolOperation "stitch" }) }
 Update-BattleAnnotationDataVisual
+Set-BattleAnnotationLabelSize $script:BattleAnnotationLabelSize $false
 if ($OcrExampleButton) {
     $OcrExampleButton.Add_Click({
         $script:SelectedOcrImagePath = $OcrExamplePath
@@ -7289,7 +7348,7 @@ if ($Check) {
     Apply-Theme "pink"
     Apply-Theme "dark"
     Write-Output "gui check ok"
-    return
+    exit 0
 }
 
 $Window.Add_Closed({

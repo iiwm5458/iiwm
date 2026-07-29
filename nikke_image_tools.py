@@ -152,6 +152,15 @@ PIXEL_GLYPHS = {
     " ": ("00", "00", "00", "00", "00"),
 }
 
+# These are deliberately fixed pixel presets.  Player-card output is stitched
+# to a stable 720px panel width, so marker sizing must not depend on portraits,
+# title-band colours, or other live image content.
+OUTCOME_LABEL_SCALES = {
+    "small": 4,
+    "medium": 6,
+    "large": 8,
+}
+
 
 @dataclass(frozen=True)
 class AnnotationBlock:
@@ -721,6 +730,7 @@ def draw_pixel_frame(
     end: tuple[int, int, int],
     label: str,
     label_down_shift: int = 0,
+    label_size: str = "small",
 ) -> None:
     x0, y0, x1, y1 = box
     width = max(1, x1 - x0)
@@ -742,7 +752,10 @@ def draw_pixel_frame(
     for index, segment in enumerate(segments):
         draw.rectangle(segment, fill=interpolate_color(start, end, index / max(1, len(segments) - 1)))
 
-    text_scale = max(1, min(4, int(width / max(1, len(label) * 8))))
+    # Keep the current small marker unchanged while offering two larger,
+    # pre-authored pixel sizes.  Never derive marker size from portrait or
+    # black-header pixels: some player art intentionally covers that region.
+    text_scale = OUTCOME_LABEL_SCALES.get(label_size, OUTCOME_LABEL_SCALES["small"])
     text_width = pixel_text_width(label, text_scale)
     # Centre the WIN/LOSE label inside the black header of the player card.
     text_x = max(x0 + unit, min(x1 - text_width - unit, x0 + (width - text_width) // 2))
@@ -994,6 +1007,7 @@ def annotate_image(
     records: list[AnnotationRecord],
     client_profile: str,
     gray_loser: bool,
+    label_size: str = "small",
 ) -> tuple[Path | None, dict[str, int | str]]:
     matching = [record for record in records if normalized_source_name(record.source_image) == normalized_source_name(source.name)]
     if not matching:
@@ -1029,8 +1043,8 @@ def annotate_image(
         label_down_shift = max(2, round(layout.label_down_shift * (winner_box[3] - winner_box[1]) / max(1, layout.height)))
         if gray_loser:
             gray_out_losing_team(image, player_panel_box(block, layout, loser_side, "team"))
-        draw_pixel_frame(image, winner_box, (29, 192, 255), (225, 252, 255), "WIN", label_down_shift)
-        draw_pixel_frame(image, loser_box, (248, 88, 78), (255, 223, 215), "LOSE", label_down_shift)
+        draw_pixel_frame(image, winner_box, (29, 192, 255), (225, 252, 255), "WIN", label_down_shift, label_size)
+        draw_pixel_frame(image, loser_box, (248, 88, 78), (255, 223, 215), "LOSE", label_down_shift, label_size)
         annotated_matches += 1
         annotated_players += 2
 
@@ -1083,13 +1097,14 @@ def annotate_images(
     data_file: Path,
     client_profile: str,
     gray_loser: bool,
+    label_size: str = "small",
 ) -> tuple[list[Path], dict[str, int], list[str]]:
     records = load_annotation_records(data_file)
     outputs: list[Path] = []
     totals = {"annotated_players": 0, "annotated_matches": 0, "skipped_matches": 0, "group_labels": 0}
     warnings: list[str] = []
     for source in paths:
-        output, stats = annotate_image(source, destination, records, client_profile, gray_loser)
+        output, stats = annotate_image(source, destination, records, client_profile, gray_loser, label_size)
         if output is not None:
             outputs.append(output)
         for key in totals:
@@ -1174,6 +1189,7 @@ def annotate_direct_detail_image(
     destination: Path,
     client_profile: str,
     gray_loser: bool,
+    label_size: str = "small",
 ) -> tuple[Path, dict[str, int | str | list[dict[str, float | int | str]]]]:
     with Image.open(source) as opened:
         image = ImageOps.exif_transpose(opened).convert("RGB")
@@ -1190,8 +1206,8 @@ def annotate_direct_detail_image(
     label_down_shift = max(2, round(layout.label_down_shift * (winner_box[3] - winner_box[1]) / max(1, layout.height)))
     if gray_loser:
         gray_out_losing_team(image, player_panel_box(whole_match, layout, loser_side, "team"))
-    draw_pixel_frame(image, winner_box, (29, 192, 255), (225, 252, 255), "WIN", label_down_shift)
-    draw_pixel_frame(image, loser_box, (248, 88, 78), (255, 223, 215), "LOSE", label_down_shift)
+    draw_pixel_frame(image, winner_box, (29, 192, 255), (225, 252, 255), "WIN", label_down_shift, label_size)
+    draw_pixel_frame(image, loser_box, (248, 88, 78), (255, 223, 215), "LOSE", label_down_shift, label_size)
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     extension = ".png" if source.suffix.lower() == ".png" else ".jpg"
@@ -1216,10 +1232,11 @@ def annotate_direct_detail_images(
     destination: Path,
     client_profile: str,
     gray_loser: bool,
+    label_size: str = "small",
 ) -> tuple[list[Path], dict[str, int | str | list[dict[str, float | int | str]]]]:
     if len(paths) != 1:
         raise ImageToolError("单张详细战果自动标记仅支持选择 1 张图像。")
-    output, metadata = annotate_direct_detail_image(paths[0], destination, client_profile, gray_loser)
+    output, metadata = annotate_direct_detail_image(paths[0], destination, client_profile, gray_loser, label_size)
     return [output], metadata
 
 
@@ -1244,12 +1261,14 @@ def build_parser() -> argparse.ArgumentParser:
     annotate.add_argument("--data-file", required=True, type=data_path)
     annotate.add_argument("--client-profile", choices=("cn", "overseas", "hmt"), default="cn")
     annotate.add_argument("--gray-loser", action="store_true")
+    annotate.add_argument("--label-size", choices=tuple(OUTCOME_LABEL_SCALES), default="small")
 
     annotate_direct = subparsers.add_parser("annotate-direct", help="Mark one two-player detailed result screenshot without OCR data")
     annotate_direct.add_argument("images", nargs="+", type=image_path)
     annotate_direct.add_argument("--output-dir", required=True, type=output_directory)
     annotate_direct.add_argument("--client-profile", choices=("cn", "overseas", "hmt"), default="cn")
     annotate_direct.add_argument("--gray-loser", action="store_true")
+    annotate_direct.add_argument("--label-size", choices=tuple(OUTCOME_LABEL_SCALES), default="small")
     return parser
 
 
@@ -1275,6 +1294,7 @@ def main() -> int:
                 args.data_file,
                 args.client_profile,
                 args.gray_loser,
+                args.label_size,
             )
             metadata["warnings"] = warnings
         else:
@@ -1283,6 +1303,7 @@ def main() -> int:
                 args.output_dir,
                 args.client_profile,
                 args.gray_loser,
+                args.label_size,
             )
     except (ImageToolError, MemoryError, OSError, ValueError) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)

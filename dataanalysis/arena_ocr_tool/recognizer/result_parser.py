@@ -281,8 +281,34 @@ COLLECTION_DIRECT_R15_CYAN_OVERRIDE_ACTIVE_MIN = 0.18
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_SCORE_MARGIN = -0.08
 NAME_PROFILE_DEFAULT = "default"
 NAME_PROFILE_FHD = "fhd"
+SOURCE_PROFILE_1920_1080 = "1920x1080"
+SOURCE_PROFILE_1920_1200 = "1920x1200"
+SOURCE_PROFILE_1920_1440 = "1920x1440"
+SOURCE_PROFILE_2560_1080 = "2560x1080"
+SOURCE_PROFILE_2560_1440 = "2560x1440"
 SOURCE_PROFILE_3840 = "3840x2160"
 SOURCE_PROFILE_2560_1600 = "2560x1600"
+SOURCE_PROFILE_3440_1440 = "3440x1440"
+
+# Source resolution is available from the imported filename.  Keep the two
+# measured overseas anchors intact and derive the remaining source profiles
+# from their matching FHD or wide stitch family.  The 2560x1440 client export
+# has a verified one-pixel horizontal and two-pixel vertical icon phase.
+OVERSEAS_COLLECTION_GRID_BY_SOURCE_PROFILE = {
+    SOURCE_PROFILE_1920_1080: OVERSEAS_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_1920_1200: OVERSEAS_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_1920_1440: OVERSEAS_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_2560_1080: OVERSEAS_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_2560_1440: {
+        **OVERSEAS_COLLECTION_GRID_WIDE,
+        "phase_dx": 1.0,
+        "phase_dy": -2.0,
+        "template_profile": "overseas_2560x1440",
+    },
+    SOURCE_PROFILE_2560_1600: OVERSEAS_COLLECTION_GRID_WIDE,
+    SOURCE_PROFILE_3440_1440: OVERSEAS_COLLECTION_GRID_WIDE,
+    SOURCE_PROFILE_3840: OVERSEAS_COLLECTION_GRID_WIDE,
+}
 # Exact OCR artifacts observed on multiple client layouts. These preserve the
 # colon evidence needed by the existing special-name matcher without lowering
 # any general name-matching threshold.
@@ -1601,8 +1627,13 @@ def _normalize_collection_label(label: str) -> str:
     return COLLECTION_NONE
 
 
-def _collection_cv_template_dir() -> Path:
-    return _module_data_dir() / "collection_cv_templates" / "v2_manual"
+def _collection_cv_template_dir(template_profile: str = "") -> Path:
+    root = _module_data_dir() / "collection_cv_templates" / "v2_manual"
+    if template_profile:
+        profile_dir = root / "profiles" / template_profile
+        if (profile_dir / "manifest.json").exists():
+            return profile_dir
+    return root
 
 
 def _collection_direct_features(rgb: np.ndarray) -> np.ndarray:
@@ -1625,9 +1656,9 @@ def _collection_direct_features(rgb: np.ndarray) -> np.ndarray:
     ).astype(np.float32)
 
 
-@lru_cache(maxsize=1)
-def _collection_direct_templates() -> tuple[_CollectionDirectTemplate, ...]:
-    template_dir = _collection_cv_template_dir()
+@lru_cache(maxsize=4)
+def _collection_direct_templates(template_profile: str = "") -> tuple[_CollectionDirectTemplate, ...]:
+    template_dir = _collection_cv_template_dir(template_profile)
     manifest_path = template_dir / "manifest.json"
     if not manifest_path.exists():
         return tuple()
@@ -1665,9 +1696,9 @@ def _collection_direct_templates() -> tuple[_CollectionDirectTemplate, ...]:
     return tuple(templates)
 
 
-@lru_cache(maxsize=1)
-def _collection_direct_negative_templates() -> tuple[_CollectionDirectTemplate, ...]:
-    template_dir = _collection_cv_template_dir()
+@lru_cache(maxsize=4)
+def _collection_direct_negative_templates(template_profile: str = "") -> tuple[_CollectionDirectTemplate, ...]:
+    template_dir = _collection_cv_template_dir(template_profile)
     manifest_path = template_dir / "manifest.json"
     if not manifest_path.exists():
         return tuple()
@@ -1705,9 +1736,9 @@ def _collection_direct_negative_templates() -> tuple[_CollectionDirectTemplate, 
     return tuple(templates)
 
 
-@lru_cache(maxsize=1)
-def _collection_generic_positive_mask() -> np.ndarray | None:
-    templates = _collection_direct_templates()
+@lru_cache(maxsize=4)
+def _collection_generic_positive_mask(template_profile: str = "") -> np.ndarray | None:
+    templates = _collection_direct_templates(template_profile)
     if not templates:
         return None
     masks = np.stack([template.mask for template in templates]).astype(np.float32)
@@ -1806,8 +1837,11 @@ def _postprocess_collection_direct_label(label: str, scores: dict[str, float], s
     return adjusted
 
 
-def _classify_collection_icon_by_direct_template(icon_image: Image.Image) -> str | None:
-    templates = _collection_direct_templates()
+def _classify_collection_icon_by_direct_template(
+    icon_image: Image.Image,
+    template_profile: str = "",
+) -> str | None:
+    templates = _collection_direct_templates(template_profile)
     if not templates:
         return None
     try:
@@ -1826,11 +1860,11 @@ def _classify_collection_icon_by_direct_template(icon_image: Image.Image) -> str
         ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         best_label, best_score = ranked[0]
         second_score = ranked[1][1] if len(ranked) > 1 else 0.0
-        stats = _collection_visual_stats(rgb, _collection_generic_positive_mask())
+        stats = _collection_visual_stats(rgb, _collection_generic_positive_mask(template_profile))
         if best_score < COLLECTION_DIRECT_SCORE_THRESHOLD or stats["family_max"] < COLLECTION_DIRECT_FAMILY_THRESHOLD:
             return COLLECTION_NONE
         none_score: float | None = None
-        negative_templates = _collection_direct_negative_templates()
+        negative_templates = _collection_direct_negative_templates(template_profile)
         if negative_templates:
             none_score = max(_collection_direct_score(candidate, template) for template in negative_templates)
             if not _collection_has_positive_evidence(best_score, none_score):
@@ -1946,6 +1980,16 @@ def _collection_precise_group64_geometry(
     )
 
 
+def _overseas_collection_grid_profile(source_profile: str, block_height: int) -> dict:
+    profile = OVERSEAS_COLLECTION_GRID_BY_SOURCE_PROFILE.get(source_profile)
+    if profile is not None and abs(block_height - int(profile["block_height"])) <= 6:
+        return profile
+    return min(
+        (OVERSEAS_COLLECTION_GRID_FHD, OVERSEAS_COLLECTION_GRID_WIDE),
+        key=lambda candidate: abs(block_height - int(candidate["block_height"])),
+    )
+
+
 def _overseas_collection_slot_box(
     row_image: Image.Image,
     *,
@@ -1954,18 +1998,17 @@ def _overseas_collection_slot_box(
     slot_index: int,
     match_index: int | None,
     block_height: int | None,
+    source_profile: str = "",
 ) -> tuple[int, int, int, int] | None:
     if block_height is None or not 1 <= team_index <= 5 or not 1 <= slot_index <= 5:
         return None
-    profile = min(
-        (OVERSEAS_COLLECTION_GRID_FHD, OVERSEAS_COLLECTION_GRID_WIDE),
-        key=lambda candidate: abs(block_height - int(candidate["block_height"])),
-    )
+    profile = _overseas_collection_grid_profile(source_profile, block_height)
     reference_row_width = float(profile["row_width"][side])
     scale_x = row_image.width / max(1.0, reference_row_width)
     reference_x0 = float(profile["icon_x0"][side][slot_index - 1])
-    x0 = round(reference_x0 * scale_x)
-    x1 = round((reference_x0 + float(profile["icon_width"])) * scale_x)
+    phase_dx = float(profile.get("phase_dx", 0.0)) * scale_x
+    x0 = round(reference_x0 * scale_x + phase_dx)
+    x1 = round((reference_x0 + float(profile["icon_width"])) * scale_x + phase_dx)
 
     reference_block_height = float(profile["block_height"])
     scale_y = block_height / max(1.0, reference_block_height)
@@ -1973,8 +2016,9 @@ def _overseas_collection_slot_box(
     reference_y0 = float(profile["icon_y0"][team_index - 1])
     if match_index in {3, 4}:
         reference_y0 += float(profile["bottom_match_dy"])
-    y0 = round(reference_y0 * scale_y) - row_start
-    y1 = round((reference_y0 + float(profile["icon_height"])) * scale_y) - row_start
+    phase_dy = float(profile.get("phase_dy", 0.0)) * scale_y
+    y0 = round(reference_y0 * scale_y + phase_dy) - row_start
+    y1 = round((reference_y0 + float(profile["icon_height"])) * scale_y + phase_dy) - row_start
     return (
         max(0, min(row_image.width, x0)),
         max(0, min(row_image.height, y0)),
@@ -1983,7 +2027,7 @@ def _overseas_collection_slot_box(
     )
 
 
-def _classify_collection_icon_by_color(icon_image: Image.Image) -> str:
+def _classify_collection_icon_by_color(icon_image: Image.Image, preserve_r_level: bool = False) -> str:
     icon_image = icon_image.convert("RGB")
     total = max(1, icon_image.width * icon_image.height)
     dark = 0
@@ -2027,11 +2071,17 @@ def _classify_collection_icon_by_color(icon_image: Image.Image) -> str:
         return "SR15" if is_level_15 else "SR"
     if rarity == "SSR":
         return "SSR3" if is_level_15 else "SSR"
-    return "R"
+    return "R15" if preserve_r_level and is_level_15 else "R"
 
 
-def _classify_collection_icon(icon_image: Image.Image) -> str:
-    template_label = _classify_collection_icon_by_direct_template(icon_image)
+def _classify_collection_icon(icon_image: Image.Image, template_profile: str = "") -> str:
+    template_label = _classify_collection_icon_by_direct_template(icon_image, template_profile)
+    if template_label is not None and template_label != COLLECTION_NONE:
+        return template_label
+    if template_profile:
+        color_label = _classify_collection_icon_by_color(icon_image, preserve_r_level=True)
+        if color_label != COLLECTION_NONE:
+            return color_label
     if template_label is not None:
         return template_label
     return _classify_collection_icon_by_color(icon_image)
@@ -2056,6 +2106,12 @@ def recognize_collection_slots(
 ) -> list[str]:
     levels: list[str] = []
     x_offsets = COLLECTION_ROW_ICON_X_OFFSETS.get(side, COLLECTION_ROW_ICON_X_OFFSETS["attacker"])
+    overseas_grid = (
+        _overseas_collection_grid_profile(source_profile, block_height)
+        if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS and block_height is not None
+        else None
+    )
+    template_profile = str((overseas_grid or {}).get("template_profile", ""))
     for slot in range(slot_count):
         x_offset = x_offsets[min(slot, len(x_offsets) - 1)]
         icon_center = centers[slot] - x_offset
@@ -2067,11 +2123,12 @@ def recognize_collection_slots(
                 slot_index=slot + 1,
                 match_index=match_index,
                 block_height=block_height,
+                source_profile=source_profile,
             )
             if icon_box is None or icon_box[2] <= icon_box[0] or icon_box[3] <= icon_box[1]:
                 levels.append(COLLECTION_NONE)
                 continue
-            levels.append(_classify_collection_icon(row_image.crop(icon_box)))
+            levels.append(_classify_collection_icon(row_image.crop(icon_box), template_profile))
             continue
         geometry = _collection_slot_geometry(side, team_index, slot + 1, icon_center)
         geometry, dy = _collection_precise_group64_geometry(

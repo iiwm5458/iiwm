@@ -1,6 +1,6 @@
 # NIKKE C ARENA Tool Project Handoff
 
-Updated: 2026-07-27 (UTC+8)
+Updated: 2026-07-29 (UTC+8)
 
 ## Products
 
@@ -9,8 +9,8 @@ updated separately.
 
 | Product | Current source release | Entry point | Scope |
 | --- | --- | --- | --- |
-| Full edition | `0.1.15` | `run_gui.bat` | Automated screenshots, stitching, image tools, local CPU OCR, optional user-configured GPU OCR, Excel/JSON export, roster maintenance. |
-| Capture Lite | `0.1.7` | `run_capture_lite.bat` | Automated screenshots, stitching, image tools, result-page checks, and parameter persistence. The recognition page is a demo that directs users to the full edition. |
+| Full edition | `0.1.16` | `run_gui.bat` | Automated screenshots, stitching, image tools, local CPU OCR, optional user-configured GPU OCR, Excel/JSON export, roster maintenance. |
+| Capture Lite | `0.1.8` | `run_capture_lite.bat` | Automated screenshots, stitching, image tools, result-page checks, and parameter persistence. The recognition page is a demo that directs users to the full edition. |
 
 The full edition ships an internal Python runtime, CPU PaddleOCR runtime, and
 offline OCR models. It does **not** ship CUDA, cuDNN, NVIDIA drivers, or a GPU
@@ -62,16 +62,16 @@ Run commands from the repository root in PowerShell. Inno Setup 6 must be
 installed.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_installer.ps1 -Version 0.1.15
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_capture_lite_installer.ps1 -Version 0.1.7
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_update_patches.ps1 -FullVersion 0.1.15 -LiteVersion 0.1.7
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_installer.ps1 -Version 0.1.16
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_capture_lite_installer.ps1 -Version 0.1.8
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_update_patches.ps1 -FullVersion 0.1.16 -LiteVersion 0.1.8
 ```
 
 Validate release directories before distributing them:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify_release_directory.ps1 -ReleaseRoot .\dist\r_0.1.15
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify_capture_lite_release.ps1 -ReleaseRoot .\dist\lite_r_0.1.7
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify_release_directory.ps1 -ReleaseRoot .\dist\r_0.1.16
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify_capture_lite_release.ps1 -ReleaseRoot .\dist\lite_r_0.1.8
 ```
 
 The direct-update ZIPs include `apply_update.bat`, `apply_update.ps1`, a

@@ -195,6 +195,7 @@ $ConfiguredBracketResultDelaySeconds = $null
 $ConfiguredOcrPerformanceMode = "cpu"
 $ConfiguredOcrThermalMode = "safe"
 $ConfiguredCaptureParametersPreflightSuppressedMonth = ""
+$ConfiguredDirectBattleAnnotationLabelSize = "small"
 try {
     if (Test-Path $RoundConfigPath) {
         $configJson = Get-Content -LiteralPath $RoundConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -223,6 +224,9 @@ try {
             if ($configJson.launcher_settings.PSObject.Properties["capture_parameters_preflight_suppressed_month"] -and $null -ne $configJson.launcher_settings.capture_parameters_preflight_suppressed_month) {
                 $ConfiguredCaptureParametersPreflightSuppressedMonth = [string]$configJson.launcher_settings.capture_parameters_preflight_suppressed_month
             }
+            if ($configJson.launcher_settings.PSObject.Properties["direct_battle_annotation_label_size"] -and $null -ne $configJson.launcher_settings.direct_battle_annotation_label_size) {
+                $ConfiguredDirectBattleAnnotationLabelSize = [string]$configJson.launcher_settings.direct_battle_annotation_label_size
+            }
         }
     }
 } catch {}
@@ -238,6 +242,7 @@ if ($null -ne $ConfiguredAvatarProfileDelaySeconds) {
 }
 $AvatarProfilePollEnabled = [bool]$ConfiguredAvatarProfilePollEnabled
 $CaptureParametersPreflightSuppressedMonth = $ConfiguredCaptureParametersPreflightSuppressedMonth
+$script:DirectBattleAnnotationLabelSize = if ($ConfiguredDirectBattleAnnotationLabelSize -in @("small", "medium", "large")) { $ConfiguredDirectBattleAnnotationLabelSize } else { "small" }
 if ($null -ne $ConfiguredBracketResultDelaySeconds) {
     $BracketResultDelaySeconds = [Math]::Max($DelayMinSeconds, [Math]::Min(5.0, [double]$ConfiguredBracketResultDelaySeconds))
 } else {
@@ -454,6 +459,10 @@ $script:LiteExtraTranslations = @{
     "单张详细战果自动标记仅支持选择 1 张图像。" = @{ zh = "单张详细战果自动标记仅支持选择 1 张图像。"; ja = "詳細戦績の自動マークは画像を1枚だけ選択してください。"; en = "Automatic detailed-result marking supports exactly one image."; ko = "상세 전적 자동 표시는 이미지 1장만 지원합니다." }
     "正在读取中间详细战果并标记玩家胜负，请稍候" = @{ zh = "正在读取中间详细战果并标记玩家胜负，请稍候"; ja = "中央の詳細戦績を読み取り、プレイヤーの勝敗をマークしています。"; en = "Reading the center detailed result and marking player outcomes."; ko = "중앙 상세 전적을 읽고 플레이어 승패를 표시하고 있습니다." }
     "玩家战果标记" = @{ zh = "玩家战果标记"; ja = "プレイヤー戦績マーク"; en = "Player Result Marking"; ko = "플레이어 전적 표시" }
+    "胜负像素文字大小" = @{ zh = "胜负像素文字大小"; ja = "勝敗ピクセル文字サイズ"; en = "WIN / LOSE Pixel Size"; ko = "WIN / LOSE 픽셀 크기" }
+    "小" = @{ zh = "小"; ja = "小"; en = "Small"; ko = "작게" }
+    "中" = @{ zh = "中"; ja = "中"; en = "Medium"; ko = "중간" }
+    "大" = @{ zh = "大"; ja = "大"; en = "Large"; ko = "크게" }
 }
 
 function Get-LiteLocalizedText([string]$Source) {
@@ -1008,6 +1017,52 @@ try {
         </Setter.Value>
       </Setter>
     </Style>
+    <Style x:Key="DarkOutcomeLabelSize" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="#D7E8F6"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Segment" CornerRadius="5" BorderThickness="1" BorderBrush="#4C6F90" Background="#40101A2A" Padding="8,4" Margin="1,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Segment" Property="BorderBrush" Value="#8CEBFF"/></Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Segment" Property="Background" Value="#CC29C7FF"/>
+                <Setter TargetName="Segment" Property="BorderBrush" Value="#C8F8FF"/>
+                <Setter Property="Foreground" Value="#06151F"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="PinkOutcomeLabelSize" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="#6D344B"/>
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Segment" CornerRadius="5" BorderThickness="1" BorderBrush="#FFFFBCD5" Background="#8AFFF8FC" Padding="8,4" Margin="1,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Segment" Property="BorderBrush" Value="#FFFF8DB9"/></Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Segment" Property="Background" Value="#FFFFBBD3"/>
+                <Setter TargetName="Segment" Property="BorderBrush" Value="#FFFFF7FB"/>
+                <Setter Property="Foreground" Value="#5A2439"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
   <Grid>
     <Image x:Name="BackgroundImage" Stretch="UniformToFill" RenderTransformOrigin="0.5,0.5"/>
@@ -1361,6 +1416,12 @@ try {
                 </Button>
                 <CheckBox x:Name="DirectBattleAnnotationGrayLoserCheck" Content="灰化失败妮姬队伍" Style="{StaticResource DarkOptionCheck}" IsChecked="True" Margin="16,0,0,0" VerticalAlignment="Center"/>
               </StackPanel>
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                <TextBlock Text="胜负像素文字大小" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#A9C2D9" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                <RadioButton x:Name="DirectBattleAnnotationLabelSmallRadio" Content="小" GroupName="DirectBattleAnnotationLabelSize" IsChecked="True" Style="{StaticResource DarkOutcomeLabelSize}"/>
+                <RadioButton x:Name="DirectBattleAnnotationLabelMediumRadio" Content="中" GroupName="DirectBattleAnnotationLabelSize" Style="{StaticResource DarkOutcomeLabelSize}"/>
+                <RadioButton x:Name="DirectBattleAnnotationLabelLargeRadio" Content="大" GroupName="DirectBattleAnnotationLabelSize" Style="{StaticResource DarkOutcomeLabelSize}"/>
+              </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -1635,6 +1696,9 @@ $ImageToolGapUnitText = $Window.FindName("ImageToolGapUnitText")
 $DirectBattleAnnotationPanel = $Window.FindName("DirectBattleAnnotationPanel")
 $DirectBattleAnnotationRunButton = $Window.FindName("DirectBattleAnnotationRunButton")
 $DirectBattleAnnotationGrayLoserCheck = $Window.FindName("DirectBattleAnnotationGrayLoserCheck")
+$DirectBattleAnnotationLabelSmallRadio = $Window.FindName("DirectBattleAnnotationLabelSmallRadio")
+$DirectBattleAnnotationLabelMediumRadio = $Window.FindName("DirectBattleAnnotationLabelMediumRadio")
+$DirectBattleAnnotationLabelLargeRadio = $Window.FindName("DirectBattleAnnotationLabelLargeRadio")
 $ImageToolSlot1Button = $Window.FindName("ImageToolSlot1Button")
 $ImageToolSlot2Button = $Window.FindName("ImageToolSlot2Button")
 $ImageToolSlot3Button = $Window.FindName("ImageToolSlot3Button")
@@ -2621,6 +2685,9 @@ function Apply-Theme($Theme) {
         Set-Style $ImageToolVerticalCheck "PinkOptionCheck"
         Set-Style $ImageToolHorizontalCheck "PinkOptionCheck"
         Set-Style $DirectBattleAnnotationGrayLoserCheck "PinkOptionCheck"
+        foreach ($option in @($DirectBattleAnnotationLabelSmallRadio, $DirectBattleAnnotationLabelMediumRadio, $DirectBattleAnnotationLabelLargeRadio)) {
+            Set-Style $option "PinkOutcomeLabelSize"
+        }
         Set-Brush $ImageToolGapLabel Foreground "#6D344B"
         $ImageToolGapBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
         $ImageToolGapBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
@@ -2736,6 +2803,9 @@ function Apply-Theme($Theme) {
         Set-Style $ImageToolVerticalCheck "DarkOptionCheck"
         Set-Style $ImageToolHorizontalCheck "DarkOptionCheck"
         Set-Style $DirectBattleAnnotationGrayLoserCheck "DarkOptionCheck"
+        foreach ($option in @($DirectBattleAnnotationLabelSmallRadio, $DirectBattleAnnotationLabelMediumRadio, $DirectBattleAnnotationLabelLargeRadio)) {
+            Set-Style $option "DarkOutcomeLabelSize"
+        }
         Set-Brush $ImageToolGapLabel Foreground "#D7E8F6"
         $ImageToolGapBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
         $ImageToolGapBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
@@ -3030,6 +3100,7 @@ function Save-CaptureTimingSettings {
         Set-JsonProperty $configJson.launcher_settings "ocr_performance_mode" ([string]$script:OcrPerformanceMode)
         Set-JsonProperty $configJson.launcher_settings "ocr_thermal_mode" ([string]$script:OcrThermalMode)
         Set-JsonProperty $configJson.launcher_settings "capture_parameters_preflight_suppressed_month" ([string]$script:CaptureParametersPreflightSuppressedMonth)
+        Set-JsonProperty $configJson.launcher_settings "direct_battle_annotation_label_size" ([string]$script:DirectBattleAnnotationLabelSize)
 
         $json = $configJson | ConvertTo-Json -Depth 20
         $encoding = [Text.UTF8Encoding]::new($false)
@@ -5818,6 +5889,27 @@ function Show-ProgramHelpDialog {
 用户自行修改、二次分发或违规使用本工具及其衍生成果所产生的后果，由相关行为人自行承担。
 "@
 
+    $releaseLinkBlock = New-Object Windows.Controls.TextBlock
+    $releaseLinkBlock.FontFamily = "Microsoft YaHei UI"
+    $releaseLinkBlock.FontSize = 12
+    $releaseLinkBlock.Foreground = New-WpfBrush $bodyColor
+    $releaseLinkBlock.TextWrapping = "Wrap"
+    $releaseLinkBlock.Margin = [Windows.Thickness]::new(0, 0, 0, 4)
+    $releaseLinkBlock.Inlines.Add("GitHub 发布页：") | Out-Null
+    $releaseLink = New-Object Windows.Documents.Hyperlink
+    $releaseLink.NavigateUri = [Uri]"https://github.com/iiwm5458/iiwm/releases"
+    $releaseLink.Foreground = New-WpfBrush $sectionColor
+    $releaseLink.TextDecorations = [Windows.TextDecorations]::Underline
+    $releaseLink.Cursor = [Windows.Input.Cursors]::Hand
+    $releaseLink.Inlines.Add("https://github.com/iiwm5458/iiwm/releases") | Out-Null
+    $releaseLink.Add_RequestNavigate({
+        param($sender, $eventArgs)
+        Start-Process -FilePath $eventArgs.Uri.AbsoluteUri
+        $eventArgs.Handled = $true
+    })
+    $releaseLinkBlock.Inlines.Add($releaseLink) | Out-Null
+    $content.Children.Add($releaseLinkBlock) | Out-Null
+
     $buttonPanel = New-Object Windows.Controls.StackPanel
     $buttonPanel.Orientation = "Horizontal"
     $buttonPanel.HorizontalAlignment = "Right"
@@ -5916,6 +6008,15 @@ function Complete-ImageToolProcess {
     }
 }
 
+function Set-DirectBattleAnnotationLabelSize([string]$Size, [bool]$Persist = $true) {
+    if ($Size -notin @("small", "medium", "large")) { $Size = "small" }
+    $script:DirectBattleAnnotationLabelSize = $Size
+    if ($DirectBattleAnnotationLabelSmallRadio) { $DirectBattleAnnotationLabelSmallRadio.IsChecked = ($Size -eq "small") }
+    if ($DirectBattleAnnotationLabelMediumRadio) { $DirectBattleAnnotationLabelMediumRadio.IsChecked = ($Size -eq "medium") }
+    if ($DirectBattleAnnotationLabelLargeRadio) { $DirectBattleAnnotationLabelLargeRadio.IsChecked = ($Size -eq "large") }
+    if ($Persist) { Save-CaptureTimingSettings }
+}
+
 function Start-ImageToolOperation([string]$Operation) {
     if ($script:ImageToolProcess -and -not $script:ImageToolProcess.HasExited) {
         Show-ImageToolMessage "图像工具正在处理中，请等待当前任务完成。" "图像工具" "Information"
@@ -5963,7 +6064,7 @@ function Start-ImageToolOperation([string]$Operation) {
             "hmt" { "hmt"; break }
             default { "overseas" }
         }
-        $arguments += @("--client-profile", $clientProfile)
+        $arguments += @("--client-profile", $clientProfile, "--label-size", $script:DirectBattleAnnotationLabelSize)
         if ([bool]$DirectBattleAnnotationGrayLoserCheck.IsChecked) { $arguments += "--gray-loser" }
         $message = "正在读取中间详细战果并标记玩家胜负，请稍候"
     } else {
@@ -6729,11 +6830,15 @@ if ($ImageToolHorizontalCheck) {
 if ($ImageToolCompressButton) { $ImageToolCompressButton.Add_Click({ Start-ImageToolOperation "compress" }) }
 if ($ImageToolStitchButton) { $ImageToolStitchButton.Add_Click({ Start-ImageToolOperation "stitch" }) }
 if ($DirectBattleAnnotationRunButton) { $DirectBattleAnnotationRunButton.Add_Click({ Start-ImageToolOperation "annotate-direct" }) }
+if ($DirectBattleAnnotationLabelSmallRadio) { $DirectBattleAnnotationLabelSmallRadio.Add_Click({ Set-DirectBattleAnnotationLabelSize "small" }) }
+if ($DirectBattleAnnotationLabelMediumRadio) { $DirectBattleAnnotationLabelMediumRadio.Add_Click({ Set-DirectBattleAnnotationLabelSize "medium" }) }
+if ($DirectBattleAnnotationLabelLargeRadio) { $DirectBattleAnnotationLabelLargeRadio.Add_Click({ Set-DirectBattleAnnotationLabelSize "large" }) }
 if ($OcrExampleButton) { $OcrExampleButton.Add_Click({ Show-LiteFullVersionRequired }) }
 if ($OcrRunButton) { $OcrRunButton.Add_Click({ Show-LiteFullVersionRequired }) }
 if ($OcrOpenFolderButton) { $OcrOpenFolderButton.Add_Click({ Show-LiteFullVersionRequired }) }
 
 Set-LiteLanguageUi "zh"
+Set-DirectBattleAnnotationLabelSize $script:DirectBattleAnnotationLabelSize $false
 
 if ($Check) {
     $subPageModeSources = @(
@@ -6787,6 +6892,10 @@ if ($Check) {
         $ImageToolGapBox.Text -ne "0" -or
         -not $DirectBattleAnnotationPanel -or
         -not $DirectBattleAnnotationRunButton -or
+        -not $DirectBattleAnnotationLabelSmallRadio -or
+        -not $DirectBattleAnnotationLabelMediumRadio -or
+        -not $DirectBattleAnnotationLabelLargeRadio -or
+        [bool]$DirectBattleAnnotationLabelSmallRadio.IsChecked -ne $true -or
         [bool]$DirectBattleAnnotationGrayLoserCheck.IsChecked -ne $true) {
         throw "lightweight image tools page check failed"
     }

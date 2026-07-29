@@ -1,6 +1,6 @@
 ﻿param(
-    [string]$FullVersion = "0.1.15",
-    [string]$LiteVersion = "0.1.7"
+    [string]$FullVersion = "0.1.16",
+    [string]$LiteVersion = "0.1.8"
 )
 
 $ErrorActionPreference = "Stop"
@@ -121,7 +121,7 @@ function Write-PatchDocuments([string]$PatchRoot, [string]$ProductName, [string]
         "不需要重新运行安装包。"
     ) -join "`n"
     Write-TextFile (Join-Path $PatchRoot "升级补丁使用说明.txt") $usage
-    Write-TextFile (Join-Path $PatchRoot "更新日志_2026-07-27.txt") $LogContent
+    Write-TextFile (Join-Path $PatchRoot ("更新日志_{0}.txt" -f $releaseDate)) $LogContent
 }
 
 function Write-Checksums([string]$PatchRoot) {
@@ -166,13 +166,24 @@ function Build-Patch(
     Write-Step "Upgrade patch is ready: $zipPath"
 }
 
+function Write-ReleaseChecksums([string[]]$Paths, [string]$OutputPath) {
+    $lines = foreach ($path in $Paths) {
+        if (-not (Test-Path -LiteralPath $path)) {
+            throw "Release artifact is missing: $path"
+        }
+        "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash, (Split-Path -Leaf $path)
+    }
+    Write-TextFile $OutputPath ($lines -join "`n")
+}
+
 New-Item -ItemType Directory -Force -Path $UpdatesRoot | Out-Null
 $releaseTimestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
+$releaseDate = Get-Date -Format "yyyy-MM-dd"
 
 $fullLog = @(
     "NIKKE C ARENA Tool 完整版 更新日志",
-    "版本：0.1.15",
-    "更新基线：0.1.11（本补丁可直接覆盖升级；包含 0.1.12 至 0.1.15 的累计改动）",
+    "版本：0.1.16",
+    "更新基线：0.1.11（本补丁可直接覆盖升级；包含 0.1.12 至 0.1.16 的累计改动）",
     "时间说明：每条记录均标记对应功能最终修订时间，精确到分钟。",
     "",
     "[2026-07-15 01:47] GPU 环境一键配置新增阿里云镜像脚本；完整版本补丁包含该脚本。",
@@ -213,13 +224,20 @@ $fullLog = @(
     "[2026-07-25 12:40] 所有自动化截图任务新增截图参数检查：可前往参数设置或继续截图，并支持本月不再提醒；修复检查弹窗按钮错误显示颜色值的问题。",
     "[2026-07-27 11:40] 完整版与轻量版窗口新增外层《帮助》入口和主题化说明弹窗，集中说明功能、运行方式、开发初心、风险提示与禁止用途。",
     "[2026-07-27 11:55] 帮助入口调整为更紧凑的纯《帮助》文字按钮，移除问号并保持两种主题颜色适配。",
+    "[$releaseTimestamp] 图像工具的战果标记新增小、中、大三档固定尺寸 WIN/LOSE 像素标记；中号、大号加粗放大，且不依赖玩家立绘覆盖区域的动态计算。",
+    "[$releaseTimestamp] 妮姬名单统一修正《士兵F.A.》《士兵O.W.》《士兵E.G.》的末尾句点，并同步更新保护名单；OCR 漏读句点时仍会归一到标准名称。",
+    "[$releaseTimestamp] 赛季一键截图从晋级赛转入冠军争霸赛时，返回赛区选择页后固定等待 3 秒，点击冠军争霸赛入口后固定等待 5 秒；两项不受参数设置控件影响。",
+    "[$releaseTimestamp] 完整版与轻量版帮助页底部新增 GitHub Releases 超链接，点击可打开发布下载页，并适配两种主题。",
+    "[$releaseTimestamp] 修复完整版首次自检时可选 GPU runtime 探测可能遗留非零退出码的问题，确保发行验证与不含 GPU runtime 的标准安装包正常构建。",
+    "[$releaseTimestamp] OCR 按导入文件名识别 1920×1080、1920×1200、1920×1440、2560×1080、2560×1440、2560×1600、3440×1440、3840×2160 图源规格。",
+    "[$releaseTimestamp] OCR 为海外服 2560×1440 珍藏品增加独立模板配置、坐标相位校准与 R15 保留判定，减少不同分辨率下珍藏品等级误判。",
     "[$releaseTimestamp] 重建完整版直接覆盖升级补丁；补丁包含最新 GUI、图像工具、妮姬名单、标准配置和 GPU 配置文档，不包含 GPU/CUDA 运行时。"
 ) -join "`n"
 
 $liteLog = @(
     "NIKKE C ARENA 截图工具 轻量版 更新日志",
-    "版本：0.1.7",
-    "更新基线：0.1.4（本补丁可直接覆盖升级；包含 0.1.5 至 0.1.7 的累计改动）",
+    "版本：0.1.8",
+    "更新基线：0.1.4（本补丁可直接覆盖升级；包含 0.1.5 至 0.1.8 的累计改动）",
     "时间说明：每条记录均标记对应功能最终修订时间，精确到分钟。",
     "",
     "[2026-07-15 04:42] 新增图像工具：支持 PNG 截图压缩为 JPEG，以及多张图像的横向或纵向拼接。",
@@ -246,11 +264,13 @@ $liteLog = @(
     "[2026-07-25 12:40] 所有自动化截图任务新增截图参数检查：可前往参数设置或继续截图，并支持本月不再提醒；修复检查弹窗按钮错误显示颜色值的问题。",
     "[2026-07-27 11:40] 完整版与轻量版窗口新增外层《帮助》入口和主题化说明弹窗，集中说明功能、运行方式、开发初心、风险提示与禁止用途。",
     "[2026-07-27 11:55] 帮助入口调整为更紧凑的纯《帮助》文字按钮，移除问号并保持两种主题颜色适配。",
+    "[$releaseTimestamp] 图像工具的战果标记新增小、中、大三档固定尺寸 WIN/LOSE 像素标记；中号、大号加粗放大，且不依赖玩家立绘覆盖区域的动态计算。",
+    "[$releaseTimestamp] 帮助页底部新增 GitHub Releases 超链接，点击可打开发布下载页，并适配两种主题。",
     "[$releaseTimestamp] 重建轻量版直接覆盖升级补丁；不包含 PaddleCPU、PaddleGPU、OCR 模型、OCR 导出、GPU 配置文档或 GPU/CUDA 运行时。"
 ) -join "`n"
 
 $fullPatch = @{
-    PatchName = "NIKKE_C_ARENA_Tool_完整版_升级补丁_0.1.15"
+    PatchName = "NIKKE_C_ARENA_Tool_完整版_升级补丁_0.1.16"
     ReleaseRoot = Join-Path $DistRoot "r_$FullVersion"
     ExpectedLauncher = "run_gui.bat"
     ProductName = "NIKKE C ARENA Tool 完整版"
@@ -266,6 +286,7 @@ $fullPatch = @{
     Directories = @(
         "dataanalysis\\arena_ocr_tool\\recognizer",
         "dataanalysis\\arena_ocr_tool\\data\\defeat_templates",
+        "dataanalysis\\arena_ocr_tool\\data\\collection_cv_templates",
         "dataanalysis\\arena_ocr_tool\\models\\nickname\\chinese_cht"
     )
     LogContent = $fullLog
@@ -274,7 +295,7 @@ $fullPatch = @{
 Build-Patch @fullPatch
 
 $litePatch = @{
-    PatchName = "NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_0.1.7"
+    PatchName = "NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_0.1.8"
     ReleaseRoot = Join-Path $DistRoot "lite_r_$LiteVersion"
     ExpectedLauncher = "run_capture_lite.bat"
     ProductName = "NIKKE C ARENA 截图工具 轻量版"
@@ -296,4 +317,12 @@ $combinedLog = @(
     "",
     "轻量版说明：轻量版包含以上所有自动化截图、拼图、服务器适配与参数页更新；GPU 配置脚本、OCR 识别和数据导出仍仅由完整版提供。"
 ) -join "`n"
-Write-TextFile (Join-Path $UpdatesRoot "更新日志_2026-07-27.txt") $combinedLog
+Write-TextFile (Join-Path $UpdatesRoot ("更新日志_{0}.txt" -f $releaseDate)) $combinedLog
+
+$releaseArtifacts = @(
+    (Join-Path $DistRoot ("installer\\NIKKE_Arena_Tool_Setup_{0}.exe" -f $FullVersion)),
+    (Join-Path $DistRoot ("installer\\NIKKE_Arena_Capture_Lite_Setup_{0}.exe" -f $LiteVersion)),
+    (Join-Path $UpdatesRoot ("NIKKE_C_ARENA_Tool_完整版_升级补丁_{0}.zip" -f $FullVersion)),
+    (Join-Path $UpdatesRoot ("NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_{0}.zip" -f $LiteVersion))
+)
+Write-ReleaseChecksums $releaseArtifacts (Join-Path $UpdatesRoot ("SHA256SUMS_{0}.txt" -f $releaseDate))

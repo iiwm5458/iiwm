@@ -70,6 +70,11 @@ try {
     if (-not $roundConfig.launcher_settings) {
         $roundConfig | Add-Member -NotePropertyName launcher_settings -NotePropertyValue ([pscustomobject]@{})
     }
+    foreach ($propertyName in @("ocr_runtime_cache", "ocr_roster_preflight_suppressed_month", "capture_parameters_preflight_suppressed_month")) {
+        if ($roundConfig.launcher_settings.PSObject.Properties.Name -contains $propertyName) {
+            [void]$roundConfig.launcher_settings.PSObject.Properties.Remove($propertyName)
+        }
+    }
     $roundConfig.launcher_settings.ocr_performance_mode = "cpu"
     $roundConfig.launcher_settings.ocr_thermal_mode = "safe"
     $roundConfigJson = $roundConfig | ConvertTo-Json -Depth 100

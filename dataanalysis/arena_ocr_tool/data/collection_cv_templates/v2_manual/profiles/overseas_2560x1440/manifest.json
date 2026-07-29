@@ -1,0 +1,416 @@
+{
+  "version": 1,
+  "profile": "overseas_2560x1440",
+  "source": "64进32全部战斗数据（详）2026年7月28日-2560x1440-港澳台.png",
+  "crop_phase": {
+    "x": 1,
+    "y": -2
+  },
+  "templates": [
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_01-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_01.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_02-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_02.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_03-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_03.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_04-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_04.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_05-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_05.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_06-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_07-1920x1080.png"
+    },
+    {
+      "label": "R15",
+      "kind": "positive",
+      "path": "../../templates/R15/r15_08-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_01-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_01.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_02-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_02.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_03-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_03.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_04-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_04.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_05-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_05.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_06-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_07-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_08-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_09-1920x1080.png"
+    },
+    {
+      "label": "R",
+      "kind": "positive",
+      "path": "../../templates/R/r_10-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_01-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_01.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_02-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_02.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_03-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_03.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_04-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_04.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_05-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_05.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_06-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_07-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_08-1920x1080.png"
+    },
+    {
+      "label": "SR15",
+      "kind": "positive",
+      "path": "../../templates/SR15/sr15_09-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_01-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_01.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_02-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_02.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_03-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_03.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_04-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_04.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_05-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_05.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_06-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_07-1920x1080.png"
+    },
+    {
+      "label": "SR",
+      "kind": "positive",
+      "path": "../../templates/SR/sr_08-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_01-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_01.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_02-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_02.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_03-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_03.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_04-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_04.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_05-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_05.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_06-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_06.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_07-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_08-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_09-1920x1080.png"
+    },
+    {
+      "label": "SSR3",
+      "kind": "positive",
+      "path": "../../templates/SSR3/ssr3_10-1920x1080.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_01-1920x1080.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_01.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_02-1920x1080.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_02.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_03-1920x1080.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_03.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_04-1920x1080.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_04.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_05-1920x1080.png"
+    },
+    {
+      "label": "SSR",
+      "kind": "positive",
+      "path": "../../templates/SSR/ssr_05.png"
+    }
+  ]
+}

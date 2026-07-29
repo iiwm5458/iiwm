@@ -27,6 +27,10 @@ DETAIL_PAGE_CAPTURE_SETTLE_SECONDS = 0.5
 PROFILE_PAGE_CAPTURE_SETTLE_SECONDS = 0.35
 PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS = 10.0
 PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
+# Season capture always uses these fixed transition waits; they are intentionally
+# independent from the user-configurable capture timing controls.
+SEASON_TRANSITION_BACK_WAIT_SECONDS = 3.0
+SEASON_TOP8_ENTRY_WAIT_SECONDS = 5.0
 DETAIL_PAGE_STRICT_THRESHOLDS = {
     "title_blue": 0.45,
     "detail_dark": 0.16,
@@ -90,8 +94,6 @@ DEFAULT_CONFIG = {
         "profile_page_poll_enabled": False,
         "profile_page_timeout_seconds": PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS,
         "profile_page_poll_interval_seconds": PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
-        "after_season_back_to_arena_seconds": 1.0,
-        "after_season_top8_entry_click_seconds": 1.2,
         "after_outpost_click_seconds": 0.7,
         "after_profile_close_seconds": 0.4,
         "after_escape_seconds": 0.45,
@@ -1916,7 +1918,6 @@ def click_config_point_or_ratio(config, point_key, ratio_key=None):
 
 
 def navigate_from_group_to_top8(config):
-    timings = config["timing"]
     print("season: returning to championship arena selection")
     server = str(config.get("runtime_server", "cn")).strip().lower()
     if server in {"global", "hmt"}:
@@ -1925,10 +1926,10 @@ def navigate_from_group_to_top8(config):
         click_config_point_or_ratio(config, "season_return_button", "season_return_button_ratio")
     else:
         press_escape(config, 1)
-    time.sleep(float(timings.get("after_season_back_to_arena_seconds", 1.0)))
+    time.sleep(SEASON_TRANSITION_BACK_WAIT_SECONDS)
     print("season: opening TOP8 championship bracket")
     click_config_point_or_ratio(config, "season_top8_entry", "season_top8_entry_ratio")
-    time.sleep(float(timings.get("after_season_top8_entry_click_seconds", 1.2)))
+    time.sleep(SEASON_TOP8_ENTRY_WAIT_SECONDS)
 
 
 def make_cached_player(bundle, key, group_index=None, slot_index=None):
