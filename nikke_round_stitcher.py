@@ -65,6 +65,8 @@ DEFAULT_CONFIG = {
     "team_summary_background": "#f7f8fa",
     "duo_column_gap": 18,
     "group_grid_gap": 18,
+    "round_robin_grid_gap": 13,
+    "round_robin_background": "#FFFFFF",
     "group_data_gap": 18,
     "group_data_column_gap": 42,
     "all_groups_grid_gap": 56,
@@ -86,6 +88,7 @@ DEFAULT_CONFIG = {
         "after_support_avatar_click_seconds": 1.0,
         "after_group_avatar_click_seconds": 1.0,
         "after_group_tab_click_seconds": 0.8,
+        "after_round_robin_group_switch_seconds": 1.3,
         "after_group_result_click_seconds": 0.9,
         "after_bracket_result_click_seconds": 1.0,
         "after_group_detail_click_seconds": 0.7,
@@ -107,6 +110,25 @@ DEFAULT_CONFIG = {
         "outpost_tab": [1899, 1333],
         "support_left_avatar": [1548, 430],
         "support_right_avatar": [1875, 430],
+        # Player avatars inside the already-open two-player result popup.
+        # Keep the tab and no-tab variants separate so either layout can be
+        # calibrated independently if a future client revision shifts it.
+        "support_result_avatars_without_stage_tabs": [[1455, 727], [1899, 727]],
+        "support_result_avatars_with_stage_tabs": [[1455, 727], [1899, 727]],
+        # The four avatar centers on the round-robin overview at 3440x1440.
+        # They are passed through the same transform as every other capture point.
+        "round_robin_avatars": [
+            [1429, 568],
+            [1427, 749],
+            [1429, 933],
+            [1425, 1115],
+        ],
+        # Round-robin GROUP selector coordinates at the 3440x1440 reference.
+        # The picker is a five-column grid containing GROUP01 through GROUP64.
+        "round_robin_group_selector": [1720, 412],
+        "round_robin_group_grid_origin": [1486, 312],
+        "round_robin_group_grid_step": [115, 67],
+        "round_robin_group_confirm": [1846, 1278],
         "group_64_avatars": [
             [1390, 500],
             [1390, 675],
@@ -218,6 +240,20 @@ DEFAULT_CONFIG = {
             [1891, 1008],
             [1891, 1070],
         ],
+        "support_result_detail_buttons_without_stage_tabs": [
+            [1891, 826],
+            [1891, 887],
+            [1891, 948],
+            [1891, 1008],
+            [1891, 1070],
+        ],
+        "support_result_detail_buttons_with_stage_tabs": [
+            [1891, 826],
+            [1891, 887],
+            [1891, 948],
+            [1891, 1008],
+            [1891, 1070],
+        ],
         "round_tabs": {
             "1": [1462, 707],
             "2": [1604, 707],
@@ -258,6 +294,10 @@ DEFAULT_CONFIG = {
         "group_simple_result": [1555, 793, 243, 301],
         "group_detailed_result": [1380, 289, 681, 873],
         "group_detailed_result_global_hmt": [1380, 356, 681, 788],
+        # The round-robin post-match overview: GROUP header plus all four
+        # result rows. It is placed to the left of the four profile cards.
+        "round_robin_post_result": [1327, 360, 815, 858],
+        "round_robin_post_result_global_hmt": [1327, 360, 815, 858],
         "group_detailed_title_probe": [1415, 160, 610, 140],
         # Profile-page probes use the same 3440x1440 reference coordinates as
         # the detailed-result probes and are transformed for every screen size.
@@ -545,6 +585,24 @@ def crop_from_image(config, img, crop_name):
 
 def crop_current(config, crop_name):
     return crop_from_image(config, screenshot(), crop_name)
+
+
+def get_round_robin_post_result_rect(config):
+    crops = config.get("crops", {})
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    if server in {"global", "hmt"}:
+        regional_rect = crops.get("round_robin_post_result_global_hmt")
+        if regional_rect:
+            return regional_rect
+    return crops["round_robin_post_result"]
+
+
+def capture_round_robin_post_result(config):
+    """Capture the current GROUP's four-row post-match result overview."""
+    current = screenshot()
+    transform = get_transform(config, current.size)
+    box = scale_rect(get_round_robin_post_result_rect(config), transform, current.size)
+    return current.crop(box)
 
 
 def get_research_card_rects(config):
@@ -1481,6 +1539,31 @@ def stitch_group_pairs_with_data(player_images, data_parts, config, mode, single
     return canvas
 
 
+def stitch_round_robin_capture(player_images, config, post_result=None):
+    """Compose four player pages, optionally preceded by the GROUP result panel."""
+    gap = int(config.get("round_robin_grid_gap", 13))
+    background = config.get("round_robin_background", "#FFFFFF")
+    players = stitch_grid_with_gap(player_images, 4, gap, background)
+    if post_result is None:
+        return players
+
+    height = max(post_result.height, players.height)
+    width = post_result.width + gap + players.width
+    canvas = Image.new("RGB", (width, height), background)
+    canvas.paste(post_result.convert("RGB"), (0, (height - post_result.height) // 2))
+    canvas.paste(players.convert("RGB"), (post_result.width + gap, (height - players.height) // 2))
+    return canvas
+
+
+def round_robin_player_capture_config(config):
+    """Use the round-robin canvas colour inside each player composition too."""
+    player_config = dict(config)
+    player_config["background"] = config.get(
+        "round_robin_background", config.get("background", "#FFFFFF")
+    )
+    return player_config
+
+
 def make_support_status_part(img, config, target_width):
     part = crop_rects_from_image(config, img, [config["crops"]["support_status"]])[0]
     fitted = resize_to_width(part, target_width)
@@ -1545,6 +1628,96 @@ def run_support_duo_capture(config, output_path, parts_dir, include_support_stat
     if include_support_status:
         status_part = make_support_status_part(support_screen_img, config, final_img.width)
         final_img = append_bottom(final_img, status_part, config)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    final_img.save(output_path)
+    save_framed_output(final_img, config, output_path)
+    print(f"done: {output_path}")
+
+
+def get_support_result_avatar_points(config, with_stage_tabs):
+    clicks = config["clicks"]
+    key = (
+        "support_result_avatars_with_stage_tabs"
+        if with_stage_tabs
+        else "support_result_avatars_without_stage_tabs"
+    )
+    points = clicks.get(key, [])
+    if len(points) != 2:
+        raise SystemExit(f"{key} must contain exactly two player avatar points")
+    return points
+
+
+def get_support_result_detail_buttons(config, with_stage_tabs):
+    clicks = config["clicks"]
+    key = (
+        "support_result_detail_buttons_with_stage_tabs"
+        if with_stage_tabs
+        else "support_result_detail_buttons_without_stage_tabs"
+    )
+    fallback = (
+        clicks.get("group_32_detail_buttons", clicks.get("group_detail_buttons", []))
+        if with_stage_tabs
+        else clicks.get("group_detail_buttons", [])
+    )
+    return clicks.get(key, fallback)
+
+
+def capture_support_result_data(config, parts_dir, detailed, with_stage_tabs):
+    """Capture the active pair-result popup without changing its stage tab."""
+    if not detailed:
+        part = crop_current(config, "group_simple_result")
+        if config.get("save_parts"):
+            save_part(part, parts_dir, "support_result_simple")
+        return part
+
+    detail_buttons = get_support_result_detail_buttons(config, with_stage_tabs)
+    if not detail_buttons:
+        raise SystemExit("support-result detailed battle buttons are not configured")
+
+    round_parts = []
+    for detail_index, detail_point in enumerate(detail_buttons, 1):
+        print(f"support result detailed: opening detail {detail_index}/{len(detail_buttons)}")
+        transform = get_transform(config, screenshot().size)
+        click(detail_point, transform)
+        part = wait_for_detailed_result_page(config, f"support result detailed {detail_index}")
+        round_parts.append(part)
+        if config.get("save_parts"):
+            save_part(part, parts_dir, f"support_result_detailed_{detail_index:02d}")
+        press_escape(config, 1)
+
+    return stitch_vertical(round_parts, config, gap=0, background="#f7f8fa")
+
+
+def run_support_result_capture(config, output_path, parts_dir, detailed=True):
+    """Capture both profiles and the active two-player result popup as one pair block."""
+    transform = print_screen_context(config)
+    timings = config["timing"]
+    with_stage_tabs = has_group_stage_tabs(config)
+    avatar_points = get_support_result_avatar_points(config, with_stage_tabs)
+    layout_label = "with stage tabs" if with_stage_tabs else "without stage tabs"
+    print(f"support result: {layout_label}")
+
+    player_images = []
+    for index, point in enumerate(avatar_points, 1):
+        print(f"support result: opening player {index}/2")
+        click(point, transform)
+        time.sleep(float(timings.get("after_support_avatar_click_seconds", 1.0)))
+        player_images.append(
+            capture_player_image(config, parts_dir, f"support_result_{index:02d}", close_profile=False)
+        )
+        print("support result: returning to pair result")
+        press_escape_twice(config)
+        transform = get_transform(config, screenshot().size)
+
+    data_part = capture_support_result_data(config, parts_dir, detailed, with_stage_tabs)
+    mode = "detailed" if detailed else "simple"
+    final_img = stitch_group_pairs_with_data(
+        player_images,
+        [data_part],
+        config,
+        mode,
+        single_row=True,
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     final_img.save(output_path)
     save_framed_output(final_img, config, output_path)
@@ -1791,6 +1964,170 @@ def run_group_capture(config, output_path, parts_dir, group_size, post_data_mode
     final_img.save(output_path)
     save_framed_output(final_img, config, output_path)
     print(f"done: {output_path}")
+
+
+def run_round_robin_capture(config, output_path, parts_dir, include_post_result=False):
+    """Collect the four players shown on a round-robin overview in display order."""
+    transform = print_screen_context(config)
+    timings = config["timing"]
+    points = config["clicks"].get("round_robin_avatars", [])
+    if len(points) != 4:
+        raise SystemExit("round_robin_avatars must contain exactly four player avatar points")
+
+    post_result = None
+    if include_post_result:
+        print("round-robin: capturing post-match result overview")
+        post_result = capture_round_robin_post_result(config)
+
+    player_config = round_robin_player_capture_config(config)
+    player_images = []
+    for index, point in enumerate(points, 1):
+        print(f"round-robin: opening player {index}/4")
+        click(point, transform)
+        time.sleep(float(timings.get("after_group_avatar_click_seconds", 1.0)))
+        player_images.append(
+            capture_player_image(
+                player_config,
+                parts_dir,
+                f"round_robin_{index:02d}",
+                close_profile=False,
+            )
+        )
+
+        # Return to the overview after every player, including the last one.
+        # CN uses Esc; Global and HMT reuse the established backdrop-click path.
+        print("round-robin: returning to overview")
+        press_escape_twice(config)
+        transform = get_transform(config, screenshot().size)
+
+    final_img = stitch_round_robin_capture(player_images, config, post_result)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    final_img.save(output_path)
+    print(f"done: {output_path}")
+
+
+def round_robin_group_output_path(output_path, group_index):
+    """Build a non-destructive deep-compressed JPEG output path for one GROUP."""
+    stem = f"Group{int(group_index):02d}-{output_path.stem}"
+    candidate = output_path.with_name(f"{stem}.jpg")
+    if not candidate.exists():
+        return candidate
+    for suffix in range(2, 1000):
+        candidate = output_path.with_name(f"{stem}-{suffix}.jpg")
+        if not candidate.exists():
+            return candidate
+    stamp = datetime.now().strftime("%H%M%S")
+    return output_path.with_name(f"{stem}-{stamp}.jpg")
+
+
+def save_round_robin_deep_jpeg(image, output_path, config):
+    """Match the image tool's deep-compression preset without launching it 64 times."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    image.convert("RGB").save(
+        output_path,
+        format="JPEG",
+        quality=78,
+        subsampling=2,
+        optimize=True,
+    )
+    maybe_collect_garbage(config)
+
+
+def select_round_robin_group(config, group_index):
+    if not 1 <= int(group_index) <= 64:
+        raise ValueError("round-robin GROUP must be between 1 and 64")
+
+    clicks = config["clicks"]
+    timings = config["timing"]
+    selector = clicks.get("round_robin_group_selector")
+    grid_origin = clicks.get("round_robin_group_grid_origin")
+    grid_step = clicks.get("round_robin_group_grid_step")
+    confirm = clicks.get("round_robin_group_confirm")
+    if not selector or not grid_origin or not grid_step or not confirm:
+        raise SystemExit("round-robin GROUP selector coordinates are missing")
+
+    delay = float(timings.get("after_group_tab_click_seconds", 0.8))
+    transform = get_transform(config, screenshot().size)
+    click(selector, transform)
+    time.sleep(delay)
+
+    index = int(group_index) - 1
+    point = [
+        int(grid_origin[0]) + (index % 5) * int(grid_step[0]),
+        int(grid_origin[1]) + (index // 5) * int(grid_step[1]),
+    ]
+    transform = get_transform(config, screenshot().size)
+    click(point, transform)
+    time.sleep(delay)
+    transform = get_transform(config, screenshot().size)
+    click(confirm, transform)
+    time.sleep(
+        float(timings.get("after_round_robin_group_switch_seconds", 1.3))
+    )
+
+
+def capture_round_robin_group_image(config, parts_dir, group_index, include_post_result=False):
+    """Capture one selected round-robin GROUP and return to its overview."""
+    transform = print_screen_context(config)
+    timings = config["timing"]
+    points = config["clicks"].get("round_robin_avatars", [])
+    if len(points) != 4:
+        raise SystemExit("round_robin_avatars must contain exactly four player avatar points")
+
+    post_result = None
+    if include_post_result:
+        print(f"round-robin: GROUP{group_index:02d} capturing post-match result overview")
+        post_result = capture_round_robin_post_result(config)
+
+    player_config = round_robin_player_capture_config(config)
+    player_images = []
+    for player_index, point in enumerate(points, 1):
+        print(f"round-robin: GROUP{group_index:02d} opening player {player_index}/4")
+        click(point, transform)
+        time.sleep(float(timings.get("after_group_avatar_click_seconds", 1.0)))
+        player_images.append(
+            capture_player_image(
+                player_config,
+                parts_dir,
+                f"round_robin_group{group_index:02d}_{player_index:02d}",
+                close_profile=False,
+            )
+        )
+
+        # Return to the selected overview after every profile. CN uses Esc;
+        # Global/HMT reuse the existing safe backdrop-click route.
+        print(f"round-robin: GROUP{group_index:02d} returning to overview")
+        press_escape_twice(config)
+        transform = get_transform(config, screenshot().size)
+
+    return stitch_round_robin_capture(player_images, config, post_result)
+
+
+def run_all_round_robin_groups_capture(
+    config,
+    output_path,
+    parts_dir,
+    start_group=1,
+    include_post_result=False,
+):
+    """Select and export each requested round-robin GROUP as an individual JPEG."""
+    start_group = int(start_group)
+    if not 1 <= start_group <= 64:
+        raise SystemExit("round-robin start GROUP must be between 1 and 64")
+
+    print(f"round-robin-all: starting from GROUP{start_group:02d}/64")
+    for group_index in range(start_group, 65):
+        print(f"round-robin-all: selecting GROUP{group_index:02d}/64")
+        select_round_robin_group(config, group_index)
+        final_img = capture_round_robin_group_image(
+            config,
+            parts_dir / f"group{group_index:02d}",
+            group_index,
+            include_post_result,
+        )
+        group_output = round_robin_group_output_path(output_path, group_index)
+        save_round_robin_deep_jpeg(final_img, group_output, config)
+        print(f"round-robin-all: GROUP{group_index:02d}/64 saved: {group_output}")
 
 
 def run_top8_capture(config, output_path, parts_dir, top8_size, post_data_mode="none"):
@@ -2467,6 +2804,56 @@ def parse_args():
         help="Capture both players from the support information screen and stitch them side by side.",
     )
     parser.add_argument(
+        "--support-result",
+        action="store_true",
+        help="Capture both players and the active two-player result popup as one pair block.",
+    )
+    parser.add_argument(
+        "--support-result-simple",
+        action="store_true",
+        help="With --support-result, capture the simplified result panel instead of detailed battle records.",
+    )
+    parser.add_argument(
+        "--round-robin",
+        action="store_true",
+        help="Capture the four players shown on the C ARENA round-robin overview in one horizontal image.",
+    )
+    parser.add_argument(
+        "--round-robin-all",
+        action="store_true",
+        help="Select and export individual round-robin screenshots for GROUP01 through GROUP64.",
+    )
+    parser.add_argument(
+        "--round-robin-post-result",
+        action="store_true",
+        help="Capture the four-row round-robin post-match result panel before player profiles.",
+    )
+    parser.add_argument(
+        "--round-robin-start-group",
+        type=int,
+        choices=range(1, 65),
+        default=1,
+        help="First GROUP to capture when --round-robin-all is enabled.",
+    )
+    parser.add_argument(
+        "--round-robin-group-switch-delay",
+        type=float,
+        default=None,
+        help="Delay after confirming a round-robin GROUP before opening its first player.",
+    )
+    parser.add_argument(
+        "--round-robin-gap",
+        type=int,
+        default=None,
+        help="Horizontal gap in pixels between the four round-robin player captures.",
+    )
+    parser.add_argument(
+        "--round-robin-background",
+        choices=("white", "pink", "blue", "black", "ivory"),
+        default=None,
+        help="Background colour used only for round-robin player-image stitching.",
+    )
+    parser.add_argument(
         "--include-support-status",
         action="store_true",
         help="Append the support status comparison bar to the support duo output.",
@@ -2612,6 +2999,20 @@ def main():
         config["timing"]["after_avatar_click_seconds"] = max(
             0.45, min(5.0, float(args.avatar_profile_delay))
         )
+    if args.round_robin_group_switch_delay is not None:
+        config["timing"]["after_round_robin_group_switch_seconds"] = max(
+            0.45, min(10.0, float(args.round_robin_group_switch_delay))
+        )
+    if args.round_robin_gap is not None:
+        config["round_robin_grid_gap"] = max(0, min(5000, int(args.round_robin_gap)))
+    if args.round_robin_background is not None:
+        config["round_robin_background"] = {
+            "white": "#FFFFFF",
+            "pink": "#FFF0F6",
+            "blue": "#29C7FF",
+            "black": "#000000",
+            "ivory": "#FFF6E5",
+        }[args.round_robin_background]
     if args.bracket_result_delay is not None:
         config["timing"]["after_bracket_result_click_seconds"] = max(
             0.45, min(5.0, float(args.bracket_result_delay))
@@ -2634,7 +3035,24 @@ def main():
     print("put the game on the arena popup screen now")
     countdown(seconds)
     parts_dir = args.output.with_suffix("")
-    if args.season_capture:
+    if args.round_robin_all:
+        if not args.round_robin:
+            raise SystemExit("--round-robin-all requires --round-robin")
+        run_all_round_robin_groups_capture(
+            config,
+            args.output,
+            parts_dir,
+            args.round_robin_start_group,
+            args.round_robin_post_result,
+        )
+    elif args.round_robin:
+        run_round_robin_capture(
+            config,
+            args.output,
+            parts_dir,
+            args.round_robin_post_result,
+        )
+    elif args.season_capture:
         run_season_capture(config, args.output, parts_dir, args.group_post_data)
     elif args.top8_pyramid:
         run_top8_pyramid_capture(config, args.output, parts_dir, args.group_post_data)
@@ -2645,6 +3063,13 @@ def main():
             run_all_groups_capture(config, args.output, parts_dir, args.group_size, args.group_post_data)
         else:
             run_group_capture(config, args.output, parts_dir, args.group_size, args.group_post_data)
+    elif args.support_result:
+        run_support_result_capture(
+            config,
+            args.output,
+            parts_dir,
+            detailed=not args.support_result_simple,
+        )
     elif args.support_duo:
         run_support_duo_capture(config, args.output, parts_dir, args.include_support_status)
     else:

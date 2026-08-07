@@ -1,6 +1,6 @@
 ﻿param(
-    [string]$FullVersion = "0.1.16",
-    [string]$LiteVersion = "0.1.8"
+    [string]$FullVersion = "0.1.17",
+    [string]$LiteVersion = "0.1.9"
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,8 +36,8 @@ function Copy-PayloadDirectory([string]$ReleaseRoot, [string]$PayloadRoot, [stri
         throw "Patch source directory is missing: $source"
     }
     $destination = Join-Path $PayloadRoot $RelativePath
-    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
-    Copy-Item -LiteralPath $source -Destination $destination -Recurse -Force
+    New-Item -ItemType Directory -Force -Path $destination | Out-Null
+    Get-ChildItem -LiteralPath $source -Force | Copy-Item -Destination $destination -Recurse -Force
     Get-ChildItem -LiteralPath $destination -Recurse -Force -Directory -Filter "__pycache__" -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force
     Get-ChildItem -LiteralPath $destination -Recurse -Force -File -Filter "*.pyc" -ErrorAction SilentlyContinue |
@@ -106,7 +106,7 @@ exit /b %rc%
 function Write-PatchDocuments([string]$PatchRoot, [string]$ProductName, [string]$Version, [string]$LogContent, [string]$ConfigResetNotice) {
     $usage = @(
         "$ProductName 升级补丁使用说明",
-        "适用版本：已安装的旧版 $ProductName",
+        "适用版本：所有已发布的旧版 $ProductName（0.1.0 及以后）",
         "目标版本：$Version",
         "",
         "1. 先完全退出程序。",
@@ -116,7 +116,8 @@ function Write-PatchDocuments([string]$PatchRoot, [string]$ProductName, [string]
         "5. 出现《升级完成》后，重新启动程序即可。",
         "",
         "补丁会自动备份被替换的程序文件到安装目录的 update_backups 文件夹。",
-        "本补丁采用直接覆盖方式，不会解析或合并 JSON 配置；截图、导出数据、用户主题和自定义背景不会被删除。",
+        "本补丁采用直接覆盖方式，支持从任意已发布的同产品版本升级；不会解析或合并 JSON 配置。",
+        "截图、导出数据、用户主题和自定义背景不会被删除。",
         $ConfigResetNotice,
         "不需要重新运行安装包。"
     ) -join "`n"
@@ -182,8 +183,8 @@ $releaseDate = Get-Date -Format "yyyy-MM-dd"
 
 $fullLog = @(
     "NIKKE C ARENA Tool 完整版 更新日志",
-    "版本：0.1.16",
-    "更新基线：0.1.11（本补丁可直接覆盖升级；包含 0.1.12 至 0.1.16 的累计改动）",
+    "版本：0.1.17",
+    "更新基线：0.1.0（本补丁可直接覆盖升级；包含至 0.1.17 的全部累计改动）",
     "时间说明：每条记录均标记对应功能最终修订时间，精确到分钟。",
     "",
     "[2026-07-15 01:47] GPU 环境一键配置新增阿里云镜像脚本；完整版本补丁包含该脚本。",
@@ -231,13 +232,22 @@ $fullLog = @(
     "[$releaseTimestamp] 修复完整版首次自检时可选 GPU runtime 探测可能遗留非零退出码的问题，确保发行验证与不含 GPU runtime 的标准安装包正常构建。",
     "[$releaseTimestamp] OCR 按导入文件名识别 1920×1080、1920×1200、1920×1440、2560×1080、2560×1440、2560×1600、3440×1440、3840×2160 图源规格。",
     "[$releaseTimestamp] OCR 为海外服 2560×1440 珍藏品增加独立模板配置、坐标相位校准与 R15 保留判定，减少不同分辨率下珍藏品等级误判。",
-    "[$releaseTimestamp] 重建完整版直接覆盖升级补丁；补丁包含最新 GUI、图像工具、妮姬名单、标准配置和 GPU 配置文档，不包含 GPU/CUDA 运行时。"
+    "[$releaseTimestamp] 图像工具补齐透明、纯白、粉色、蓝色、黑色、奶白与自定义背景拼接；自定义背景会裁切铺满画布，并以半透明方式叠放顶层图像。",
+    "[$releaseTimestamp] 图像压缩同时支持 PNG 与 JPG 输入，并保留原图宽高比例；拼接解除单图最大尺寸限制后，超大循环赛输出会自动拆分为每张 8 个 GROUP。",
+    "[$releaseTimestamp] 新增《小组循环赛》自动截图：可采集当前 GROUP 的 4 名玩家资料页，按横向排列并支持间距、背景和窗口模式坐标换算。",
+    "[$releaseTimestamp] 小组循环赛新增《战斗结果（赛后用）》：在四人资料页前截取结果区域，并在最终拼图最左侧垂直居中放置该结果图。",
+    "[$releaseTimestamp] 小组循环赛新增全部 GROUP 批量采集：支持设置起始 GROUP、切换等待时间、每组单独深度压缩输出和日期目录下的专用文件夹。",
+    "[$releaseTimestamp] 小组循环赛文件夹拼接支持纵向或横向分批输出、背景颜色、GROUP 像素标记与加粗外框；修复黑色背景与 GROUP49/50 标记截断问题。",
+    "[$releaseTimestamp] 新增《双方赛果截图》：从已打开的两人赛果窗口依次采集双方资料，可选简化或默认详细赛果，并复用国服及海外服的战果裁切、轮询与关闭页面规则。",
+    "[$releaseTimestamp] 《双方赛果截图》支持窗口模式；主面板将《小组循环赛》调整到《C ARENA 晋级赛》正上方。",
+    "[$releaseTimestamp] 妮姬名单与离线保护名单新增《天城雪子》《新岛真》《埃癸斯》，供本地 OCR 名称校准与恢复使用。",
+    "[$releaseTimestamp] 重建完整版直接覆盖升级补丁；补丁包含完整内置 assets、基础 Python 运行时、最新 GUI、图像工具、妮姬名单、标准配置和 GPU 配置文档，不包含 GPU/CUDA 运行时。"
 ) -join "`n"
 
 $liteLog = @(
     "NIKKE C ARENA 截图工具 轻量版 更新日志",
-    "版本：0.1.8",
-    "更新基线：0.1.4（本补丁可直接覆盖升级；包含 0.1.5 至 0.1.8 的累计改动）",
+    "版本：0.1.9",
+    "更新基线：0.1.0（本补丁可直接覆盖升级；包含至 0.1.9 的全部累计改动）",
     "时间说明：每条记录均标记对应功能最终修订时间，精确到分钟。",
     "",
     "[2026-07-15 04:42] 新增图像工具：支持 PNG 截图压缩为 JPEG，以及多张图像的横向或纵向拼接。",
@@ -266,11 +276,19 @@ $liteLog = @(
     "[2026-07-27 11:55] 帮助入口调整为更紧凑的纯《帮助》文字按钮，移除问号并保持两种主题颜色适配。",
     "[$releaseTimestamp] 图像工具的战果标记新增小、中、大三档固定尺寸 WIN/LOSE 像素标记；中号、大号加粗放大，且不依赖玩家立绘覆盖区域的动态计算。",
     "[$releaseTimestamp] 帮助页底部新增 GitHub Releases 超链接，点击可打开发布下载页，并适配两种主题。",
-    "[$releaseTimestamp] 重建轻量版直接覆盖升级补丁；不包含 PaddleCPU、PaddleGPU、OCR 模型、OCR 导出、GPU 配置文档或 GPU/CUDA 运行时。"
+    "[$releaseTimestamp] 图像工具补齐透明、纯白、粉色、蓝色、黑色、奶白与自定义背景拼接；自定义背景会裁切铺满画布，并以半透明方式叠放顶层图像。",
+    "[$releaseTimestamp] 图像压缩同时支持 PNG 与 JPG 输入，并保留原图宽高比例；拼接解除单图最大尺寸限制后，超大循环赛输出会自动拆分为每张 8 个 GROUP。",
+    "[$releaseTimestamp] 新增《小组循环赛》自动截图：可采集当前 GROUP 的 4 名玩家资料页，按横向排列并支持间距、背景和窗口模式坐标换算。",
+    "[$releaseTimestamp] 小组循环赛新增《战斗结果（赛后用）》、全部 GROUP 批量采集、起始 GROUP、切换等待时间、深度压缩输出及文件夹拼接功能。",
+    "[$releaseTimestamp] 小组循环赛拼接支持纵向或横向分批输出、背景颜色、GROUP 像素标记与加粗外框；修复黑色背景与 GROUP49/50 标记截断问题。",
+    "[$releaseTimestamp] 新增《双方赛果截图》：从已打开的两人赛果窗口依次采集双方资料，可选简化或默认详细赛果，并复用国服及海外服的战果裁切、轮询与关闭页面规则。",
+    "[$releaseTimestamp] 《双方赛果截图》支持窗口模式；主面板将《小组循环赛》调整到《C ARENA 晋级赛》正上方。",
+    "[$releaseTimestamp] 妮姬名单与离线保护名单新增《天城雪子》《新岛真》《埃癸斯》，供完整版 OCR 名称校准与恢复使用。",
+    "[$releaseTimestamp] 重建轻量版直接覆盖升级补丁；补齐完整内置 assets，不包含 PaddleCPU、PaddleGPU、OCR 模型、OCR 导出、GPU 配置文档或 GPU/CUDA 运行时。"
 ) -join "`n"
 
 $fullPatch = @{
-    PatchName = "NIKKE_C_ARENA_Tool_完整版_升级补丁_0.1.16"
+    PatchName = "NIKKE_C_ARENA_Tool_完整版_升级补丁_0.1.17"
     ReleaseRoot = Join-Path $DistRoot "r_$FullVersion"
     ExpectedLauncher = "run_gui.bat"
     ProductName = "NIKKE C ARENA Tool 完整版"
@@ -284,6 +302,8 @@ $fullPatch = @{
         "dataanalysis\\arena_ocr_tool\\data\\nikke_names.backup.json", "dataanalysis\\arena_ocr_tool\\models\\nickname\\README.md"
     )
     Directories = @(
+        "assets",
+        "runtime_python310_base",
         "dataanalysis\\arena_ocr_tool\\recognizer",
         "dataanalysis\\arena_ocr_tool\\data\\defeat_templates",
         "dataanalysis\\arena_ocr_tool\\data\\collection_cv_templates",
@@ -295,7 +315,7 @@ $fullPatch = @{
 Build-Patch @fullPatch
 
 $litePatch = @{
-    PatchName = "NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_0.1.8"
+    PatchName = "NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_0.1.9"
     ReleaseRoot = Join-Path $DistRoot "lite_r_$LiteVersion"
     ExpectedLauncher = "run_capture_lite.bat"
     ProductName = "NIKKE C ARENA 截图工具 轻量版"
@@ -303,7 +323,9 @@ $litePatch = @{
         "run_capture_lite.bat", "nikke_capture_lite_launcher.ps1", "nikke_round_stitcher.py", "nikke_image_tools.py",
         "nikke_character_capture.py", "nikke_character_capture_config.json", "nikke_round_config.json", "RELEASE_INFO.json"
     )
-    Directories = @()
+    Directories = @(
+        "assets"
+    )
     LogContent = $liteLog
     ConfigResetNotice = "nikke_round_config.json 与 nikke_character_capture_config.json 会恢复为新版标准内容；截图参数会重置，旧文件可在 update_backups 文件夹中找回。"
 }

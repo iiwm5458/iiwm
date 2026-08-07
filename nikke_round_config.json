@@ -17,6 +17,8 @@
     "team_summary_background":  "#f7f8fa",
     "duo_column_gap":  18,
     "group_grid_gap":  18,
+    "round_robin_grid_gap":  13,
+    "round_robin_background":  "#000000",
     "group_data_gap":  18,
     "group_data_column_gap":  42,
     "all_groups_grid_gap":  56,
@@ -35,7 +37,7 @@
     "save_parts":  false,
     "close_profile_after_capture":  true,
     "launcher_settings":  {
-                              "ocr_performance_mode":  "gpu",
+                              "ocr_performance_mode":  "cpu",
                               "ocr_thermal_mode":  "performance",
                               "ocr_runtime_cache":  {
                                                         "schema_version":  1,
@@ -56,16 +58,20 @@
                                                                 }
                                                     },
                               "ocr_roster_preflight_suppressed_month":  "",
-                              "capture_parameters_preflight_suppressed_month":  ""
+                              "capture_parameters_preflight_suppressed_month":  "",
+                              "battle_annotation_label_size":  "small",
+                              "capture_window_mode":  "minimize",
+                              "direct_battle_annotation_label_size":  "small",
+                              "image_tool_stitch_background":  "custom"
                           },
     "timing":  {
                    "countdown_seconds":  0,
-                   "after_round_click_seconds":  0.8,
+                   "after_round_click_seconds":  0.83,
                    "after_avatar_click_seconds":  0.6,
-                   "after_support_avatar_click_seconds":  0.8,
-                   "after_group_avatar_click_seconds":  0.8,
-                   "after_group_tab_click_seconds":  0.8,
-                   "after_group_result_click_seconds":  0.8,
+                   "after_support_avatar_click_seconds":  0.83,
+                   "after_group_avatar_click_seconds":  0.83,
+                   "after_group_tab_click_seconds":  0.83,
+                   "after_group_result_click_seconds":  0.83,
                    "after_bracket_result_click_seconds":  1,
                    "after_group_detail_click_seconds":  0.7,
                    "detail_page_timeout_seconds":  60,
@@ -73,9 +79,11 @@
                    "profile_page_poll_enabled":  true,
                    "profile_page_timeout_seconds":  10,
                    "profile_page_poll_interval_seconds":  0.35,
-                   "after_outpost_click_seconds":  0.8,
+                   "after_outpost_click_seconds":  0.83,
                    "after_profile_close_seconds":  0.4,
-                   "after_escape_seconds":  0.45
+                   "after_escape_seconds":  0.45,
+                   "capture_startup_delay_seconds":  1,
+                   "after_round_robin_group_switch_seconds":  1.6
                },
     "clicks":  {
                    "avatar":  [
@@ -108,6 +116,26 @@
                                                 1875,
                                                 430
                                             ],
+                   "support_result_avatars_without_stage_tabs":  [
+                                                                     [
+                                                                         1455,
+                                                                         727
+                                                                     ],
+                                                                     [
+                                                                         1899,
+                                                                         727
+                                                                     ]
+                                                                 ],
+                   "support_result_avatars_with_stage_tabs":  [
+                                                                  [
+                                                                      1455,
+                                                                      727
+                                                                  ],
+                                                                  [
+                                                                      1899,
+                                                                      727
+                                                                  ]
+                                                              ],
                    "group_64_avatars":  [
                                             [
                                                 1390,

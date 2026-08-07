@@ -1,7 +1,7 @@
 {
     "source":  "local",
-    "updated_at":  "2026-07-28 12:26:56",
-    "count":  201,
+    "updated_at":  "2026-08-07 00:00:00",
+    "count":  204,
     "names":  [
                   "2B",
                   "A2",
@@ -203,7 +203,10 @@
                   "鲁玛妮",
                   "麦斯威尔",
                   "麦斯威尔：平凡技师",
-                  "拉普拉斯：究极英雄"
+                  "拉普拉斯：究极英雄",
+                  "天城雪子",
+                  "新岛真",
+                  "埃癸斯"
               ],
     "special_count":  44,
     "special_names":  [
@@ -276,7 +279,7 @@
                              "芙罗拉",
                              "罗珊娜"
                          ],
-    "protected_count":  201,
+    "protected_count":  204,
     "protected_names":  [
                             "2B",
                             "A2",
@@ -478,7 +481,10 @@
                             "鲁玛妮",
                             "麦斯威尔",
                             "麦斯威尔：平凡技师",
-                            "拉普拉斯：究极英雄"
+                            "拉普拉斯：究极英雄",
+                            "天城雪子",
+                            "新岛真",
+                            "埃癸斯"
                         ],
     "protected_collection_count":  21,
     "protected_collection_names":  [

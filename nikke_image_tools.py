@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 from io import BytesIO
 import json
+import math
 import re
 import sys
 import zipfile
@@ -22,6 +23,26 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 Image.MAX_IMAGE_PIXELS = None
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 MAX_ANNOTATION_PIXELS = 250_000_000
+JPEG_MAX_DIMENSION = 65_500
+ROUND_ROBIN_TILE_FRAME_MARGIN = 33
+ROUND_ROBIN_TILE_LABEL_HEIGHT = 64
+ROUND_ROBIN_TILE_LABEL_SCALE = 8
+ROUND_ROBIN_BACKGROUND_COLORS = {
+    "white": (255, 255, 255),
+    "pink": (255, 240, 246),
+    "blue": (41, 199, 255),
+    "black": (0, 0, 0),
+    "ivory": (255, 246, 229),
+}
+STITCH_BACKGROUND_COLORS = {
+    "white": (255, 255, 255),
+    "pink": (255, 240, 246),
+    "blue": (41, 199, 255),
+    "black": (0, 0, 0),
+    "ivory": (255, 246, 229),
+}
+STITCH_BACKGROUND_OPTIONS = (*STITCH_BACKGROUND_COLORS, "transparent", "custom")
+CUSTOM_STITCH_CONTENT_OPACITY = 0.86
 
 OUTER_GROUP_GAP = 56
 MATCH_COLUMN_GAP = 42
@@ -141,6 +162,7 @@ PIXEL_GLYPHS = {
     "S": ("01111", "10000", "01110", "00001", "11110"),
     "U": ("10001", "10001", "10001", "10001", "01110"),
     "W": ("10001", "10001", "10101", "10101", "01010"),
+    "0": ("01110", "10001", "10001", "10001", "01110"),
     "1": ("010", "110", "010", "010", "111"),
     "2": ("11110", "00001", "01110", "10000", "11111"),
     "3": ("11110", "00001", "01110", "00001", "11110"),
@@ -149,6 +171,7 @@ PIXEL_GLYPHS = {
     "6": ("01111", "10000", "11110", "10001", "01110"),
     "7": ("11111", "00010", "00100", "01000", "01000"),
     "8": ("01110", "10001", "01110", "10001", "01110"),
+    "9": ("01110", "10001", "01111", "00001", "11110"),
     " ": ("00", "00", "00", "00", "00"),
 }
 
@@ -221,6 +244,13 @@ def output_directory(value: str) -> Path:
     return path
 
 
+def input_directory(value: str) -> Path:
+    path = Path(value)
+    if not path.is_dir():
+        raise argparse.ArgumentTypeError(f"Image folder does not exist: {path}")
+    return path
+
+
 def unique_output_path(directory: Path, filename: str) -> Path:
     candidate = directory / filename
     if not candidate.exists():
@@ -261,12 +291,37 @@ def jpeg_bytes(image: Image.Image, quality: int, subsampling: int) -> bytes:
     return buffer.getvalue()
 
 
+def scaled_size_preserving_aspect_ratio(
+    width: int,
+    height: int,
+    scale: float,
+) -> tuple[int, int]:
+    """Return the nearest downscaled size while keeping the source aspect ratio."""
+    target_width = max(1, round(width * scale))
+    target_height = max(1, round(height * scale))
+    if width <= 0 or height <= 0:
+        return target_width, target_height
+
+    # Prefer dimensions that retain the exact ratio for common screenshot sizes.
+    divisor = math.gcd(width, height)
+    base_width, base_height = width // divisor, height // divisor
+    multiplier = max(1, min(divisor, math.floor(min(target_width / base_width, target_height / base_height))))
+    exact_width, exact_height = base_width * multiplier, base_height * multiplier
+    if (
+        exact_width <= target_width
+        and exact_height <= target_height
+        and exact_width >= target_width * 0.95
+        and exact_height >= target_height * 0.95
+    ):
+        return exact_width, exact_height
+    return target_width, target_height
+
+
 def extreme_jpeg_bytes(image: Image.Image) -> tuple[bytes, tuple[int, int]]:
     """Make a share-friendly JPEG that is kept near the 10 MiB target.
 
-    The mode keeps a moderate quality level and reduces dimensions only when
-    necessary.  This is more readable than forcing an enormous screenshot to
-    an extremely low JPEG quality at its original resolution.
+    This mode preserves the image's aspect ratio whenever dimensional reduction
+    is necessary, so an extreme-compressed screenshot never looks stretched.
     """
     working = image
     encoded = b""
@@ -275,20 +330,18 @@ def extreme_jpeg_bytes(image: Image.Image) -> tuple[bytes, tuple[int, int]]:
         if len(encoded) <= EXTREME_TARGET_BYTES:
             return encoded, working.size
         scale = min(0.97, max(0.45, (EXTREME_TARGET_BYTES / len(encoded)) ** 0.5 * 0.96))
-        resized = (max(1, round(working.width * scale)), max(1, round(working.height * scale)))
+        resized = scaled_size_preserving_aspect_ratio(working.width, working.height, scale)
         if resized == working.size:
             break
         working = working.resize(resized, Image.Resampling.LANCZOS)
 
-    # An unusually detailed image can still exceed the target after resizing.
-    # Keep reducing the dimensions from this point until the compact-file
-    # target is met, instead of silently returning an oversized result.
+    # Keep reducing detailed source images until the compact-file target is met.
     for _ in range(4):
         encoded = jpeg_bytes(working, quality=48, subsampling=2)
         if len(encoded) <= EXTREME_TARGET_BYTES:
             return encoded, working.size
         scale = min(0.94, max(0.45, (EXTREME_TARGET_BYTES / len(encoded)) ** 0.5 * 0.96))
-        resized = (max(1, round(working.width * scale)), max(1, round(working.height * scale)))
+        resized = scaled_size_preserving_aspect_ratio(working.width, working.height, scale)
         if resized == working.size:
             break
         working = working.resize(resized, Image.Resampling.LANCZOS)
@@ -321,9 +374,23 @@ def image_size(path: Path) -> tuple[int, int]:
         return opened.size
 
 
-def stitch_images(paths: list[Path], destination: Path, direction: str, gap: int) -> Path:
+def stitch_images(
+    paths: list[Path],
+    destination: Path,
+    direction: str,
+    gap: int,
+    background: str = "white",
+    background_image: Path | None = None,
+) -> Path:
     dimensions = [image_size(path) for path in paths]
     all_jpeg = all(path.suffix.lower() in {".jpg", ".jpeg"} for path in paths)
+    all_png = all(path.suffix.lower() == ".png" for path in paths)
+    if background not in STITCH_BACKGROUND_OPTIONS:
+        background = "white"
+    if background == "transparent" and not all_png:
+        raise ImageToolError("透明背景仅支持全部选择 PNG 图像。")
+    if background == "custom" and background_image is None:
+        raise ImageToolError("未找到自定义背景图。请将 JPG 或 PNG 图片放入 custom_backgrounds 后重试。")
     if direction == "vertical":
         canvas_width = max(width for width, _ in dimensions)
         canvas_height = sum(height for _, height in dimensions) + gap * (len(paths) - 1)
@@ -331,40 +398,252 @@ def stitch_images(paths: list[Path], destination: Path, direction: str, gap: int
         canvas_width = sum(width for width, _ in dimensions) + gap * (len(paths) - 1)
         canvas_height = max(height for _, height in dimensions)
 
-    output_mode = "RGB" if all_jpeg else "RGBA"
-    background = "white" if all_jpeg else (0, 0, 0, 0)
+    can_save_jpeg = (
+        background != "transparent"
+        and all_jpeg
+        and max(canvas_width, canvas_height) <= JPEG_MAX_DIMENSION
+    )
+    output_mode = "RGB" if can_save_jpeg and background != "custom" else "RGBA"
     try:
-        canvas = Image.new(output_mode, (canvas_width, canvas_height), background)
+        canvas_size = (canvas_width, canvas_height)
+        if background == "transparent":
+            canvas = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
+        elif background == "custom":
+            custom_background = load_image(background_image, "RGBA")
+            canvas = ImageOps.fit(
+                custom_background,
+                canvas_size,
+                method=Image.Resampling.LANCZOS,
+                centering=(0.5, 0.5),
+            )
+        else:
+            fill = STITCH_BACKGROUND_COLORS[background]
+            canvas = Image.new(output_mode, canvas_size, fill)
+
+        content = Image.new("RGBA", canvas_size, (0, 0, 0, 0)) if background == "custom" else canvas
         offset = 0
         # Each source is centered on the opposite axis and pasted one at a time to limit peak memory use.
         for source, (width, height) in zip(paths, dimensions):
-            image = load_image(source, output_mode)
+            image = load_image(source, "RGBA" if background == "custom" else output_mode)
             if direction == "vertical":
                 position = ((canvas_width - width) // 2, offset)
                 offset += height + gap
             else:
                 position = (offset, (canvas_height - height) // 2)
                 offset += width + gap
-            if output_mode == "RGBA":
-                canvas.alpha_composite(image, dest=position)
+            if content.mode == "RGBA":
+                content.alpha_composite(image, dest=position)
             else:
-                canvas.paste(image, position)
+                content.paste(image, position)
+
+        if background == "custom":
+            alpha = content.getchannel("A").point(
+                lambda value: round(value * CUSTOM_STITCH_CONTENT_OPACITY)
+            )
+            content.putalpha(alpha)
+            canvas.alpha_composite(content)
 
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         direction_label = "纵向" if direction == "vertical" else "横向"
-        extension = "jpg" if all_jpeg else "png"
+        extension = "jpg" if can_save_jpeg else "png"
         output = unique_output_path(
             destination,
             f"图像拼接_{direction_label}_{stamp}_{canvas_width}x{canvas_height}.{extension}",
         )
-        if all_jpeg:
-            canvas.save(output, format="JPEG", quality=95, subsampling=0, optimize=True)
+        if can_save_jpeg:
+            canvas.convert("RGB").save(output, format="JPEG", quality=95, subsampling=0, optimize=True)
         else:
             canvas.save(output, format="PNG", optimize=True)
         return output
     except MemoryError as exc:
         raise ImageToolError(
             "图像拼接需要的内存超过当前设备可用容量。请关闭占用内存较高的程序，或改用更小的图片后重试。"
+        ) from exc
+
+
+ROUND_ROBIN_GROUP_FILE_PATTERN = re.compile(
+    r"^group0*(?P<index>[1-9]|[1-5][0-9]|6[0-4])(?:[-_].*)?$",
+    flags=re.IGNORECASE,
+)
+
+
+def round_robin_group_images(directory: Path) -> list[tuple[int, Path]]:
+    """Return one direct-child capture per GROUP, preferring the newest retry."""
+    candidates: dict[int, Path] = {}
+    for path in directory.iterdir():
+        if not path.is_file() or path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+        match = ROUND_ROBIN_GROUP_FILE_PATTERN.match(path.stem)
+        if not match:
+            continue
+        group_index = int(match.group("index"))
+        current = candidates.get(group_index)
+        if current is None or path.stat().st_mtime > current.stat().st_mtime:
+            candidates[group_index] = path
+    return sorted(candidates.items(), key=lambda item: item[0])
+
+
+def round_robin_background_fill(background: str, mode: str) -> tuple[int, ...]:
+    color = ROUND_ROBIN_BACKGROUND_COLORS.get(background, ROUND_ROBIN_BACKGROUND_COLORS["white"])
+    return color if mode == "RGB" else (*color, 255)
+
+
+def paste_image(canvas: Image.Image, image: Image.Image, position: tuple[int, int]) -> None:
+    if canvas.mode == "RGBA":
+        canvas.alpha_composite(image, dest=position)
+    else:
+        canvas.paste(image, position)
+
+
+def round_robin_group_tile_size(width: int, height: int, group_labels: bool) -> tuple[int, int]:
+    if not group_labels:
+        return width, height
+    return (
+        width + ROUND_ROBIN_TILE_FRAME_MARGIN * 2,
+        height + ROUND_ROBIN_TILE_LABEL_HEIGHT + ROUND_ROBIN_TILE_FRAME_MARGIN * 2,
+    )
+
+
+def build_round_robin_group_tile(
+    image: Image.Image,
+    group_index: int,
+    background: str,
+    group_labels: bool,
+) -> Image.Image:
+    """Place optional GROUP chrome outside the original screenshot pixels."""
+    if not group_labels:
+        return image
+
+    tile_width, tile_height = round_robin_group_tile_size(*image.size, True)
+    tile = Image.new(image.mode, (tile_width, tile_height), round_robin_background_fill(background, image.mode))
+    image_position = (
+        ROUND_ROBIN_TILE_FRAME_MARGIN,
+        ROUND_ROBIN_TILE_LABEL_HEIGHT + ROUND_ROBIN_TILE_FRAME_MARGIN,
+    )
+    paste_image(tile, image, image_position)
+
+    draw = ImageDraw.Draw(tile)
+    label_plate = (13, 21, 45) if tile.mode == "RGB" else (13, 21, 45, 235)
+    # Reuse the chunky gradient pixel outline used by the main image-tool
+    # result markers, but leave this tile without a second in-frame label.
+    draw_pixel_frame(
+        tile,
+        (0, 0, tile_width - 1, tile_height - 1),
+        (29, 192, 255),
+        (225, 252, 255),
+        "",
+    )
+
+    label = f"GROUP{group_index}"
+    text_width = pixel_text_width(label, ROUND_ROBIN_TILE_LABEL_SCALE)
+    text_height = 5 * ROUND_ROBIN_TILE_LABEL_SCALE
+    text_x = max(8, (tile_width - text_width) // 2)
+    text_y = max(8, (ROUND_ROBIN_TILE_LABEL_HEIGHT - text_height) // 2)
+    pad_x = ROUND_ROBIN_TILE_LABEL_SCALE
+    pad_y = max(4, ROUND_ROBIN_TILE_LABEL_SCALE // 2)
+    draw.rounded_rectangle(
+        (
+            text_x - pad_x,
+            text_y - pad_y,
+            text_x + text_width + pad_x,
+            text_y + text_height + pad_y,
+        ),
+        radius=4,
+        fill=label_plate,
+    )
+    draw_pixel_text(
+        tile,
+        label,
+        (text_x, text_y),
+        ROUND_ROBIN_TILE_LABEL_SCALE,
+        (177, 126, 255),
+        (74, 210, 255),
+    )
+    return tile
+
+
+def stitch_round_robin_folder(
+    directory: Path,
+    destination: Path,
+    layout: str,
+    gap: int,
+    group_labels: bool,
+    background: str,
+) -> tuple[list[Path], list[int]]:
+    sources = round_robin_group_images(directory)
+    source_map = dict(sources)
+    missing_groups = [group for group in range(1, 65) if group not in source_map]
+    if missing_groups:
+        missing_text = ", ".join(f"GROUP{group:02d}" for group in missing_groups)
+        raise ImageToolError(f"所选文件夹缺少以下小组循环赛截图：{missing_text}")
+
+    if layout not in {"vertical", "horizontal"}:
+        raise ImageToolError("小组循环赛图像仅支持纵向或横向拼接。")
+
+    all_sources = [(group_index, source_map[group_index]) for group_index in range(1, 65)]
+    all_jpeg = all(path.suffix.lower() in {".jpg", ".jpeg"} for _, path in sources)
+    output_mode = "RGB" if all_jpeg else "RGBA"
+
+    try:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        layout_label = {"vertical": "纵向", "horizontal": "横向"}[layout]
+        label_suffix = "_GROUP标记" if group_labels else ""
+        outputs: list[Path] = []
+        for batch_start in range(1, 65, 8):
+            batch = all_sources[batch_start - 1 : batch_start + 7]
+            dimensions = [
+                (group_index, path, *round_robin_group_tile_size(*image_size(path), group_labels))
+                for group_index, path in batch
+            ]
+            cell_width = max(width for _, _, width, _ in dimensions)
+            cell_height = max(height for _, _, _, height in dimensions)
+            if layout == "vertical":
+                canvas_width = cell_width
+                canvas_height = cell_height * len(dimensions) + gap * (len(dimensions) - 1)
+            else:
+                canvas_width = cell_width * len(dimensions) + gap * (len(dimensions) - 1)
+                canvas_height = cell_height
+
+            can_save_jpeg = all_jpeg and max(canvas_width, canvas_height) <= JPEG_MAX_DIMENSION
+            canvas = Image.new(
+                output_mode,
+                (canvas_width, canvas_height),
+                round_robin_background_fill(background, output_mode),
+            )
+            offset = 0
+            for group_index, path, tile_width, tile_height in dimensions:
+                image = build_round_robin_group_tile(
+                    load_image(path, output_mode),
+                    group_index,
+                    background,
+                    group_labels,
+                )
+                if layout == "vertical":
+                    position = ((canvas_width - tile_width) // 2, offset)
+                    offset += tile_height + gap
+                else:
+                    position = (offset, (canvas_height - tile_height) // 2)
+                    offset += tile_width + gap
+                paste_image(canvas, image, position)
+
+            batch_end = batch_start + 7
+            extension = "jpg" if can_save_jpeg else "png"
+            output = unique_output_path(
+                destination,
+                (
+                    f"小组循环赛图像拼接_{layout_label}_GROUP{batch_start:02d}-{batch_end:02d}"
+                    f"{label_suffix}_{stamp}_{canvas_width}x{canvas_height}.{extension}"
+                ),
+            )
+            if can_save_jpeg:
+                canvas.save(output, format="JPEG", quality=95, subsampling=0, optimize=True)
+            else:
+                canvas.save(output, format="PNG", optimize=True)
+            outputs.append(output)
+        return outputs, [group_index for group_index, _ in all_sources]
+    except MemoryError as exc:
+        raise ImageToolError(
+            "拼接图像所需内存超过当前可用容量。请关闭占用内存较高的程序，或减少本次拼接的截图数量后重试。"
         ) from exc
 
 
@@ -1254,6 +1533,24 @@ def build_parser() -> argparse.ArgumentParser:
     stitch.add_argument("--output-dir", required=True, type=output_directory)
     stitch.add_argument("--direction", required=True, choices=("vertical", "horizontal"))
     stitch.add_argument("--gap", required=True, type=int)
+    stitch.add_argument("--background", choices=STITCH_BACKGROUND_OPTIONS, default="white")
+    stitch.add_argument("--background-image", type=image_path)
+
+    round_robin_stitch = subparsers.add_parser(
+        "stitch-round-robin-folder",
+        help="Stitch direct-child Group01-Group64 screenshots from a folder",
+    )
+    round_robin_stitch.add_argument("--input-dir", required=True, type=input_directory)
+    round_robin_stitch.add_argument("--output-dir", required=True, type=output_directory)
+    round_robin_stitch.add_argument("--layout", required=True, choices=("vertical", "horizontal"))
+    round_robin_stitch.add_argument("--gap", required=True, type=int)
+    round_robin_stitch.add_argument("--group-labels", action="store_true")
+    round_robin_stitch.add_argument(
+        "--background",
+        choices=tuple(ROUND_ROBIN_BACKGROUND_COLORS),
+        default="white",
+        help="Background colour for round-robin-only output gutters and GROUP labels.",
+    )
 
     annotate = subparsers.add_parser("annotate", help="Mark detailed battle screenshots from exported result data")
     annotate.add_argument("images", nargs="+", type=image_path)
@@ -1276,8 +1573,6 @@ def main() -> int:
     args = build_parser().parse_args()
     try:
         if args.command == "compress":
-            if any(path.suffix.lower() != ".png" for path in args.images):
-                raise ImageToolError("压缩图像仅支持 PNG 截图，请移除 JPG 图像后重试。")
             outputs = compress_images(args.images, args.output_dir, args.mode)
             metadata = {}
         elif args.command == "stitch":
@@ -1285,8 +1580,35 @@ def main() -> int:
                 raise ImageToolError("拼接图像至少需要选择 2 张图像。")
             if args.gap < 0 or args.gap > 5000:
                 raise ImageToolError("图像间距需为 0 到 5000 的整数。")
-            outputs = [stitch_images(args.images, args.output_dir, args.direction, args.gap)]
-            metadata = {}
+            outputs = [
+                stitch_images(
+                    args.images,
+                    args.output_dir,
+                    args.direction,
+                    args.gap,
+                    args.background,
+                    args.background_image,
+                )
+            ]
+            metadata = {"background": args.background}
+        elif args.command == "stitch-round-robin-folder":
+            if args.gap < 0 or args.gap > 5000:
+                raise ImageToolError("图像间距需为 0 到 5000 的整数像素。")
+            outputs, group_indices = stitch_round_robin_folder(
+                args.input_dir,
+                args.output_dir,
+                args.layout,
+                args.gap,
+                args.group_labels,
+                args.background,
+            )
+            metadata = {
+                "layout": args.layout,
+                "group_labels": args.group_labels,
+                "background": args.background,
+                "group_count": len(group_indices),
+                "group_indices": group_indices,
+            }
         elif args.command == "annotate":
             outputs, metadata, warnings = annotate_images(
                 args.images,
