@@ -333,6 +333,10 @@ $DetailPageTimeoutSeconds = 60
 $ConfiguredCaptureDelaySeconds = $null
 $ConfiguredAvatarProfileDelaySeconds = $null
 $ConfiguredAvatarProfilePollEnabled = $false
+$ConfiguredPlayerLineupDelaySeconds = $null
+$ConfiguredPlayerLineupPollEnabled = $true
+$PlayerLineupPollMigrationVersion = 1
+$ConfiguredPlayerLineupPollMigrationVersion = 0
 $ConfiguredBracketResultDelaySeconds = $null
 $ConfiguredOcrPerformanceMode = "cpu"
 $ConfiguredOcrThermalMode = "safe"
@@ -357,6 +361,15 @@ try {
         }
         if ($configJson.timing.PSObject.Properties["profile_page_poll_enabled"] -and $null -ne $configJson.timing.profile_page_poll_enabled) {
             $ConfiguredAvatarProfilePollEnabled = [bool]$configJson.timing.profile_page_poll_enabled
+        }
+        if ($configJson.timing.PSObject.Properties["after_player_lineup_click_seconds"] -and $null -ne $configJson.timing.after_player_lineup_click_seconds) {
+            $ConfiguredPlayerLineupDelaySeconds = [double]$configJson.timing.after_player_lineup_click_seconds
+        }
+        if ($configJson.timing.PSObject.Properties["player_lineup_poll_enabled"] -and $null -ne $configJson.timing.player_lineup_poll_enabled) {
+            $ConfiguredPlayerLineupPollEnabled = [bool]$configJson.timing.player_lineup_poll_enabled
+        }
+        if ($configJson.timing.PSObject.Properties["player_lineup_poll_default_version"] -and $null -ne $configJson.timing.player_lineup_poll_default_version) {
+            $ConfiguredPlayerLineupPollMigrationVersion = [int]$configJson.timing.player_lineup_poll_default_version
         }
         if ($null -ne $configJson.timing.after_bracket_result_click_seconds) {
             $ConfiguredBracketResultDelaySeconds = [double]$configJson.timing.after_bracket_result_click_seconds
@@ -414,6 +427,7 @@ try {
         }
     }
 } catch {}
+$ConfiguredPlayerLineupPollEnabled = if ($ConfiguredPlayerLineupPollMigrationVersion -lt $PlayerLineupPollMigrationVersion) { $true } else { $ConfiguredPlayerLineupPollEnabled }
 if (-not (Restore-OcrRuntimeCache $ConfiguredOcrRuntimeCache)) {
     Initialize-OcrRuntimes $true
 }
@@ -428,6 +442,12 @@ if ($null -ne $ConfiguredAvatarProfileDelaySeconds) {
     $AvatarProfileDelaySeconds = 0.80
 }
 $AvatarProfilePollEnabled = [bool]$ConfiguredAvatarProfilePollEnabled
+if ($null -ne $ConfiguredPlayerLineupDelaySeconds) {
+    $PlayerLineupDelaySeconds = [Math]::Max(0.6, [Math]::Min(10.0, [double]$ConfiguredPlayerLineupDelaySeconds))
+} else {
+    $PlayerLineupDelaySeconds = 1.0
+}
+$PlayerLineupPollEnabled = [bool]$ConfiguredPlayerLineupPollEnabled
 $script:CaptureWindowMode = if ($ConfiguredCaptureWindowMode -eq "minimize") { "minimize" } else { "hide" }
 $script:CaptureStartupDelaySeconds = if ($null -ne $ConfiguredCaptureStartupDelaySeconds) {
     [Math]::Max(1.0, [Math]::Min(5.0, [double]$ConfiguredCaptureStartupDelaySeconds))
@@ -516,6 +536,25 @@ if (-not $Check) {
             [System.Windows.MessageBoxImage]::Warning
         ) | Out-Null
         return
+    }
+}
+
+if (-not $Check) {
+    # A full and a lite launcher share this mutex so a second GUI cannot start a duplicate capture session.
+    $script:GuiSessionId = [Guid]::NewGuid().ToString("N")
+    $script:GuiProcessId = $PID
+    $script:GuiMutexName = "Local\NIKKE_C_ARENA_Tool.Gui.Singleton"
+    $createdNew = $false
+    try {
+        $script:GuiInstanceMutex = [Threading.Mutex]::new($true, $script:GuiMutexName, [ref]$createdNew)
+    } catch {
+        [System.Windows.MessageBox]::Show("无法初始化程序单实例保护：$($_.Exception.Message)", "NIKKE C ARENA Tool", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+        exit 1
+    }
+    if (-not $createdNew) {
+        try { $script:GuiInstanceMutex.Dispose() } catch {}
+        [System.Windows.MessageBox]::Show("NIKKE C ARENA Tool 已在运行。为避免重复截图，已阻止再次启动。", "NIKKE C ARENA Tool", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+        exit 0
     }
 }
 Add-Type @"
@@ -890,6 +929,36 @@ try {
         </Setter.Value>
       </Setter>
     </Style>
+    <Style x:Key="SlotResetButton" TargetType="Button">
+      <Setter Property="Width" Value="22"/>
+      <Setter Property="Height" Value="22"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="#6FE6FF"/>
+      <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+      <Setter Property="FontSize" Value="17"/>
+      <Setter Property="ToolTip" Value="重置四个卡槽"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="#FFFFFFFF"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Opacity" Value="0.62"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.35"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
     <Style x:Key="TinyThemeButton" TargetType="Button">
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Padding" Value="0"/>
@@ -1234,7 +1303,7 @@ try {
     <Rectangle x:Name="OverlayA" Fill="#AA030712"/>
     <Rectangle x:Name="OverlayB" Fill="#33091423"/>
 
-    <Border x:Name="SubPagePanel" Width="490" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="58,18,0,18"
+    <Border x:Name="SubPagePanel" Width="525" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="58,18,0,18"
             CornerRadius="18" BorderBrush="#766BDFFF" BorderThickness="1.1" Visibility="Collapsed">
       <Border.Effect>
         <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="10" Opacity="0.48"/>
@@ -1273,6 +1342,20 @@ try {
               </Grid.ColumnDefinitions>
               <Slider x:Name="CaptureDelaySlider" Grid.Column="0" Minimum="0.45" Maximum="5" Value="0.80" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0"/>
               <TextBox x:Name="CaptureDelayBox" Grid.Column="1" Height="25" Text="0.80" TextAlignment="Center" VerticalContentAlignment="Center"
+                       FontFamily="Segoe UI" FontSize="13" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
+            </Grid>
+            <Grid Margin="0,4,0,2">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <TextBlock Text="&#28857;&#20987;&#29609;&#23478;&#22836;&#20687;&#21040;&#24320;&#22987;&#25130;&#21462;&#35813;&#29609;&#23478;&#38453;&#23481;&#39029;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" VerticalAlignment="Center"/>
+              <CheckBox x:Name="PlayerLineupPollCheck" Grid.Column="1" Content="&#36718;&#35810;&#26816;&#27979;" Style="{StaticResource DarkOptionCheck}" FontSize="10" Margin="6,0,0,0" ToolTip="&#26816;&#27979;&#29609;&#23478;&#20116;&#38431;&#38453;&#23481;&#39029;&#65292;&#26368;&#38271;&#31561;&#24453; 10 &#31186;&#65307;&#36229;&#26102;&#21518;&#20173;&#20250;&#32487;&#32493;&#25130;&#22270;&#12290;"/>
+            </Grid>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="82"/>
+              </Grid.ColumnDefinitions>
+              <Slider x:Name="PlayerLineupDelaySlider" Grid.Column="0" Minimum="0.6" Maximum="10" Value="1.00" TickFrequency="0.05" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <TextBox x:Name="PlayerLineupDelayBox" Grid.Column="1" Height="25" Text="1.00" TextAlignment="Center" VerticalContentAlignment="Center"
                        FontFamily="Segoe UI" FontSize="13" Foreground="#F7FBFF" Background="#44101A2A" BorderBrush="#5EDCFF"/>
             </Grid>
             <Grid Margin="0,4,0,2">
@@ -1529,6 +1612,7 @@ try {
                   </Button>
                   <Button x:Name="OcrSlotGroup64ClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
                 </Grid>
+                <Button x:Name="OcrSlotsResetButton" Style="{StaticResource SlotResetButton}" VerticalAlignment="Top" Margin="10,1,0,0" Content="&#xE72C;"/>
               </StackPanel>
               <StackPanel HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
@@ -1625,6 +1709,7 @@ try {
                   </Button>
                   <Button x:Name="ImageToolSlot4ClearButton" Style="{StaticResource OcrSlotClearButton}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" Visibility="Collapsed" Content="&#215;"/>
                 </Grid>
+                <Button x:Name="ImageToolSlotsResetButton" Style="{StaticResource SlotResetButton}" VerticalAlignment="Top" Margin="10,1,0,0" Content="&#xE72C;"/>
               </StackPanel>
               <TextBlock x:Name="ImageToolSelectedCountText" Text="已选择 0 / 4 张图像" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#A9C2D9"/>
             </StackPanel>
@@ -2013,6 +2098,7 @@ $OcrExampleButton = $Window.FindName("OcrExampleButton")
 $OcrRunButton = $Window.FindName("OcrRunButton")
 $OcrOpenFolderButton = $Window.FindName("OcrOpenFolderButton")
 $OcrUploadPanel = $Window.FindName("OcrUploadPanel")
+$OcrSlotsResetButton = $Window.FindName("OcrSlotsResetButton")
 $BattleAnnotationPanel = $Window.FindName("BattleAnnotationPanel")
 $BattleAnnotationDataButton = $Window.FindName("BattleAnnotationDataButton")
 $BattleAnnotationDataEmptyImage = $Window.FindName("BattleAnnotationDataEmptyImage")
@@ -2051,6 +2137,7 @@ $OcrStatusGroup64 = $Window.FindName("OcrStatusGroup64")
 $ImageToolsButton = $Window.FindName("ImageToolsButton")
 $ImageToolsPanel = $Window.FindName("ImageToolsPanel")
 $ImageToolsUploadPanel = $Window.FindName("ImageToolsUploadPanel")
+$ImageToolSlotsResetButton = $Window.FindName("ImageToolSlotsResetButton")
 $ImageToolSelectedCountText = $Window.FindName("ImageToolSelectedCountText")
 $ImageToolCompressButton = $Window.FindName("ImageToolCompressButton")
 $ImageToolCompressionLabel = $Window.FindName("ImageToolCompressionLabel")
@@ -2132,6 +2219,9 @@ $CaptureDelayBox = $Window.FindName("CaptureDelayBox")
 $AvatarProfileDelaySlider = $Window.FindName("AvatarProfileDelaySlider")
 $AvatarProfileDelayBox = $Window.FindName("AvatarProfileDelayBox")
 $AvatarProfilePollCheck = $Window.FindName("AvatarProfilePollCheck")
+$PlayerLineupDelaySlider = $Window.FindName("PlayerLineupDelaySlider")
+$PlayerLineupDelayBox = $Window.FindName("PlayerLineupDelayBox")
+$PlayerLineupPollCheck = $Window.FindName("PlayerLineupPollCheck")
 $CaptureWindowHideRadio = $Window.FindName("CaptureWindowHideRadio")
 $CaptureWindowMinimizeRadio = $Window.FindName("CaptureWindowMinimizeRadio")
 $CaptureStartupDelaySlider = $Window.FindName("CaptureStartupDelaySlider")
@@ -2941,6 +3031,8 @@ function Apply-Theme($Theme) {
         foreach ($slotButton in @($OcrSlotTop8Button, $OcrSlotGroup16Button, $OcrSlotGroup32Button, $OcrSlotGroup64Button)) {
             Set-Style $slotButton "OcrSlotButton"
         }
+        Set-Style $OcrSlotsResetButton "SlotResetButton"
+        Set-Brush $OcrSlotsResetButton Foreground "#A20F55"
         Set-Brush $OcrUploadPanel BorderBrush "#FFFFBCD5"
         Set-Brush $OcrUploadPanel Background "#74FFF6FA"
         Set-Style $BattleAnnotationDataButton "OcrSlotButton"
@@ -2960,6 +3052,8 @@ function Apply-Theme($Theme) {
         foreach ($slotButton in @($ImageToolSlot1Button, $ImageToolSlot2Button, $ImageToolSlot3Button, $ImageToolSlot4Button)) {
             Set-Style $slotButton "OcrSlotButton"
         }
+        Set-Style $ImageToolSlotsResetButton "SlotResetButton"
+        Set-Brush $ImageToolSlotsResetButton Foreground "#A20F55"
         Set-Brush $ImageToolsUploadPanel BorderBrush "#FFFFBCD5"
         Set-Brush $ImageToolsUploadPanel Background "#74FFF6FA"
         Set-Style $ImageToolVerticalCheck "PinkOptionCheck"
@@ -3010,6 +3104,7 @@ function Apply-Theme($Theme) {
         Set-Style $OcrChinaClientCheck "PinkOptionCheck"
         Set-Style $OcrOverseasClientCheck "PinkOptionCheck"
         Set-Style $AvatarProfilePollCheck "PinkOptionCheck"
+        Set-Style $PlayerLineupPollCheck "PinkOptionCheck"
         foreach ($option in @($CaptureWindowHideRadio, $CaptureWindowMinimizeRadio)) {
             Set-Style $option "PinkCompressionMode"
         }
@@ -3040,6 +3135,9 @@ function Apply-Theme($Theme) {
         $AvatarProfileDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
         $AvatarProfileDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
         $AvatarProfileDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
+        $PlayerLineupDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
+        $PlayerLineupDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
+        $PlayerLineupDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
         $RoundRobinGroupSwitchDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
         $RoundRobinGroupSwitchDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
         $RoundRobinGroupSwitchDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
@@ -3102,6 +3200,8 @@ function Apply-Theme($Theme) {
         foreach ($slotButton in @($OcrSlotTop8Button, $OcrSlotGroup16Button, $OcrSlotGroup32Button, $OcrSlotGroup64Button)) {
             Set-Style $slotButton "OcrSlotButton"
         }
+        Set-Style $OcrSlotsResetButton "SlotResetButton"
+        Set-Brush $OcrSlotsResetButton Foreground "#6FE6FF"
         Set-Brush $OcrUploadPanel BorderBrush "#5EDCFF"
         Set-Brush $OcrUploadPanel Background "#44101A2A"
         Set-Style $BattleAnnotationDataButton "OcrSlotButton"
@@ -3121,6 +3221,8 @@ function Apply-Theme($Theme) {
         foreach ($slotButton in @($ImageToolSlot1Button, $ImageToolSlot2Button, $ImageToolSlot3Button, $ImageToolSlot4Button)) {
             Set-Style $slotButton "OcrSlotButton"
         }
+        Set-Style $ImageToolSlotsResetButton "SlotResetButton"
+        Set-Brush $ImageToolSlotsResetButton Foreground "#6FE6FF"
         Set-Brush $ImageToolsUploadPanel BorderBrush "#5EDCFF"
         Set-Brush $ImageToolsUploadPanel Background "#44101A2A"
         Set-Style $ImageToolVerticalCheck "DarkOptionCheck"
@@ -3171,6 +3273,7 @@ function Apply-Theme($Theme) {
         Set-Style $OcrChinaClientCheck "DarkOptionCheck"
         Set-Style $OcrOverseasClientCheck "DarkOptionCheck"
         Set-Style $AvatarProfilePollCheck "DarkOptionCheck"
+        Set-Style $PlayerLineupPollCheck "DarkOptionCheck"
         foreach ($option in @($CaptureWindowHideRadio, $CaptureWindowMinimizeRadio)) {
             Set-Style $option "DarkCompressionMode"
         }
@@ -3201,6 +3304,9 @@ function Apply-Theme($Theme) {
         $AvatarProfileDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
         $AvatarProfileDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
         $AvatarProfileDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
+        $PlayerLineupDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
+        $PlayerLineupDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
+        $PlayerLineupDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
         $RoundRobinGroupSwitchDelayBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
         $RoundRobinGroupSwitchDelayBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
         $RoundRobinGroupSwitchDelayBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
@@ -3250,7 +3356,12 @@ function New-CaptureDiagnosticsLog([string]$Mode) {
         $stamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
         $safeMode = if ($Mode) { $Mode -replace "[^A-Za-z0-9_-]", "_" } else { "capture" }
         $path = Join-Path $logDirectory ("capture_{0}_{1}.log" -f $stamp, $safeMode)
-        [IO.File]::WriteAllText($path, ("[{0}] capture requested`r`n" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff")), [Text.UTF8Encoding]::new($false))
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
+        $header = @(
+            ("[{0}] capture requested" -f $timestamp),
+            ("[{0}] gui_session_id={1}; gui_pid={2}; edition=full" -f $timestamp, $script:GuiSessionId, $script:GuiProcessId)
+        ) -join "`r`n"
+        [IO.File]::WriteAllText($path, ($header + "`r`n"), [Text.UTF8Encoding]::new($false))
         return $path
     } catch {
         return $null
@@ -3301,6 +3412,7 @@ function Set-Running($Running) {
         $OcrSlotGroup16ClearButton,
         $OcrSlotGroup32ClearButton,
         $OcrSlotGroup64ClearButton,
+        $OcrSlotsResetButton,
         $BattleAnnotationDataButton,
         $BattleAnnotationDataClearButton,
         $BattleAnnotationRunButton,
@@ -3322,6 +3434,7 @@ function Set-Running($Running) {
         $ImageToolSlot2ClearButton,
         $ImageToolSlot3ClearButton,
         $ImageToolSlot4ClearButton,
+        $ImageToolSlotsResetButton,
         $RoundRobinPostResultCheck,
         $SupportResultDetailedCheck,
         $RoundRobinAllGroupsCheck,
@@ -3450,6 +3563,11 @@ $AvatarProfileDelaySlider.Maximum = 5
 $AvatarProfileDelaySlider.Value = $AvatarProfileDelaySeconds
 $AvatarProfileDelayBox.Text = ("{0:0.00}" -f $AvatarProfileDelaySeconds)
 $AvatarProfilePollCheck.IsChecked = $AvatarProfilePollEnabled
+$PlayerLineupDelaySlider.Minimum = 0.6
+$PlayerLineupDelaySlider.Maximum = 10
+$PlayerLineupDelaySlider.Value = $PlayerLineupDelaySeconds
+$PlayerLineupDelayBox.Text = ("{0:0.00}" -f $PlayerLineupDelaySeconds)
+$PlayerLineupPollCheck.IsChecked = $PlayerLineupPollEnabled
 $CaptureWindowHideRadio.IsChecked = ($script:CaptureWindowMode -eq "hide")
 $CaptureWindowMinimizeRadio.IsChecked = ($script:CaptureWindowMode -eq "minimize")
 $CaptureStartupDelaySlider.Minimum = 1
@@ -3518,8 +3636,6 @@ function Save-CaptureTimingSettings {
         $clickDelay = [Math]::Round([double]$script:CaptureDelaySeconds, 2)
         foreach ($key in @(
             "after_round_click_seconds",
-            "after_support_avatar_click_seconds",
-            "after_group_avatar_click_seconds",
             "after_group_tab_click_seconds",
             "after_group_result_click_seconds",
             "after_outpost_click_seconds"
@@ -3528,6 +3644,9 @@ function Save-CaptureTimingSettings {
         }
         Set-JsonProperty $configJson.timing "after_avatar_click_seconds" ([Math]::Round([double]$script:AvatarProfileDelaySeconds, 2))
         Set-JsonProperty $configJson.timing "profile_page_poll_enabled" ([bool]$script:AvatarProfilePollEnabled)
+        Set-JsonProperty $configJson.timing "after_player_lineup_click_seconds" ([Math]::Round([double]$script:PlayerLineupDelaySeconds, 2))
+        Set-JsonProperty $configJson.timing "player_lineup_poll_enabled" ([bool]$script:PlayerLineupPollEnabled)
+        Set-JsonProperty $configJson.timing "player_lineup_poll_default_version" $PlayerLineupPollMigrationVersion
         Set-JsonProperty $configJson.timing "after_bracket_result_click_seconds" ([Math]::Round([double]$script:BracketResultDelaySeconds, 2))
         Set-JsonProperty $configJson.timing "detail_page_timeout_seconds" ([Math]::Round([double]$script:DetailPageTimeoutSeconds, 0))
         Set-JsonProperty $configJson.timing "capture_startup_delay_seconds" ([Math]::Round([double]$script:CaptureStartupDelaySeconds, 2))
@@ -3623,6 +3742,49 @@ $AvatarProfilePollCheck.Add_Checked({
 $AvatarProfilePollCheck.Add_Unchecked({
     $script:AvatarProfilePollEnabled = $false
     Save-CaptureTimingSettings
+})
+
+function Set-PlayerLineupDelay($Value) {
+    $valueNumber = [double]$Value
+    $valueNumber = [Math]::Max(0.6, [Math]::Min(10.0, $valueNumber))
+    $valueNumber = [Math]::Round($valueNumber, 2)
+    $script:PlayerLineupDelaySeconds = $valueNumber
+    if ([Math]::Abs($PlayerLineupDelaySlider.Value - $valueNumber) -gt 0.001) {
+        $PlayerLineupDelaySlider.Value = $valueNumber
+    }
+    $PlayerLineupDelayBox.Text = ("{0:0.00}" -f $valueNumber)
+    Save-CaptureTimingSettings
+}
+
+$PlayerLineupDelaySlider.Add_ValueChanged({
+    Set-PlayerLineupDelay $PlayerLineupDelaySlider.Value
+})
+
+function Commit-PlayerLineupDelayBox {
+    $parsed = 0.0
+    if ([double]::TryParse($PlayerLineupDelayBox.Text, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        Set-PlayerLineupDelay $parsed
+    } else {
+        $PlayerLineupDelayBox.Text = ("{0:0.00}" -f $PlayerLineupDelaySeconds)
+    }
+}
+
+$PlayerLineupPollCheck.Add_Checked({
+    $script:PlayerLineupPollEnabled = $true
+    Save-CaptureTimingSettings
+})
+$PlayerLineupPollCheck.Add_Unchecked({
+    $script:PlayerLineupPollEnabled = $false
+    Save-CaptureTimingSettings
+})
+
+$PlayerLineupDelayBox.Add_LostFocus({ Commit-PlayerLineupDelayBox })
+$PlayerLineupDelayBox.Add_KeyDown({
+    param($sender, $eventArgs)
+    if ($eventArgs.Key -eq [Windows.Input.Key]::Enter) {
+        Commit-PlayerLineupDelayBox
+        $eventArgs.Handled = $true
+    }
 })
 
 function Set-CaptureWindowMode([string]$Mode) {
@@ -6019,6 +6181,15 @@ function Clear-OcrSeasonSlot([string]$SlotKey) {
     Update-OcrSeasonSlotStatuses
 }
 
+function Reset-OcrSeasonSlots {
+    foreach ($slotKey in @("top8", "group16", "group32", "group64")) {
+        $script:OcrSeasonImageSlots[$slotKey] = $null
+    }
+    $script:SelectedOcrImagePath = $null
+    Update-OcrSelectedPath
+    Update-OcrSeasonSlotStatuses
+}
+
 function Get-OcrSeasonSelectedImageSpecs {
     $mapping = @(
         @{ Key = "group64"; Argument = "--season-group64-image"; Label = "64进32全部战斗数据（详）" },
@@ -6296,6 +6467,13 @@ function Select-ImageToolImage([string]$SlotKey) {
 function Clear-ImageToolSlot([string]$SlotKey) {
     if (-not $SlotKey -or -not $script:ImageToolSlots.ContainsKey($SlotKey)) { return }
     $script:ImageToolSlots[$SlotKey] = $null
+    Update-ImageToolSlotVisuals
+}
+
+function Reset-ImageToolSlots {
+    foreach ($slotKey in @("slot1", "slot2", "slot3", "slot4")) {
+        $script:ImageToolSlots[$slotKey] = $null
+    }
     Update-ImageToolSlotVisuals
 }
 
@@ -7685,8 +7863,9 @@ function Request-MinimizedCaptureWindowRestoreStop($Process) {
 
 function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMinimizedWindow = $false) {
     if (-not (Confirm-CaptureParametersPreflight)) { return }
+    $captureRunId = [Guid]::NewGuid().ToString("N")
     $captureLogPath = New-CaptureDiagnosticsLog $CurrentCaptureMode
-    Add-CaptureDiagnosticsLog $captureLogPath ("mode={0}; elevated={1}; script_dir={2}" -f $CurrentCaptureMode, ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator), $ScriptDir)
+    Add-CaptureDiagnosticsLog $captureLogPath ("capture_run_id={0}; mode={1}; elevated={2}; script_dir={3}" -f $captureRunId, $CurrentCaptureMode, ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator), $ScriptDir)
     if (-not (Test-GameReadyForCapture)) {
         Add-CaptureDiagnosticsLog $captureLogPath "NIKKE process was not detected before capture."
         return
@@ -7819,6 +7998,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $delayArg = $CaptureDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
         $avatarProfileDelayArg = $AvatarProfileDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
+        $playerLineupDelayArg = $PlayerLineupDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
         $bracketResultDelayArg = $BracketResultDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
         $detailPageTimeoutArg = $DetailPageTimeoutSeconds.ToString("0", [Globalization.CultureInfo]::InvariantCulture)
         $roundRobinGroupSwitchDelayArg = $script:RoundRobinGroupSwitchDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
@@ -7832,10 +8012,9 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
                 Append-Log "小组循环赛：将在四人资料页前截取战斗结果。"
             }
         }
-        # The packaged CN worker predates profile-page polling. When that option
-        # is enabled, run the shared Python worker so every server uses the same
-        # scale-aware probe until the next worker rebuild.
-        $useRoundWorkerExe = (Test-Path $RoundWorkerExe) -and ($CurrentCaptureMode -notin @("round-robin", "support-result")) -and ($serverCode -notin @("global", "hmt")) -and (-not $AvatarProfilePollEnabled) -and (-not $isWindowedCapture)
+        # The legacy worker cannot receive the player-lineup wait setting. Always
+        # use the shared Python implementation so every capture mode stays aligned.
+        $useRoundWorkerExe = $false
         if ($useRoundWorkerExe) {
             $psi.FileName = $RoundWorkerExe
             $arguments = "--output `"$output`" --click-delay $delayArg --detail-page-min-wait 0.70 --detail-page-timeout $detailPageTimeoutArg --quiet"
@@ -7845,7 +8024,10 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
                 return
             }
             $psi.FileName = $PythonExe
-            $arguments = "`"$StitcherPath`" --output `"$output`" --click-delay $delayArg --avatar-profile-delay $avatarProfileDelayArg --bracket-result-delay $bracketResultDelayArg --detail-page-min-wait 0.70 --detail-page-timeout $detailPageTimeoutArg --quiet"
+            $arguments = "`"$StitcherPath`" --output `"$output`" --click-delay $delayArg --avatar-profile-delay $avatarProfileDelayArg --player-lineup-delay $playerLineupDelayArg --bracket-result-delay $bracketResultDelayArg --detail-page-min-wait 0.70 --detail-page-timeout $detailPageTimeoutArg --quiet"
+        }
+        if ($PlayerLineupPollEnabled) {
+            $arguments += " --player-lineup-poll"
         }
         # The legacy packaged worker only supports the old CN defaults. The
         # shared Python worker accepts every regional code explicitly.
@@ -7967,9 +8149,6 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
 
         if ($script:StopRequested) {
             Append-Log "Stopped."
-        } elseif ($proc.ExitCode -eq 42 -or $stdout -match "NIKKE_DETAIL_PAGE_TIMEOUT") {
-            Append-Log "Capture paused because the detailed battle record page did not become ready."
-            Show-TopMessage $TextDetailPageTimeoutMessage $TextDetailPageTimeoutTitle ([System.Windows.MessageBoxImage]::Warning)
         } elseif ($proc.ExitCode -eq 0) {
             $name = Split-Path -Leaf $output
             if ($CurrentCaptureMode -eq "round-robin" -and $roundRobinAllGroups) {
@@ -8087,6 +8266,7 @@ if ($OcrSlotTop8ClearButton) { $OcrSlotTop8ClearButton.Add_Click({ Clear-OcrSeas
 if ($OcrSlotGroup16ClearButton) { $OcrSlotGroup16ClearButton.Add_Click({ Clear-OcrSeasonSlot "group16" }) }
 if ($OcrSlotGroup32ClearButton) { $OcrSlotGroup32ClearButton.Add_Click({ Clear-OcrSeasonSlot "group32" }) }
 if ($OcrSlotGroup64ClearButton) { $OcrSlotGroup64ClearButton.Add_Click({ Clear-OcrSeasonSlot "group64" }) }
+if ($OcrSlotsResetButton) { $OcrSlotsResetButton.Add_Click({ Reset-OcrSeasonSlots }) }
 if ($BattleAnnotationDataButton) { $BattleAnnotationDataButton.Add_Click({ Select-BattleAnnotationData }) }
 if ($BattleAnnotationDataClearButton) { $BattleAnnotationDataClearButton.Add_Click({ Clear-BattleAnnotationData }) }
 if ($BattleAnnotationRunButton) { $BattleAnnotationRunButton.Add_Click({ Start-BattleAnnotation }) }
@@ -8107,6 +8287,7 @@ if ($ImageToolSlot1ClearButton) { $ImageToolSlot1ClearButton.Add_Click({ Clear-I
 if ($ImageToolSlot2ClearButton) { $ImageToolSlot2ClearButton.Add_Click({ Clear-ImageToolSlot "slot2" }) }
 if ($ImageToolSlot3ClearButton) { $ImageToolSlot3ClearButton.Add_Click({ Clear-ImageToolSlot "slot3" }) }
 if ($ImageToolSlot4ClearButton) { $ImageToolSlot4ClearButton.Add_Click({ Clear-ImageToolSlot "slot4" }) }
+if ($ImageToolSlotsResetButton) { $ImageToolSlotsResetButton.Add_Click({ Reset-ImageToolSlots }) }
 if ($ImageToolVerticalCheck) {
     $ImageToolVerticalCheck.Add_Checked({ Set-ImageToolDirection "vertical" })
     $ImageToolVerticalCheck.Add_Unchecked({ if (-not [bool]$ImageToolHorizontalCheck.IsChecked) { Set-ImageToolDirection "horizontal" } })
@@ -8207,6 +8388,11 @@ if ($Check) {
 $Window.Add_Closed({
     if ($script:StopHotkeyTimer) {
         $script:StopHotkeyTimer.Stop()
+    }
+    if ($script:GuiInstanceMutex) {
+        try { $script:GuiInstanceMutex.ReleaseMutex() } catch {}
+        try { $script:GuiInstanceMutex.Dispose() } catch {}
+        $script:GuiInstanceMutex = $null
     }
 })
 

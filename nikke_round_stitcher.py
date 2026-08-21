@@ -27,6 +27,9 @@ DETAIL_PAGE_CAPTURE_SETTLE_SECONDS = 0.5
 PROFILE_PAGE_CAPTURE_SETTLE_SECONDS = 0.35
 PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS = 10.0
 PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
+PLAYER_LINEUP_PAGE_CAPTURE_SETTLE_SECONDS = 0.15
+PLAYER_LINEUP_PAGE_DEFAULT_TIMEOUT_SECONDS = 10.0
+PLAYER_LINEUP_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
 # Season capture always uses these fixed transition waits; they are intentionally
 # independent from the user-configurable capture timing controls.
 SEASON_TRANSITION_BACK_WAIT_SECONDS = 3.0
@@ -41,11 +44,30 @@ GLOBAL_HMT_DETAIL_PAGE_FALLBACK_THRESHOLDS = {
     "detail_dark": 0.12,
     "detail_edges": 0.14,
 }
+GLOBAL_HMT_DETAIL_PAGE_LAYOUT_THRESHOLDS = {
+    # Global/HMT detailed records can have either character portraits or dark
+    # DISCONNECTED tiles. Require the stable two-column card layout instead of
+    # relying only on one dark-pixel ratio from the CN-oriented crop.
+    "title_blue": 0.60,
+    "detail_bright": 0.45,
+    "detail_edges": 0.13,
+    "left_edges": 0.12,
+    "right_edges": 0.12,
+}
 PROFILE_PAGE_READY_THRESHOLDS = {
     "header_bright": 0.30,
     "lower_bright": 0.40,
     "bottom_bright": 0.35,
     "basic_tab_blue": 0.025,
+}
+PLAYER_LINEUP_PAGE_READY_THRESHOLDS = {
+    # The lineup dialog is intentionally identified by structure rather than
+    # title text, so the same probe works for CN, Global, and HMT clients.
+    "header_blue": 0.60,
+    "tabs_bright": 0.60,
+    "tabs_cyan": 0.04,
+    "lineup_bright": 0.35,
+    "lineup_edges": 0.24,
 }
 
 
@@ -85,6 +107,11 @@ DEFAULT_CONFIG = {
         "countdown_seconds": 0,
         "after_round_click_seconds": 0.45,
         "after_avatar_click_seconds": 0.9,
+        "after_player_lineup_click_seconds": 1.0,
+        "player_lineup_poll_enabled": True,
+        "player_lineup_poll_default_version": 1,
+        "player_lineup_poll_timeout_seconds": PLAYER_LINEUP_PAGE_DEFAULT_TIMEOUT_SECONDS,
+        "player_lineup_poll_interval_seconds": PLAYER_LINEUP_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
         "after_support_avatar_click_seconds": 1.0,
         "after_group_avatar_click_seconds": 1.0,
         "after_group_tab_click_seconds": 0.8,
@@ -264,6 +291,12 @@ DEFAULT_CONFIG = {
     },
     "crops": {
         "round_lineup": [1393, 756, 660, 274],
+        # Player lineup dialog probes at the 3440x1440 reference size. These
+        # are transformed through get_transform for all fullscreen and window
+        # modes, exactly like the capture crops below.
+        "player_lineup_header_probe": [1380, 405, 680, 105],
+        "player_lineup_tabs_probe": [1395, 670, 665, 74],
+        "player_lineup_cards_probe": [1393, 756, 660, 274],
         "profile_basic": [1378, 0, 684, 514],
         "team_summary": [1380, 908, 656, 122],
         "sync_level": [1402, 1174, 638, 64],
@@ -615,13 +648,6 @@ def get_research_card_rects(config):
     return crops["research_cards"]
 
 
-class DetailPageTimeout(RuntimeError):
-    def __init__(self, context, timeout_seconds):
-        self.context = context
-        self.timeout_seconds = timeout_seconds
-        super().__init__(f"{context}: detailed battle record was not ready after {timeout_seconds:.1f}s")
-
-
 def _probe_image(img, max_width=200):
     if img.width <= max_width:
         return img.convert("RGB")
@@ -640,7 +666,12 @@ def inspect_detailed_result_page(config, img):
     """Return whether the post-click screen is the fully loaded battle record page."""
     crops = config.get("crops", {})
     title_rect = crops.get("group_detailed_title_probe")
-    detail_rect = crops.get("group_detailed_result")
+    server = str(config.get("runtime_server", "cn")).strip().lower()
+    detail_rect = (
+        crops.get("group_detailed_result_global_hmt")
+        if server in {"global", "hmt"}
+        else crops.get("group_detailed_result")
+    )
     if not title_rect or not detail_rect:
         return False, None, {"reason": "detail probes are not configured"}
 
@@ -657,23 +688,47 @@ def inspect_detailed_result_page(config, img):
         detail_probe,
         lambda r, g, b: r <= 75 and g <= 75 and b <= 75,
     )
+    detail_bright_ratio = _ratio_matching(
+        detail_probe,
+        lambda r, g, b: r >= 165 and g >= 165 and b >= 165,
+    )
     edge_probe = detail_probe.convert("L").filter(ImageFilter.FIND_EDGES)
     detail_edge_ratio = sum(1 for value in edge_probe.getdata() if value >= 75) / max(1, detail_probe.width * detail_probe.height)
+
+    # The overseas detailed page has two independent five-card columns. These
+    # halves remain visually stable even when some cards render as portraits
+    # and others as dark DISCONNECTED tiles.
+    split_x = max(1, detail_probe.width // 2)
+    left_probe = detail_probe.crop((0, 0, split_x, detail_probe.height))
+    right_probe = detail_probe.crop((split_x, 0, detail_probe.width, detail_probe.height))
+    left_edges = left_probe.convert("L").filter(ImageFilter.FIND_EDGES)
+    right_edges = right_probe.convert("L").filter(ImageFilter.FIND_EDGES)
+    left_edge_ratio = sum(1 for value in left_edges.getdata() if value >= 75) / max(1, left_probe.width * left_probe.height)
+    right_edge_ratio = sum(1 for value in right_edges.getdata() if value >= 75) / max(1, right_probe.width * right_probe.height)
 
     metrics = {
         "title_blue": title_blue_ratio,
         "detail_dark": detail_dark_ratio,
+        "detail_bright": detail_bright_ratio,
         "detail_edges": detail_edge_ratio,
+        "left_edges": left_edge_ratio,
+        "right_edges": right_edge_ratio,
     }
     strict_ready = all(
         metrics[name] >= threshold for name, threshold in DETAIL_PAGE_STRICT_THRESHOLDS.items()
     )
-    server = str(config.get("runtime_server", "cn")).strip().lower()
     regional_fallback_ready = (
         server in {"global", "hmt"}
         and all(
             metrics[name] >= threshold
             for name, threshold in GLOBAL_HMT_DETAIL_PAGE_FALLBACK_THRESHOLDS.items()
+        )
+    )
+    regional_layout_ready = (
+        server in {"global", "hmt"}
+        and all(
+            metrics[name] >= threshold
+            for name, threshold in GLOBAL_HMT_DETAIL_PAGE_LAYOUT_THRESHOLDS.items()
         )
     )
     # Global/HMT can display fully loaded opponent cards as DISCONNECTED, which
@@ -683,9 +738,11 @@ def inspect_detailed_result_page(config, img):
         metrics["readiness_rule"] = "strict"
     elif regional_fallback_ready:
         metrics["readiness_rule"] = "global_hmt_disconnected_fallback"
+    elif regional_layout_ready:
+        metrics["readiness_rule"] = "global_hmt_two_column_layout"
     else:
         metrics["readiness_rule"] = "not_ready"
-    is_ready = strict_ready or regional_fallback_ready
+    is_ready = strict_ready or regional_fallback_ready or regional_layout_ready
     return is_ready, detail, metrics
 
 
@@ -733,6 +790,125 @@ def inspect_profile_basic_page(config, img):
         metrics[name] >= threshold for name, threshold in PROFILE_PAGE_READY_THRESHOLDS.items()
     )
     return is_ready, metrics
+
+
+def inspect_player_lineup_page(config, img):
+    """Return whether the five-ROUND player lineup dialog is ready to capture.
+
+    This deliberately avoids OCR and title text. The same dialog can be named
+    differently across clients, while its blue header, ROUND-tab row, and five
+    card lineup retain the same scaled layout.
+    """
+    crops = config.get("crops", {})
+    probe_names = {
+        "header": "player_lineup_header_probe",
+        "tabs": "player_lineup_tabs_probe",
+        "lineup": "player_lineup_cards_probe",
+    }
+    if any(not crops.get(name) for name in probe_names.values()):
+        return False, {"reason": "player lineup probes are not configured"}
+
+    transform = get_transform(config, img.size)
+    probes = {
+        label: _probe_image(img.crop(scale_rect(crops[crop_name], transform, img.size)))
+        for label, crop_name in probe_names.items()
+    }
+    lineup_edges = probes["lineup"].convert("L").filter(ImageFilter.FIND_EDGES)
+    metrics = {
+        "header_blue": _ratio_matching(
+            probes["header"],
+            lambda r, g, b: b >= 150 and g >= 90 and r <= 105 and (b - r) >= 70,
+        ),
+        "tabs_bright": _ratio_matching(
+            probes["tabs"],
+            lambda r, g, b: r >= 175 and g >= 175 and b >= 175,
+        ),
+        "tabs_cyan": _ratio_matching(
+            probes["tabs"],
+            lambda r, g, b: b >= 155 and g >= 120 and r <= 105 and (b - r) >= 65,
+        ),
+        "lineup_bright": _ratio_matching(
+            probes["lineup"],
+            lambda r, g, b: r >= 175 and g >= 175 and b >= 175,
+        ),
+        "lineup_edges": sum(value >= 70 for value in lineup_edges.getdata())
+        / max(1, lineup_edges.width * lineup_edges.height),
+    }
+    is_ready = all(
+        metrics[name] >= threshold
+        for name, threshold in PLAYER_LINEUP_PAGE_READY_THRESHOLDS.items()
+    )
+    return is_ready, metrics
+
+
+def wait_for_player_lineup_page(config, context):
+    """Wait for the player lineup dialog without allowing a missed probe to stop capture."""
+    timings = config["timing"]
+    minimum_wait = max(
+        0.6,
+        min(10.0, float(timings.get("after_player_lineup_click_seconds", 1.0))),
+    )
+    if not bool(timings.get("player_lineup_poll_enabled", True)):
+        time.sleep(minimum_wait)
+        return
+
+    timeout_seconds = max(
+        0.6,
+        min(
+            PLAYER_LINEUP_PAGE_DEFAULT_TIMEOUT_SECONDS,
+            float(
+                timings.get(
+                    "player_lineup_poll_timeout_seconds",
+                    PLAYER_LINEUP_PAGE_DEFAULT_TIMEOUT_SECONDS,
+                )
+            ),
+        ),
+    )
+    poll_seconds = max(
+        0.2,
+        min(
+            1.0,
+            float(
+                timings.get(
+                    "player_lineup_poll_interval_seconds",
+                    PLAYER_LINEUP_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
+                )
+            ),
+        ),
+    )
+    started_at = time.monotonic()
+    deadline = started_at + timeout_seconds
+    stable_hits = 0
+    latest_metrics = None
+
+    while True:
+        current_img = screenshot()
+        ready, latest_metrics = inspect_player_lineup_page(config, current_img)
+        elapsed = time.monotonic() - started_at
+        if ready and elapsed >= minimum_wait:
+            stable_hits += 1
+            if stable_hits >= 2:
+                time.sleep(PLAYER_LINEUP_PAGE_CAPTURE_SETTLE_SECONDS)
+                print(
+                    f"{context}: player lineup ready "
+                    f"(header_blue={latest_metrics['header_blue']:.3f}, "
+                    f"tabs_bright={latest_metrics['tabs_bright']:.3f}, "
+                    f"tabs_cyan={latest_metrics['tabs_cyan']:.3f}, "
+                    f"lineup_bright={latest_metrics['lineup_bright']:.3f}, "
+                    f"lineup_edges={latest_metrics['lineup_edges']:.3f})"
+                )
+                return
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            print(
+                f"{context}: player lineup poll timeout; continuing capture; "
+                f"metrics={latest_metrics}"
+            )
+            return
+        time.sleep(min(poll_seconds, remaining))
 
 
 def wait_for_profile_basic_page(config, context):
@@ -832,8 +1008,14 @@ def wait_for_detailed_result_page(config, context):
 
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            print(f"{context}: detailed battle record timeout; metrics={latest_metrics}")
-            raise DetailPageTimeout(context, timeout_seconds)
+            final_img = screenshot()
+            transform = get_transform(config, final_img.size)
+            final_box = scale_rect(get_detailed_result_capture_rect(config), transform, final_img.size)
+            print(
+                f"{context}: detailed battle record poll timeout; continuing capture "
+                f"with the current screen; metrics={latest_metrics}"
+            )
+            return final_img.crop(final_box)
         time.sleep(min(poll_seconds, remaining))
 
 
@@ -1612,7 +1794,7 @@ def run_support_duo_capture(config, output_path, parts_dir, include_support_stat
 
     print("support: opening left player")
     click(config["clicks"]["support_left_avatar"], transform)
-    time.sleep(float(timings.get("after_support_avatar_click_seconds", 1.0)))
+    wait_for_player_lineup_page(config, "support left player")
     left_img = capture_player_image(config, parts_dir, "support_left", close_profile=False)
 
     print("support: returning to support screen")
@@ -1621,7 +1803,7 @@ def run_support_duo_capture(config, output_path, parts_dir, include_support_stat
 
     print("support: opening right player")
     click(config["clicks"]["support_right_avatar"], transform)
-    time.sleep(float(timings.get("after_support_avatar_click_seconds", 1.0)))
+    wait_for_player_lineup_page(config, "support right player")
     right_img = capture_player_image(config, parts_dir, "support_right", close_profile=False)
 
     final_img = stitch_columns([left_img, right_img], config)
@@ -1701,7 +1883,7 @@ def run_support_result_capture(config, output_path, parts_dir, detailed=True):
     for index, point in enumerate(avatar_points, 1):
         print(f"support result: opening player {index}/2")
         click(point, transform)
-        time.sleep(float(timings.get("after_support_avatar_click_seconds", 1.0)))
+        wait_for_player_lineup_page(config, f"support result player {index}")
         player_images.append(
             capture_player_image(config, parts_dir, f"support_result_{index:02d}", close_profile=False)
         )
@@ -1931,7 +2113,7 @@ def capture_group_image(
     for index, point in enumerate(points, 1):
         print(f"group {round_label}: opening player {index}/{len(points)}")
         click(point, transform)
-        time.sleep(float(timings.get("after_group_avatar_click_seconds", 1.0)))
+        wait_for_player_lineup_page(config, f"group {round_label} player {index}")
         prefix = f"group{round_label}_{index:02d}" if part_prefix is None else f"{part_prefix}_{index:02d}"
         player_images.append(
             capture_player_image(config, parts_dir, prefix, close_profile=False)
@@ -1984,7 +2166,7 @@ def run_round_robin_capture(config, output_path, parts_dir, include_post_result=
     for index, point in enumerate(points, 1):
         print(f"round-robin: opening player {index}/4")
         click(point, transform)
-        time.sleep(float(timings.get("after_group_avatar_click_seconds", 1.0)))
+        wait_for_player_lineup_page(player_config, f"round-robin player {index}")
         player_images.append(
             capture_player_image(
                 player_config,
@@ -2084,7 +2266,10 @@ def capture_round_robin_group_image(config, parts_dir, group_index, include_post
     for player_index, point in enumerate(points, 1):
         print(f"round-robin: GROUP{group_index:02d} opening player {player_index}/4")
         click(point, transform)
-        time.sleep(float(timings.get("after_group_avatar_click_seconds", 1.0)))
+        wait_for_player_lineup_page(
+            player_config,
+            f"round-robin GROUP{group_index:02d} player {player_index}",
+        )
         player_images.append(
             capture_player_image(
                 player_config,
@@ -2303,7 +2488,10 @@ def capture_seed_players_for_group(config, group_index, parts_dir, ocr):
         key = f"group{group_index:02d}_seed{slot_index:02d}"
         print(f"season cache: GROUP{group_index:02d} opening seed player {slot_index}/{len(points)}")
         click(point, transform)
-        time.sleep(float(timings.get("after_group_avatar_click_seconds", 1.0)))
+        wait_for_player_lineup_page(
+            config,
+            f"season cache GROUP{group_index:02d} player {slot_index}",
+        )
         bundle = capture_player_image(
             config,
             parts_dir,
@@ -2906,6 +3094,17 @@ def parse_args():
         help="Delay in seconds after opening a player profile before capturing its basic information page.",
     )
     parser.add_argument(
+        "--player-lineup-delay",
+        type=float,
+        default=None,
+        help="Delay in seconds after opening a player lineup before capturing its five ROUND pages.",
+    )
+    parser.add_argument(
+        "--player-lineup-poll",
+        action="store_true",
+        help="Wait for a detected player lineup page for up to 10 seconds before continuing capture.",
+    )
+    parser.add_argument(
         "--bracket-result-delay",
         type=float,
         default=None,
@@ -2927,7 +3126,7 @@ def parse_args():
         "--detail-page-timeout",
         type=float,
         default=None,
-        help="Maximum seconds to wait for one detailed battle record page before stopping safely.",
+        help="Maximum seconds to wait for one detailed battle record page before continuing capture.",
     )
     parser.add_argument(
         "--low-memory",
@@ -2988,8 +3187,6 @@ def main():
         click_delay = max(0.0, min(5.0, float(args.click_delay)))
         for key in (
             "after_round_click_seconds",
-            "after_support_avatar_click_seconds",
-            "after_group_avatar_click_seconds",
             "after_group_tab_click_seconds",
             "after_group_result_click_seconds",
             "after_outpost_click_seconds",
@@ -2999,6 +3196,12 @@ def main():
         config["timing"]["after_avatar_click_seconds"] = max(
             0.45, min(5.0, float(args.avatar_profile_delay))
         )
+    if args.player_lineup_delay is not None:
+        config["timing"]["after_player_lineup_click_seconds"] = max(
+            0.6, min(10.0, float(args.player_lineup_delay))
+        )
+    if args.player_lineup_poll:
+        config["timing"]["player_lineup_poll_enabled"] = True
     if args.round_robin_group_switch_delay is not None:
         config["timing"]["after_round_robin_group_switch_seconds"] = max(
             0.45, min(10.0, float(args.round_robin_group_switch_delay))
@@ -3079,11 +3282,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except DetailPageTimeout as exc:
-        # Keep this machine-readable even when --quiet has disabled regular progress output.
-        sys.stdout.write(f"NIKKE_DETAIL_PAGE_TIMEOUT|{exc.context}|{exc.timeout_seconds:.1f}\n")
-        sys.stdout.flush()
-        sys.exit(42)
     except KeyboardInterrupt:
         print("cancelled")
         sys.exit(130)

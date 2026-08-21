@@ -246,6 +246,15 @@ OVERSEAS_COLLECTION_GRID_WIDE = {
     "icon_height": 29,
     "bottom_match_dy": 12,
 }
+# The 2560x1600 overseas capture keeps every lineup crop at the fixed 720px
+# output width. Its taller match block comes from the stitched result/bottom
+# sections, not from the five roster rows. Keep the validated wide X grid and
+# the roster Y coordinates fixed instead of scaling them with the whole block.
+OVERSEAS_COLLECTION_GRID_2560_1600 = {
+    **OVERSEAS_COLLECTION_GRID_WIDE,
+    "block_height": 2327,
+    "fixed_y": True,
+}
 COLLECTION_TEMPLATE_SIZE = (64, 64)
 COLLECTION_TEMPLATE_THRESHOLD = 0.72
 COLLECTION_DIRECT_TEMPLATE_SIZE = (48, 48)
@@ -279,6 +288,17 @@ COLLECTION_DIRECT_R15_CYAN_OVERRIDE_WHITE_MAX = 0.46
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_MARGIN = 0.04
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_ACTIVE_MIN = 0.18
 COLLECTION_DIRECT_R15_CYAN_OVERRIDE_SCORE_MARGIN = -0.08
+# The overseas 2560x1600 sample keeps the wide collection grid, but the
+# generic direct templates can reject its white SSR hexagons as empty.  These
+# conservative visual limits were calibrated against the matching positive
+# icons and portrait-background hard negatives.  They are intentionally used
+# only for the local rescue below, never as a global collection rule.
+OVERSEAS_2560_1600_SSR_RESCUE_ORANGE_MIN = 0.22
+OVERSEAS_2560_1600_SSR_RESCUE_ORANGE_MAX = 0.33
+OVERSEAS_2560_1600_SSR_RESCUE_BRIGHT_MIN = 0.55
+OVERSEAS_2560_1600_SSR_RESCUE_BRIGHT_MAX = 0.74
+OVERSEAS_2560_1600_SSR_RESCUE_INTERIOR_BRIGHT_MIN = 0.44
+OVERSEAS_2560_1600_SSR_RESCUE_MIN_EDGE_HITS = 5
 NAME_PROFILE_DEFAULT = "default"
 NAME_PROFILE_FHD = "fhd"
 SOURCE_PROFILE_1920_1080 = "1920x1080"
@@ -305,7 +325,7 @@ OVERSEAS_COLLECTION_GRID_BY_SOURCE_PROFILE = {
         "phase_dy": -2.0,
         "template_profile": "overseas_2560x1440",
     },
-    SOURCE_PROFILE_2560_1600: OVERSEAS_COLLECTION_GRID_WIDE,
+    SOURCE_PROFILE_2560_1600: OVERSEAS_COLLECTION_GRID_2560_1600,
     SOURCE_PROFILE_3440_1440: OVERSEAS_COLLECTION_GRID_WIDE,
     SOURCE_PROFILE_3840: OVERSEAS_COLLECTION_GRID_WIDE,
 }
@@ -1982,6 +2002,8 @@ def _collection_precise_group64_geometry(
 
 def _overseas_collection_grid_profile(source_profile: str, block_height: int) -> dict:
     profile = OVERSEAS_COLLECTION_GRID_BY_SOURCE_PROFILE.get(source_profile)
+    if source_profile == SOURCE_PROFILE_2560_1600 and profile is not None:
+        return profile
     if profile is not None and abs(block_height - int(profile["block_height"])) <= 6:
         return profile
     return min(
@@ -2011,7 +2033,7 @@ def _overseas_collection_slot_box(
     x1 = round((reference_x0 + float(profile["icon_width"])) * scale_x + phase_dx)
 
     reference_block_height = float(profile["block_height"])
-    scale_y = block_height / max(1.0, reference_block_height)
+    scale_y = 1.0 if profile.get("fixed_y") else block_height / max(1.0, reference_block_height)
     row_start = int(block_height * (0.275 + (team_index - 1) * 0.13))
     reference_y0 = float(profile["icon_y0"][team_index - 1])
     if match_index in {3, 4}:
@@ -2087,6 +2109,51 @@ def _classify_collection_icon(icon_image: Image.Image, template_profile: str = "
     return _classify_collection_icon_by_color(icon_image)
 
 
+def _rescue_overseas_2560_1600_white_ssr(icon_image: Image.Image) -> str:
+    """Accept a white SSR hex only when its six-edge shape is visible.
+
+    The profile-specific template restores the right SSR label for this
+    capture family.  Portrait highlights can resemble that template, so the
+    rescue additionally requires the orange border at five or more expected
+    hex-edge points and a broad bright hex interior.
+    """
+    candidate = _classify_collection_icon(icon_image, "overseas_2560x1440")
+    if candidate != "SSR":
+        return COLLECTION_NONE
+    try:
+        rgb = np.asarray(
+            icon_image.convert("RGB").resize((48, 48), Image.Resampling.LANCZOS),
+            dtype=np.uint8,
+        )
+        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+        hue = hsv[:, :, 0]
+        saturation = hsv[:, :, 1]
+        value = hsv[:, :, 2]
+        orange = ((hue <= 28) | (hue >= 170)) & (saturation >= 85) & (value >= 85)
+        bright = (saturation <= 72) & (value >= 176)
+        orange_ratio = float(orange.mean())
+        bright_ratio = float(bright.mean())
+        if not (
+            OVERSEAS_2560_1600_SSR_RESCUE_ORANGE_MIN <= orange_ratio <= OVERSEAS_2560_1600_SSR_RESCUE_ORANGE_MAX
+            and OVERSEAS_2560_1600_SSR_RESCUE_BRIGHT_MIN <= bright_ratio <= OVERSEAS_2560_1600_SSR_RESCUE_BRIGHT_MAX
+        ):
+            return COLLECTION_NONE
+
+        edge_hits = 0
+        for x, y in ((24, 3), (42, 12), (42, 36), (24, 45), (6, 36), (6, 12)):
+            edge_patch = orange[max(0, y - 4) : min(48, y + 5), max(0, x - 4) : min(48, x + 5)]
+            edge_hits += int(float(edge_patch.mean()) >= 0.045)
+        interior_bright_ratio = float(bright[8:40, 6:42].mean())
+        if (
+            edge_hits < OVERSEAS_2560_1600_SSR_RESCUE_MIN_EDGE_HITS
+            or interior_bright_ratio < OVERSEAS_2560_1600_SSR_RESCUE_INTERIOR_BRIGHT_MIN
+        ):
+            return COLLECTION_NONE
+        return "SSR"
+    except Exception:
+        return COLLECTION_NONE
+
+
 def recognize_collection_level(card_image: Image.Image) -> str:
     icon_image = _crop_rel(card_image, COLLECTION_ICON_BOX)
     return _classify_collection_icon(icon_image)
@@ -2128,7 +2195,11 @@ def recognize_collection_slots(
             if icon_box is None or icon_box[2] <= icon_box[0] or icon_box[3] <= icon_box[1]:
                 levels.append(COLLECTION_NONE)
                 continue
-            levels.append(_classify_collection_icon(row_image.crop(icon_box), template_profile))
+            icon_image = row_image.crop(icon_box)
+            level = _classify_collection_icon(icon_image, template_profile)
+            if level == COLLECTION_NONE and source_profile == SOURCE_PROFILE_2560_1600:
+                level = _rescue_overseas_2560_1600_white_ssr(icon_image)
+            levels.append(level)
             continue
         geometry = _collection_slot_geometry(side, team_index, slot + 1, icon_center)
         geometry, dy = _collection_precise_group64_geometry(
