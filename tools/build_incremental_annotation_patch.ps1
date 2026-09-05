@@ -1,0 +1,363 @@
+﻿param(
+    [string]$FullVersion = "0.1.19",
+    [string]$LiteVersion = "0.1.11",
+    [string]$PatchDate = (Get-Date -Format "yyyy-MM-dd")
+)
+
+$ErrorActionPreference = "Stop"
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+$DistRoot = Join-Path $ProjectRoot "dist"
+$UpdatesRoot = Join-Path $DistRoot "updates"
+$ReleaseTimestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
+
+function Write-Utf8Text([string]$Path, [string]$Content) {
+    [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($true))
+}
+
+function Write-AsciiText([string]$Path, [string]$Content) {
+    [IO.File]::WriteAllText($Path, $Content, [Text.ASCIIEncoding]::new())
+}
+
+function Write-Step([string]$Message) {
+    Write-Host ("[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $Message)
+}
+
+function Get-RosterList($Roster, [string]$Field) {
+    if ($null -eq $Roster -or -not ($Roster.PSObject.Properties.Name -contains $Field)) {
+        return @()
+    }
+    return @($Roster.$Field | ForEach-Object { [string]$_ })
+}
+
+function Copy-PayloadFile([string]$ReleaseRoot, [string]$PayloadRoot, [string]$RelativePath) {
+    $source = Join-Path $ReleaseRoot $RelativePath
+    if (-not (Test-Path -LiteralPath $source)) {
+        throw "Patch source is missing: $source"
+    }
+    $destination = Join-Path $PayloadRoot $RelativePath
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
+    Copy-Item -LiteralPath $source -Destination $destination -Force
+}
+
+function Write-Checksums([string]$PatchRoot) {
+    $lines = Get-ChildItem -LiteralPath $PatchRoot -File -Recurse |
+        Where-Object { $_.Name -ne "SHA256SUMS.txt" } |
+        Sort-Object FullName |
+        ForEach-Object {
+            $relative = $_.FullName.Substring($PatchRoot.Length).TrimStart([char[]]@([char]92, [char]47))
+            "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash, $relative
+        }
+    Write-Utf8Text (Join-Path $PatchRoot "SHA256SUMS.txt") ($lines -join [Environment]::NewLine)
+}
+
+function Write-ApplyScripts(
+    [string]$PatchRoot,
+    [string]$ExpectedLauncher,
+    [string]$ProductName,
+    [string]$RosterRelativePath = ""
+) {
+    $applyScript = @'
+$ErrorActionPreference = "Stop"
+$ExpectedLauncher = "__EXPECTED_LAUNCHER__"
+$ProductName = "__PRODUCT_NAME__"
+$RosterRelativePath = "__ROSTER_RELATIVE_PATH__"
+$PatchRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PayloadRoot = Join-Path $PatchRoot "payload"
+$RosterAdditionsPath = Join-Path $PatchRoot "roster_additions.json"
+
+function Select-InstallRoot {
+    if (Test-Path -LiteralPath (Join-Path $PatchRoot $ExpectedLauncher)) { return $PatchRoot }
+    Add-Type -AssemblyName System.Windows.Forms
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = "请选择 $ProductName 的安装目录（其中应包含 $ExpectedLauncher）"
+    $dialog.ShowNewFolderButton = $false
+    if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
+        throw "未选择安装目录，升级已取消。"
+    }
+    return $dialog.SelectedPath
+}
+
+function Backup-ExistingFile([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    $relative = $Path.Substring($InstallRoot.Length).TrimStart([char[]]@([char]92, [char]47))
+    $backup = Join-Path $BackupRoot $relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $backup) | Out-Null
+    Copy-Item -LiteralPath $Path -Destination $backup -Force
+}
+
+function Get-StringList($Object, [string]$PropertyName) {
+    if ($null -eq $Object -or -not ($Object.PSObject.Properties.Name -contains $PropertyName)) {
+        return @()
+    }
+    return @($Object.$PropertyName | ForEach-Object { [string]$_ })
+}
+
+function Merge-RosterAdditions {
+    if ([string]::IsNullOrWhiteSpace($RosterRelativePath) -or -not (Test-Path -LiteralPath $RosterAdditionsPath)) {
+        return
+    }
+    $targetPath = Join-Path $InstallRoot $RosterRelativePath
+    if (-not (Test-Path -LiteralPath $targetPath)) {
+        Write-Warning "未找到用户妮姬名单，已跳过名单增量合并：$targetPath"
+        return
+    }
+    try {
+        $roster = Get-Content -LiteralPath $targetPath -Raw -Encoding utf8 | ConvertFrom-Json
+        $additions = Get-Content -LiteralPath $RosterAdditionsPath -Raw -Encoding utf8 | ConvertFrom-Json
+    } catch {
+        Write-Warning "无法读取现有妮姬名单，已保留原文件：$targetPath"
+        return
+    }
+
+    $changed = $false
+    foreach ($field in @("names", "protected_names")) {
+        $current = [System.Collections.Generic.List[string]]::new()
+        $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        foreach ($value in Get-StringList $roster $field) {
+            if (-not [string]::IsNullOrWhiteSpace($value) -and $seen.Add($value)) {
+                [void]$current.Add($value)
+            }
+        }
+        foreach ($value in Get-StringList $additions $field) {
+            if (-not [string]::IsNullOrWhiteSpace($value) -and $seen.Add($value)) {
+                [void]$current.Add($value)
+                $changed = $true
+            }
+        }
+        if ($roster.PSObject.Properties.Name -contains $field) {
+            $roster.$field = @($current.ToArray())
+        } else {
+            $roster | Add-Member -NotePropertyName $field -NotePropertyValue @($current.ToArray())
+            $changed = $true
+        }
+    }
+
+    foreach ($mapping in @{ "names" = "count"; "protected_names" = "protected_count" }.GetEnumerator()) {
+        $count = @(Get-StringList $roster $mapping.Key).Count
+        if ($roster.PSObject.Properties.Name -contains $mapping.Value) {
+            if ([int]$roster.($mapping.Value) -ne $count) { $changed = $true }
+            $roster.($mapping.Value) = $count
+        } else {
+            $roster | Add-Member -NotePropertyName $mapping.Value -NotePropertyValue $count
+            $changed = $true
+        }
+    }
+
+    if ($changed) {
+        Backup-ExistingFile $targetPath
+        [IO.File]::WriteAllText(
+            $targetPath,
+            (($roster | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
+            [Text.UTF8Encoding]::new($false)
+        )
+        Write-Host "已合并本次新增妮姬名单。"
+    }
+}
+
+$InstallRoot = Select-InstallRoot
+if (-not (Test-Path -LiteralPath (Join-Path $InstallRoot $ExpectedLauncher))) {
+    throw "所选目录不是 $ProductName 的安装目录：未找到 $ExpectedLauncher"
+}
+if (-not (Test-Path -LiteralPath $PayloadRoot)) {
+    throw "补丁内容不完整：未找到 payload 文件夹。"
+}
+
+$BackupRoot = Join-Path $InstallRoot ("update_backups\incremental_" + (Get-Date -Format "yyyyMMdd_HHmmss"))
+$ProtectedPaths = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($path in @("nikke_round_config.json", "nikke_character_capture_config.json")) {
+    [void]$ProtectedPaths.Add($path)
+}
+
+foreach ($payloadFile in Get-ChildItem -LiteralPath $PayloadRoot -File -Recurse) {
+    $relative = $payloadFile.FullName.Substring($PayloadRoot.Length).TrimStart([char[]]@([char]92, [char]47))
+    if ($ProtectedPaths.Contains($relative)) {
+        Write-Host "保留用户配置：$relative"
+        continue
+    }
+    $destination = Join-Path $InstallRoot $relative
+    Backup-ExistingFile $destination
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
+    Copy-Item -LiteralPath $payloadFile.FullName -Destination $destination -Force
+}
+
+Merge-RosterAdditions
+Write-Host "增量更新完成：$ProductName"
+Write-Host "被替换文件的备份位置：$BackupRoot"
+'@
+    $applyScript = $applyScript.Replace("__EXPECTED_LAUNCHER__", $ExpectedLauncher)
+    $applyScript = $applyScript.Replace("__PRODUCT_NAME__", $ProductName)
+    $applyScript = $applyScript.Replace("__ROSTER_RELATIVE_PATH__", $RosterRelativePath)
+    Write-Utf8Text (Join-Path $PatchRoot "apply_update.ps1") $applyScript
+
+    $batch = @'
+@echo off
+setlocal
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0apply_update.ps1"
+set "rc=%ERRORLEVEL%"
+echo.
+if not "%rc%"=="0" (echo Update did not complete. Review the message above.) else (echo Update completed. You can restart the app.)
+pause
+exit /b %rc%
+'@
+    Write-AsciiText (Join-Path $PatchRoot "apply_update.bat") $batch
+}
+
+function Build-IncrementalPatch(
+    [string]$PatchName,
+    [string]$ReleaseRoot,
+    [string]$ExpectedLauncher,
+    [string]$ProductName,
+    [string[]]$Files,
+    [string]$UsageText,
+    [string]$UpdateText,
+    [string]$RosterRelativePath = ""
+) {
+    if (-not (Test-Path -LiteralPath $ReleaseRoot)) {
+        throw "Release directory is missing: $ReleaseRoot"
+    }
+    $patchRoot = Join-Path $UpdatesRoot $PatchName
+    if (Test-Path -LiteralPath $patchRoot) {
+        Remove-Item -LiteralPath $patchRoot -Recurse -Force
+    }
+    $payloadRoot = Join-Path $patchRoot "payload"
+    New-Item -ItemType Directory -Force -Path $payloadRoot | Out-Null
+    foreach ($file in $Files) {
+        Copy-PayloadFile $ReleaseRoot $payloadRoot $file
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($RosterRelativePath)) {
+        $releaseRoster = Join-Path $ReleaseRoot $RosterRelativePath
+        if (-not (Test-Path -LiteralPath $releaseRoster)) {
+            throw "Release roster is missing: $releaseRoster"
+        }
+        $roster = Get-Content -LiteralPath $releaseRoster -Raw -Encoding utf8 | ConvertFrom-Json
+        $newName = "德雷克：终极反派"
+        if ($newName -notin @(Get-RosterList $roster "names") -or $newName -notin @(Get-RosterList $roster "protected_names")) {
+            throw "Release roster does not include the required new Nikke: $newName"
+        }
+        $additions = [ordered]@{
+            names = @($newName)
+            protected_names = @($newName)
+        } | ConvertTo-Json -Depth 4
+        Write-Utf8Text (Join-Path $patchRoot "roster_additions.json") ($additions + [Environment]::NewLine)
+    }
+
+    Write-ApplyScripts $patchRoot $ExpectedLauncher $ProductName $RosterRelativePath
+    Write-Utf8Text (Join-Path $patchRoot "增量更新补丁使用说明.txt") $UsageText
+    Write-Utf8Text (Join-Path $patchRoot ("更新日志_{0}.txt" -f $PatchDate)) $UpdateText
+    Write-Checksums $patchRoot
+
+    $zipPath = Join-Path $UpdatesRoot ("{0}.zip" -f $PatchName)
+    if (Test-Path -LiteralPath $zipPath) {
+        Remove-Item -LiteralPath $zipPath -Force
+    }
+    Compress-Archive -LiteralPath $patchRoot -DestinationPath $zipPath -CompressionLevel Optimal
+    Write-Step "Incremental patch is ready: $zipPath"
+    return $zipPath
+}
+
+New-Item -ItemType Directory -Force -Path $UpdatesRoot | Out-Null
+
+$fullLog = @(
+    "NIKKE C ARENA Tool 完整版 本轮增量更新日志",
+    "目标版本：$FullVersion",
+    "适用基线：完整版 0.1.18。",
+    "发布日期：$ReleaseTimestamp。",
+    "",
+    "1. TOP8 冠军争霸赛与双方赛果截图新增自动胜负标记。",
+    "启用详细赛果与胜负标记后，截图会按照本次实际使用的国服、国际服或港澳台服逻辑自动判定胜负，并直接导出标记后的图片；标记成功后不保留原始未标记图，失败时会保留原图并提示。",
+    "TOP8 自动标记仅允许冠亚军截图；选择 8 强、4 强或一图流时会给出提示，避免对非双人详细赛果图执行错误标记。",
+    "",
+    "2. 自动胜负标记与图像工具设置同步。",
+    "自动路径现在读取图像工具当前的《灰化失败妮姬队伍》开关和 WIN/LOSE 像素文字大小。设置控件不可用或值异常时，才回退为灰化失败队伍与中号文字；截图运行日志会记录实际设置来源、灰化状态和字号。",
+    "",
+    "3. OCR 标准妮姬名单新增《德雷克：终极反派》。",
+    "增量补丁仅将该条目追加合并至用户现有的主名单与受保护名单，不覆盖用户手动维护的名单或其他 OCR 配置。",
+    "",
+    "补丁范围：仅替换本轮相关启动器与版本信息，并增量合并上述妮姬名称；不覆盖截图参数、主题、赛区选择、背景、截图、导出数据或运行日志，也不替换任何 Python、OCR runtime、Paddle 依赖与离线模型。"
+) -join [Environment]::NewLine
+
+$liteLog = @(
+    "NIKKE C ARENA 截图工具 轻量版 本轮增量更新日志",
+    "目标版本：$LiteVersion",
+    "适用基线：轻量版 0.1.10。",
+    "发布日期：$ReleaseTimestamp。",
+    "",
+    "1. TOP8 冠军争霸赛与双方赛果截图新增自动胜负标记。",
+    "启用详细赛果与胜负标记后，截图会按照本次实际使用的国服、国际服或港澳台服逻辑自动判定胜负，并直接导出标记后的图片；标记成功后不保留原始未标记图，失败时会保留原图并提示。",
+    "TOP8 自动标记仅允许冠亚军截图；选择 8 强、4 强或一图流时会给出提示，避免对非双人详细赛果图执行错误标记。",
+    "",
+    "2. 自动胜负标记与图像工具设置同步。",
+    "自动路径现在读取图像工具当前的《灰化失败妮姬队伍》开关和 WIN/LOSE 像素文字大小。设置控件不可用或值异常时，才回退为灰化失败队伍与中号文字；截图运行日志会记录实际设置来源、灰化状态和字号。",
+    "",
+    "补丁范围：仅替换本轮相关启动器与版本信息，不覆盖截图参数、主题、赛区选择、背景、截图或运行日志，也不替换任何 Python 或截图运行依赖。"
+) -join [Environment]::NewLine
+
+$fullUsage = @(
+    "NIKKE C ARENA Tool 完整版 0.1.19 增量更新补丁使用说明",
+    "",
+    "适用基线：完整版 0.1.18。",
+    "本补丁只包含本轮自动胜负标记、标记设置同步和名单新增所需文件，不用于补齐更早版本的全部更新。",
+    "",
+    "1. 完全退出程序。",
+    "2. 解压 ZIP。",
+    "3. 双击 apply_update.bat。",
+    "4. 若补丁不在安装目录中，请在弹窗选择包含 run_gui.bat 的完整版安装目录。",
+    "5. 显示《增量更新完成》后重新启动程序。",
+    "",
+    "不会覆盖：nikke_round_config.json、nikke_character_capture_config.json、用户妮姬名单、主题、赛区、背景、截图、OCR 导出和运行日志。",
+    "《德雷克：终极反派》只会追加进主名单和受保护名单；原有自定义条目会保留。",
+    "被替换的启动器与版本信息会备份至安装目录 update_backups\incremental_时间戳。"
+) -join [Environment]::NewLine
+
+$liteUsage = @(
+    "NIKKE C ARENA 截图工具 轻量版 0.1.11 增量更新补丁使用说明",
+    "",
+    "适用基线：轻量版 0.1.10。",
+    "本补丁只包含本轮自动胜负标记与标记设置同步所需文件，不用于补齐更早版本的全部更新。",
+    "",
+    "1. 完全退出程序。",
+    "2. 解压 ZIP。",
+    "3. 双击 apply_update.bat。",
+    "4. 若补丁不在安装目录中，请在弹窗选择包含 run_capture_lite.bat 的轻量版安装目录。",
+    "5. 显示《增量更新完成》后重新启动程序。",
+    "",
+    "不会覆盖：nikke_round_config.json、nikke_character_capture_config.json、主题、赛区、背景、截图或运行日志。",
+    "被替换的启动器与版本信息会备份至安装目录 update_backups\incremental_时间戳。"
+) -join [Environment]::NewLine
+
+$fullPatch = @{
+    PatchName = "NIKKE_C_ARENA_Tool_完整版_增量更新补丁_$FullVersion"
+    ReleaseRoot = Join-Path $DistRoot ("r_$FullVersion")
+    ExpectedLauncher = "run_gui.bat"
+    ProductName = "NIKKE C ARENA Tool 完整版"
+    Files = @("nikke_gui_launcher.ps1", "RELEASE_INFO.json")
+    UsageText = $fullUsage
+    UpdateText = $fullLog
+    RosterRelativePath = "dataanalysis\arena_ocr_tool\data\nikke_names.json"
+}
+$fullZip = Build-IncrementalPatch @fullPatch
+
+$litePatch = @{
+    PatchName = "NIKKE_C_ARENA_Capture_Lite_轻量版_增量更新补丁_$LiteVersion"
+    ReleaseRoot = Join-Path $DistRoot ("lite_r_$LiteVersion")
+    ExpectedLauncher = "run_capture_lite.bat"
+    ProductName = "NIKKE C ARENA 截图工具 轻量版"
+    Files = @("nikke_capture_lite_launcher.ps1", "RELEASE_INFO.json")
+    UsageText = $liteUsage
+    UpdateText = $liteLog
+}
+$liteZip = Build-IncrementalPatch @litePatch
+
+$combinedLog = @(
+    "NIKKE C ARENA Tool 本次发布更新日志",
+    "发布日期：$ReleaseTimestamp",
+    "",
+    $fullLog,
+    "",
+    $liteLog
+) -join [Environment]::NewLine
+Write-Utf8Text (Join-Path $UpdatesRoot ("更新日志_$PatchDate.txt")) $combinedLog
+
+Write-Host "完整版增量补丁：$fullZip"
+Write-Host "轻量版增量补丁：$liteZip"

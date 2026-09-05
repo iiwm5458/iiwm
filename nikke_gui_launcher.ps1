@@ -1465,7 +1465,10 @@ try {
           <Button x:Name="SupportResultExecuteButton" Height="62" Style="{StaticResource PrimaryButton}">
             <TextBlock Text="&#25191;&#34892;&#25130;&#22270;" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
           </Button>
-          <CheckBox x:Name="SupportResultDetailedCheck" Content="&#35814;&#32454;&#36187;&#26524;" IsChecked="True" Style="{StaticResource DarkOptionCheck}" HorizontalAlignment="Left" Margin="3,9,0,0"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="3,9,0,0">
+            <CheckBox x:Name="SupportResultDetailedCheck" Content="&#35814;&#32454;&#36187;&#26524;" IsChecked="True" Style="{StaticResource DarkOptionCheck}"/>
+            <CheckBox x:Name="SupportResultBattleAnnotationCheck" Content="&#32988;&#36127;&#26631;&#35760;" IsChecked="True" Style="{StaticResource DarkOptionCheck}" Margin="12,0,0,0"/>
+          </StackPanel>
         </StackPanel>
         <StackPanel x:Name="RoundRobinExecutePanel" Grid.Row="3" Margin="0,20,0,0" Visibility="Collapsed">
           <StackPanel HorizontalAlignment="Left" Margin="3,0,0,10">
@@ -1814,6 +1817,7 @@ try {
             <StackPanel Orientation="Horizontal">
               <CheckBox x:Name="GroupSimpleDataCheck" Content="&#36187;&#21518;&#25968;&#25454;&#65288;&#31616;&#21270;&#65289;" Style="{StaticResource DarkOptionCheck}"/>
               <CheckBox x:Name="GroupDetailedDataCheck" Content="&#36187;&#21518;&#25968;&#25454;&#65288;&#35814;&#32454;&#65289;" Style="{StaticResource DarkOptionCheck}"/>
+              <CheckBox x:Name="Top8BattleAnnotationCheck" Content="&#32988;&#36127;&#26631;&#35760;" IsChecked="True" Style="{StaticResource DarkOptionCheck}" Margin="12,0,0,0" Visibility="Collapsed"/>
             </StackPanel>
             <CheckBox x:Name="GroupAllDataCheck" Content="&#25105;&#35201;&#25152;&#26377;GROUP&#30340;&#25968;&#25454;" Style="{StaticResource DarkOptionCheck}" HorizontalAlignment="Left" Margin="3,8,0,0"/>
             <CheckBox x:Name="ExportOcrDataCheck" Content="&#21516;&#26102;&#23548;&#20986;json&#25968;&#25454;&#22359;&#21644;excel&#25968;&#25454;" Style="{StaticResource DarkOptionCheck}"
@@ -2029,6 +2033,7 @@ $ExecuteButton = $Window.FindName("ExecuteButton")
 $SupportResultExecutePanel = $Window.FindName("SupportResultExecutePanel")
 $SupportResultExecuteButton = $Window.FindName("SupportResultExecuteButton")
 $SupportResultDetailedCheck = $Window.FindName("SupportResultDetailedCheck")
+$SupportResultBattleAnnotationCheck = $Window.FindName("SupportResultBattleAnnotationCheck")
 $RoundRobinExecutePanel = $Window.FindName("RoundRobinExecutePanel")
 $RoundRobinExecuteButton = $Window.FindName("RoundRobinExecuteButton")
 $RoundRobinStitchButton = $Window.FindName("RoundRobinStitchButton")
@@ -2257,6 +2262,7 @@ $GroupPostDataPanel = $Window.FindName("GroupPostDataPanel")
 $GroupPostDataHelpText = $Window.FindName("GroupPostDataHelpText")
 $GroupSimpleDataCheck = $Window.FindName("GroupSimpleDataCheck")
 $GroupDetailedDataCheck = $Window.FindName("GroupDetailedDataCheck")
+$Top8BattleAnnotationCheck = $Window.FindName("Top8BattleAnnotationCheck")
 $GroupAllDataCheck = $Window.FindName("GroupAllDataCheck")
 $ExportOcrDataCheck = $Window.FindName("ExportOcrDataCheck")
 $ExportOcrTooltip = $Window.FindName("ExportOcrTooltip")
@@ -3073,8 +3079,10 @@ function Apply-Theme($Theme) {
         Set-Style $CustomFrameCheck "PinkOptionCheck"
         Set-Style $SupportStatusCheck "PinkOptionCheck"
         Set-Style $SupportResultDetailedCheck "PinkOptionCheck"
+        Set-Style $SupportResultBattleAnnotationCheck "PinkOptionCheck"
         Set-Style $GroupSimpleDataCheck "PinkOptionCheck"
         Set-Style $GroupDetailedDataCheck "PinkOptionCheck"
+        Set-Style $Top8BattleAnnotationCheck "PinkOptionCheck"
         Set-Style $GroupAllDataCheck "PinkOptionCheck"
         Set-Style $RoundRobinPostResultCheck "PinkOptionCheck"
         Set-Style $RoundRobinAllGroupsCheck "PinkOptionCheck"
@@ -3242,8 +3250,10 @@ function Apply-Theme($Theme) {
         Set-Style $CustomFrameCheck "DarkOptionCheck"
         Set-Style $SupportStatusCheck "DarkOptionCheck"
         Set-Style $SupportResultDetailedCheck "DarkOptionCheck"
+        Set-Style $SupportResultBattleAnnotationCheck "DarkOptionCheck"
         Set-Style $GroupSimpleDataCheck "DarkOptionCheck"
         Set-Style $GroupDetailedDataCheck "DarkOptionCheck"
+        Set-Style $Top8BattleAnnotationCheck "DarkOptionCheck"
         Set-Style $GroupAllDataCheck "DarkOptionCheck"
         Set-Style $RoundRobinPostResultCheck "DarkOptionCheck"
         Set-Style $RoundRobinAllGroupsCheck "DarkOptionCheck"
@@ -3437,6 +3447,8 @@ function Set-Running($Running) {
         $ImageToolSlotsResetButton,
         $RoundRobinPostResultCheck,
         $SupportResultDetailedCheck,
+        $SupportResultBattleAnnotationCheck,
+        $Top8BattleAnnotationCheck,
         $RoundRobinAllGroupsCheck,
         $RoundRobinStartGroupComboBox,
         $RoundRobinGroupSwitchDelayBox,
@@ -3474,6 +3486,9 @@ function Set-Running($Running) {
     } else {
         $StatusText.Text = $TextIdle
         $StatusText.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#68F2C2")
+    }
+    if (Get-Command Update-AutomaticBattleAnnotationControls -ErrorAction SilentlyContinue) {
+        Update-AutomaticBattleAnnotationControls
     }
 }
 
@@ -4241,21 +4256,44 @@ $GroupSimpleDataCheck.Add_Click({
     if ($CurrentCaptureMode -eq "season") {
         $GroupSimpleDataCheck.IsChecked = $false
         $GroupDetailedDataCheck.IsChecked = $true
+        Update-AutomaticBattleAnnotationControls
         return
     }
     if ($GroupSimpleDataCheck.IsChecked) {
         $GroupDetailedDataCheck.IsChecked = $false
         $ExportOcrDataCheck.IsChecked = $false
     }
+    Update-AutomaticBattleAnnotationControls
 })
 
 $GroupDetailedDataCheck.Add_Click({
     if ($CurrentCaptureMode -eq "season") {
         $GroupDetailedDataCheck.IsChecked = $true
+        Update-AutomaticBattleAnnotationControls
         return
     }
     if ($GroupDetailedDataCheck.IsChecked) { $GroupSimpleDataCheck.IsChecked = $false }
+    Update-AutomaticBattleAnnotationControls
 })
+
+function Update-AutomaticBattleAnnotationControls {
+    $isRunning = [bool]$script:IsRunning
+    if ($Top8BattleAnnotationCheck) {
+        $top8DetailedEnabled = [bool]$GroupDetailedDataCheck.IsChecked
+        if (-not $top8DetailedEnabled) { $Top8BattleAnnotationCheck.IsChecked = $false }
+        $Top8BattleAnnotationCheck.IsEnabled = (-not $isRunning) -and $top8DetailedEnabled
+        $Top8BattleAnnotationCheck.Opacity = if ($top8DetailedEnabled) { 1.0 } else { 0.42 }
+    }
+    if ($SupportResultBattleAnnotationCheck) {
+        $supportDetailedEnabled = [bool]$SupportResultDetailedCheck.IsChecked
+        if (-not $supportDetailedEnabled) { $SupportResultBattleAnnotationCheck.IsChecked = $false }
+        $SupportResultBattleAnnotationCheck.IsEnabled = (-not $isRunning) -and $supportDetailedEnabled
+        $SupportResultBattleAnnotationCheck.Opacity = if ($supportDetailedEnabled) { 1.0 } else { 0.42 }
+    }
+}
+
+$SupportResultDetailedCheck.Add_Click({ Update-AutomaticBattleAnnotationControls })
+Update-AutomaticBattleAnnotationControls
 
 function Get-CustomFramePath {
     if ($CurrentCaptureMode -eq "support") {
@@ -4609,6 +4647,7 @@ function Set-SubPageMode($Mode) {
     $RoundRobinExecutePanel.Visibility = "Collapsed"
     $SupportResultExecutePanel.Visibility = "Collapsed"
     $ImageToolsPanel.Visibility = "Collapsed"
+    $Top8BattleAnnotationCheck.Visibility = "Collapsed"
     $SubPageHelpText.Visibility = "Visible"
     Set-FrameBackgroundOptionsVisible $true
     if ($Mode -eq "support") {
@@ -4637,6 +4676,7 @@ function Set-SubPageMode($Mode) {
         $Top8ExecutePanel.Visibility = "Collapsed"
         $SupportResultExecutePanel.Visibility = "Visible"
         $SupportResultDetailedCheck.IsChecked = $true
+        $SupportResultBattleAnnotationCheck.IsChecked = $true
         $FrameOptionsPanel.Visibility = "Collapsed"
         Set-FrameBackgroundOptionsVisible $false
         $CustomFrameCheck.IsChecked = $false
@@ -4703,6 +4743,10 @@ function Set-SubPageMode($Mode) {
         $GroupAllDataCheck.Visibility = "Collapsed"
         $GroupAllDataCheck.IsChecked = $false
         Set-PostDataControlsForMode "top8"
+        $GroupSimpleDataCheck.IsChecked = $false
+        $GroupDetailedDataCheck.IsChecked = $true
+        $Top8BattleAnnotationCheck.Visibility = "Visible"
+        $Top8BattleAnnotationCheck.IsChecked = $true
         $CustomFrameTooltipText.Text = $TextCustomGroupTip
     } elseif ($Mode -eq "season") {
         $SubPageHelpText.Text = $TextSeasonHelp
@@ -4794,6 +4838,7 @@ function Set-SubPageMode($Mode) {
         $ExportOcrDataCheck.IsChecked = $false
         $CustomFrameTooltipText.Text = $TextCustomSingleTip
     }
+    Update-AutomaticBattleAnnotationControls
     Update-ModeButtonStyles
 }
 
@@ -7861,6 +7906,112 @@ function Request-MinimizedCaptureWindowRestoreStop($Process) {
     }
 }
 
+function Get-AutomaticBattleAnnotationOptions() {
+    $fallback = [pscustomobject]@{
+        GrayLoser = $true
+        LabelSize = "medium"
+        Source = "fallback"
+    }
+
+    try {
+        if (-not $BattleAnnotationGrayLoserCheck) {
+            return $fallback
+        }
+        $labelSize = [string]$script:BattleAnnotationLabelSize
+        if ($labelSize -notin @("small", "medium", "large")) {
+            return $fallback
+        }
+        return [pscustomobject]@{
+            GrayLoser = [bool]$BattleAnnotationGrayLoserCheck.IsChecked
+            LabelSize = $labelSize
+            Source = "image_tools"
+        }
+    } catch {
+        return $fallback
+    }
+}
+
+function Invoke-AutomaticBattleAnnotation([string]$ImagePath, [string]$ServerCode, [string]$CaptureLogPath) {
+    if (-not $ImagePath -or -not (Test-Path -LiteralPath $ImagePath)) {
+        return [pscustomobject]@{ Success = $false; OutputPath = $null; Error = "未找到待标记的截图。" }
+    }
+    if (-not $PythonExe -or -not (Test-Path -LiteralPath $ImageToolsPath)) {
+        return [pscustomobject]@{ Success = $false; OutputPath = $null; Error = "未找到图像标记运行环境。" }
+    }
+
+    $clientProfile = switch ($ServerCode) {
+        "cn" { "cn"; break }
+        "hmt" { "hmt"; break }
+        default { "overseas" }
+    }
+    $outputFolder = Split-Path -Parent $ImagePath
+    $quote = [string][char]34
+    $annotationOptions = Get-AutomaticBattleAnnotationOptions
+    $argumentParts = @(
+        ($quote + $ImageToolsPath + $quote),
+        "annotate-direct",
+        "--output-dir", ($quote + $outputFolder + $quote),
+        "--client-profile", $clientProfile,
+        "--label-size", [string]$annotationOptions.LabelSize
+    )
+    if ([bool]$annotationOptions.GrayLoser) {
+        $argumentParts += "--gray-loser"
+    }
+    $argumentParts += ($quote + $ImagePath + $quote)
+    $arguments = $argumentParts -join " "
+
+    try {
+        Add-CaptureDiagnosticsLog $CaptureLogPath ("automatic_battle_annotation=started; client_profile={0}; source={1}; options_source={2}; gray_loser={3}; label_size={4}" -f $clientProfile, $ImagePath, $annotationOptions.Source, [bool]$annotationOptions.GrayLoser, $annotationOptions.LabelSize)
+        $psi = [System.Diagnostics.ProcessStartInfo]::new()
+        $psi.FileName = $PythonExe
+        $psi.Arguments = $arguments
+        $psi.WorkingDirectory = $ScriptDir
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
+        $psi.StandardErrorEncoding = [Text.Encoding]::UTF8
+        $psi.EnvironmentVariables["PYTHONUTF8"] = "1"
+        $psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8"
+
+        $process = [System.Diagnostics.Process]::Start($psi)
+        if (-not $process.WaitForExit(120000)) {
+            try { $process.Kill() } catch {}
+            return [pscustomobject]@{ Success = $false; OutputPath = $null; Error = "胜负标记处理超时。" }
+        }
+        $stdout = $process.StandardOutput.ReadToEnd()
+        $stderr = $process.StandardError.ReadToEnd()
+        Add-CaptureDiagnosticsLog $CaptureLogPath ("automatic_battle_annotation_exit_code={0}" -f $process.ExitCode)
+        if ($stdout) { Add-CaptureDiagnosticsLog $CaptureLogPath ("automatic_battle_annotation_stdout:`r`n" + $stdout.Trim()) }
+        if ($stderr) { Add-CaptureDiagnosticsLog $CaptureLogPath ("automatic_battle_annotation_stderr:`r`n" + $stderr.Trim()) }
+        if ($process.ExitCode -ne 0) {
+            $errorText = (($stderr -split "`r?`n" | Where-Object { $_ }) | Select-Object -Last 1)
+            if (-not $errorText) { $errorText = "标记工具返回异常状态。" }
+            return [pscustomobject]@{ Success = $false; OutputPath = $null; Error = $errorText }
+        }
+
+        $result = $stdout.Trim() | ConvertFrom-Json
+        $annotatedPath = @($result.outputs | Where-Object { $_ } | Select-Object -First 1)[0]
+        if ($annotatedPath -and -not [IO.Path]::IsPathRooted([string]$annotatedPath)) {
+            $annotatedPath = Join-Path $outputFolder $annotatedPath
+        }
+        if (-not $annotatedPath -or -not (Test-Path -LiteralPath $annotatedPath)) {
+            return [pscustomobject]@{ Success = $false; OutputPath = $null; Error = "标记结果文件未生成。" }
+        }
+
+        Remove-Item -LiteralPath $ImagePath -Force -ErrorAction Stop
+        if (Test-Path -LiteralPath $ImagePath) {
+            return [pscustomobject]@{ Success = $false; OutputPath = $annotatedPath; Error = "标记完成，但无法删除原始截图。" }
+        }
+        Add-CaptureDiagnosticsLog $CaptureLogPath ("automatic_battle_annotation=completed; output={0}; raw_deleted=true" -f $annotatedPath)
+        return [pscustomobject]@{ Success = $true; OutputPath = $annotatedPath; Error = $null }
+    } catch {
+        Add-CaptureDiagnosticsLog $CaptureLogPath ("automatic_battle_annotation_exception: " + $_.Exception.ToString())
+        return [pscustomobject]@{ Success = $false; OutputPath = $null; Error = $_.Exception.Message }
+    }
+}
+
 function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMinimizedWindow = $false) {
     if (-not (Confirm-CaptureParametersPreflight)) { return }
     $captureRunId = [Guid]::NewGuid().ToString("N")
@@ -7892,6 +8043,17 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         Show-TopMessage $TextOcrNeedDetailed $TextSettingHint ([System.Windows.MessageBoxImage]::Information)
         return
     }
+    $automaticBattleAnnotationRequested = $false
+    if ($CurrentCaptureMode -eq "top8" -and $Top8BattleAnnotationCheck -and [bool]$Top8BattleAnnotationCheck.IsChecked) {
+        $isTop8FinalCapture = (-not $Top8Pyramid -and $groupSizeValue -eq 2)
+        if (-not [bool]$GroupDetailedDataCheck.IsChecked -or -not $isTop8FinalCapture) {
+            Show-ImageToolMessage "当前胜负标记仅支持冠亚军截图，指挥官" "胜负标记" "Warning"
+            return
+        }
+        $automaticBattleAnnotationRequested = $true
+    } elseif ($CurrentCaptureMode -eq "support-result" -and $SupportResultBattleAnnotationCheck -and [bool]$SupportResultDetailedCheck.IsChecked -and [bool]$SupportResultBattleAnnotationCheck.IsChecked) {
+        $automaticBattleAnnotationRequested = $true
+    }
     $ocrStageCode = "group64"
     $ocrLayoutCode = "auto"
     if ($CurrentCaptureMode -eq "group") {
@@ -7916,6 +8078,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
     Set-Log "Preparing capture..."
     Refresh-Ui
     $completed = $false
+    $automaticBattleAnnotationWarning = $null
     $autoOcrCompleted = $true
     $script:StopRequested = $false
     $script:CaptureWindowRestoreTriggered = $false
@@ -8150,6 +8313,17 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         if ($script:StopRequested) {
             Append-Log "Stopped."
         } elseif ($proc.ExitCode -eq 0) {
+            if ($automaticBattleAnnotationRequested -and -not $script:StopRequested) {
+                Append-Log "正在自动标记胜负，请稍候"
+                $annotationResult = Invoke-AutomaticBattleAnnotation $output $serverCode $captureLogPath
+                if ($annotationResult.Success) {
+                    $output = $annotationResult.OutputPath
+                    Append-Log "胜负标记完成，原始截图已删除。"
+                } else {
+                    $automaticBattleAnnotationWarning = "截图已完成，但胜负标记失败，原始截图已保留。`n`n原因：" + $annotationResult.Error
+                    Append-Log $automaticBattleAnnotationWarning
+                }
+            }
             $name = Split-Path -Leaf $output
             if ($CurrentCaptureMode -eq "round-robin" -and $roundRobinAllGroups) {
                 Append-Log ("Done: GROUP{0:00}-GROUP64 saved to {1}" -f $roundRobinStartGroup, (Split-Path -Parent $output))
@@ -8224,7 +8398,13 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         if ($script:CaptureWindowRestoreTriggered) {
             Show-ImageToolMessage "检测到指挥官正尝试恢复窗口，截图任务已自动终止。" "截图任务" "Warning"
         } elseif ($completed -and -not $autoOcrRequested) {
-            Show-TopMessage $TextDoneMessage $TextDoneTitle ([System.Windows.MessageBoxImage]::Information)
+            if ($automaticBattleAnnotationWarning) {
+                Show-ImageToolMessage $automaticBattleAnnotationWarning "胜负标记" "Warning"
+            } elseif ($automaticBattleAnnotationRequested) {
+                Show-TopMessage ($TextDoneMessage + "`n`n胜负标记完成，原始截图已删除。") $TextDoneTitle ([System.Windows.MessageBoxImage]::Information)
+            } else {
+                Show-TopMessage $TextDoneMessage $TextDoneTitle ([System.Windows.MessageBoxImage]::Information)
+            }
         }
     }
 }
