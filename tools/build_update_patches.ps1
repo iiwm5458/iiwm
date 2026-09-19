@@ -1,6 +1,6 @@
 ﻿param(
-    [string]$FullVersion = "0.1.18",
-    [string]$LiteVersion = "0.1.10"
+    [string]$FullVersion = "0.1.21",
+    [string]$LiteVersion = "0.1.13"
 )
 
 $ErrorActionPreference = "Stop"
@@ -123,10 +123,13 @@ function Merge-RosterNames {
     if (-not $RosterRelativePath -or -not (Test-Path -LiteralPath $RosterDefaultsPath)) { return }
 
     $targetPath = Join-Path $InstallRoot $RosterRelativePath
+    $rosterDirectory = Split-Path -Parent $targetPath
+    $rosterBackupPath = Join-Path $rosterDirectory "nikke_names.backup.json"
     $defaultRoster = Get-Content -LiteralPath $RosterDefaultsPath -Raw -Encoding utf8 | ConvertFrom-Json
     if (-not (Test-Path -LiteralPath $targetPath)) {
-        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $targetPath) | Out-Null
+        New-Item -ItemType Directory -Force -Path $rosterDirectory | Out-Null
         Copy-Item -LiteralPath $RosterDefaultsPath -Destination $targetPath -Force
+        Copy-Item -LiteralPath $RosterDefaultsPath -Destination $rosterBackupPath -Force
         return
     }
 
@@ -138,6 +141,7 @@ function Merge-RosterNames {
     }
 
     Backup-ExistingFile $targetPath
+    Backup-ExistingFile $rosterBackupPath
     $legacyNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     [void]$legacyNames.Add("天城雪子")
     [void]$legacyNames.Add("新岛真")
@@ -179,7 +183,8 @@ function Merge-RosterNames {
     }
     $json = $userRoster | ConvertTo-Json -Depth 100
     [IO.File]::WriteAllText($targetPath, ($json + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
-    Write-Host "已合并标准妮姬名单并保留用户自定义条目。"
+    [IO.File]::WriteAllText($rosterBackupPath, ($json + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
+    Write-Host "已合并标准妮姬名单、保留用户自定义条目，并同步本地恢复备份。"
 }
 
 Merge-RosterNames
@@ -227,7 +232,7 @@ function Write-PatchDocuments(
         "补丁会自动备份被替换的程序文件到安装目录的 update_backups 文件夹。"
     )
     if ($HasRosterMerge) {
-        $usageLines += "完整版会合并标准妮姬名单：保留用户手动增加的条目，同时修正《天城雪子》为《雪子》、《新岛真》为《QUEEN（真）》并补齐新版标准名单。"
+        $usageLines += "完整版会合并最新标准妮姬名单：保留用户手动增加的条目，补齐《吉尔提：神力兔女郎》等新版条目，并同步更新本地恢复备份。"
     }
     $usageLines += "不需要重新运行安装包。"
     Write-TextFile (Join-Path $PatchRoot "升级补丁使用说明.txt") ($usageLines -join "`n")
@@ -306,45 +311,41 @@ $releaseTimestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
 $releaseDate = Get-Date -Format "yyyy-MM-dd"
 
 $fullLog = @(
-    "NIKKE C ARENA Tool 完整版 更新日志",
-    "版本：$FullVersion",
-    "更新范围：2026-08-07 正式版 0.1.17 之后至本次发行。",
+    "NIKKE C ARENA Tool 完整版 跨版本升级补丁更新日志",
+    "目标版本：$FullVersion",
+    "适用范围：所有已发布完整版（0.1.0 及以后）。",
+    "更新方式：以当前完整发行目录覆盖程序资源；用户配置、截图、导出数据、日志、自定义背景和自定义名单不会被覆盖。",
     "",
-    "[2026-08-09 20:46] 新增《点击玩家头像到开始截取该玩家阵容页的等待时间》及轮询检测。",
-    "缘由：网络波动或页面动画可能让玩家五个 ROUND 阵容页尚未加载完成。该设置覆盖单人、应援、双方赛果、小组循环赛、晋级赛和冠军争霸赛等全部玩家阵容采集步骤；默认轮询开启，连续确认就绪后截图，10 秒未确认也会继续截取当前画面，不会终止整项任务。",
-    "[2026-08-09 20:46] 详细战果页轮询超时改为继续截取当前详细区域并执行后续流程。",
-    "缘由：详细战果页受网络延迟影响较大，旧逻辑会因超时结束整个截图任务。",
-    "[2026-08-09 20:46] 优化国际服、港澳台服详细战果页就绪识别，新增双栏五人卡片布局、蓝色标题、亮度与左右卡列边缘的联合判定。",
-    "缘由：覆盖 2560×1440 等海外服页面，以及人像卡与 DISCONNECTED 卡混合显示时的检测失败；现有全屏和窗口模式缩放逻辑保持兼容。",
-    "[2026-08-21 21:26] OCR 增加海外服 2560×1600 珍藏品网格专用坐标与白色 SSR 徽章复核。",
-    "缘由：该图源高度来自拼接区域而非五人阵容行，通用纵向缩放会错位；新增的六边形边缘和亮度复核可减少白色 SSR 被误判为空槽。",
-    "[$releaseTimestamp] 完整版与轻量版新增跨版本 GUI 单实例互斥锁，并在截图日志记录 GUI PID、启动会话 ID 与截图运行 ID。",
-    "缘由：防止用户同时启动完整版和轻量版，或重复打开窗口后并行触发自动截图，便于定位异常重复任务。",
-    "[$releaseTimestamp] 战斗图像识别和图像工具的四卡槽新增无背景刷新按钮，可一键还原全部卡槽到未选择状态；按钮颜色适配两种主题并修正窄面板遮挡。",
-    "缘由：用户需要快速重新选择一组图像，且原始布局会遮住刷新图标。",
-    "[$releaseTimestamp] 标准妮姬名单更正《天城雪子》为《雪子》、《新岛真》为《QUEEN（真）》，保留《埃癸斯》；保护名单同步更新。",
-    "缘由：保证 OCR 名称校准、离线恢复和最新游戏内标准名称一致。",
+    "1. 国际服与港澳台服截图采用人工左键确认推进。",
+    "程序会自动定位光标，但只在指挥官亲自左键确认后才继续；国服保持原有自动点击逻辑。点偏时会回到目标位置，不会误推进。",
+    "缘由：适应海外客户端更新后对注入式点击的兼容性变化，保留用户可见、可控的截图流程。",
     "",
-    "补丁说明：本次补丁可覆盖任意已发布完整版，不覆盖用户保存的参数、主题、赛区选择、截图、导出数据、自定义背景或运行日志；已安装的 Python、CPU OCR runtime、Paddle 依赖与离线模型不会被替换。"
+    "2. 人工确认提示音新增音量与音色设置。",
+    "在图像工具下方可打开音量设置，默认音量为 25%。可选择原始 8bit 音序，或八音盒音色；试听后保存即在后续海外服截图中生效。国服自动点击不受影响。",
+    "缘由：根据用户反馈降低连续提示的响度，保留原先更清晰的 8bit 节奏，并提供更柔和的可选八音盒提示。",
+    "",
+    "3. OCR 标准妮姬名单补齐《吉尔提：神力兔女郎》。",
+    "升级时会合并到主名单、受保护名单和带冒号特殊名集合；运行时自动生成安全别名，支持完整名和滚动片段校准。",
+    "缘由：避免新角色被误识别为基础名或相近角色，并确保名单损坏时的本地恢复仍保持最新。",
+    "",
+    "补丁说明：本补丁可从任意已发布完整版直接升级；已安装的 Python、CPU OCR runtime、Paddle 依赖与离线模型不会被替换。"
 ) -join "`n"
 
 $liteLog = @(
-    "NIKKE C ARENA 截图工具 轻量版 更新日志",
-    "版本：$LiteVersion",
-    "更新范围：2026-08-07 正式版 0.1.9 之后至本次发行。",
+    "NIKKE C ARENA 截图工具 轻量版 跨版本升级补丁更新日志",
+    "目标版本：$LiteVersion",
+    "适用范围：所有已发布轻量版（0.1.0 及以后）。",
+    "更新方式：以当前完整发行目录覆盖程序资源；用户配置、截图、日志和自定义背景不会被覆盖。",
     "",
-    "[2026-08-09 20:46] 新增《点击玩家头像到开始截取该玩家阵容页的等待时间》及轮询检测。",
-    "缘由：网络波动或页面动画可能让玩家五个 ROUND 阵容页尚未加载完成。该设置覆盖轻量版可用的全部玩家阵容采集步骤；默认轮询开启，10 秒未确认也会继续截取当前画面。",
-    "[2026-08-09 20:46] 详细战果页轮询超时改为继续截取当前详细区域并执行后续流程。",
-    "缘由：避免详细页加载缓慢或识别误判时直接结束整项截图任务。",
-    "[2026-08-09 20:46] 优化国际服、港澳台服详细战果页就绪识别，新增双栏五人卡片布局、蓝色标题、亮度与左右卡列边缘的联合判定。",
-    "缘由：覆盖 2560×1440 等海外服页面，以及人像卡与 DISCONNECTED 卡混合显示时的检测失败；现有全屏和窗口模式缩放逻辑保持兼容。",
-    "[$releaseTimestamp] 完整版与轻量版新增跨版本 GUI 单实例互斥锁，并在截图日志记录 GUI PID、启动会话 ID 与截图运行 ID。",
-    "缘由：防止重复打开窗口造成并行截图，方便排查异常重复任务。",
-    "[$releaseTimestamp] 图像工具和战斗图像识别演示页的四卡槽新增无背景刷新按钮，可一键还原全部卡槽到未选择状态；按钮颜色适配两种主题并修正窄面板遮挡。",
-    "缘由：用户可以快速重新选择图像，且刷新按钮在旧版窄面板中可能被遮住。",
+    "1. 国际服与港澳台服截图采用人工左键确认推进。",
+    "程序会自动定位光标，但只在指挥官亲自左键确认后才继续；国服保持原有自动点击逻辑。点偏时会回到目标位置，不会误推进。",
+    "缘由：适应海外客户端更新后对注入式点击的兼容性变化，保留用户可见、可控的截图流程。",
     "",
-    "补丁说明：本次补丁可覆盖任意已发布轻量版，不覆盖用户保存的参数、主题、赛区选择、截图、自定义背景或运行日志；不会替换轻量版已安装的 Python 或截图运行依赖。"
+    "2. 人工确认提示音新增音量与音色设置。",
+    "在图像工具下方可打开音量设置，默认音量为 25%。可选择原始 8bit 音序，或八音盒音色；试听后保存即在后续海外服截图中生效。国服自动点击不受影响。",
+    "缘由：根据用户反馈降低连续提示的响度，保留原先更清晰的 8bit 节奏，并提供更柔和的可选八音盒提示。",
+    "",
+    "补丁说明：本补丁可从任意已发布轻量版直接升级；不会替换轻量版已安装的 Python 或截图运行依赖。"
 ) -join "`n"
 
 $fullPatch = @{
@@ -391,6 +392,8 @@ $combinedLog = @(
     "发布日期：$releaseTimestamp",
     "",
     $fullLog,
+    "",
+    $liteLog,
     "",
     "轻量版说明：轻量版包含本次 GUI、自动截图、图像工具和轮询检测更新；OCR 识别、妮姬名单维护、GPU 配置与数据导出仍仅由完整版提供。"
 ) -join "`n"

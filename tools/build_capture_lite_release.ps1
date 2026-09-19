@@ -77,6 +77,8 @@ try {
     }
     $roundConfig.launcher_settings.ocr_performance_mode = "cpu"
     $roundConfig.launcher_settings.ocr_thermal_mode = "safe"
+    $roundConfig.launcher_settings.manual_click_prompt_volume = 25
+    $roundConfig.launcher_settings.manual_click_prompt_timbre = "8bit"
     $roundConfigJson = $roundConfig | ConvertTo-Json -Depth 100
     [IO.File]::WriteAllText(
         (Join-Path $resolvedDestination "nikke_round_config.json"),

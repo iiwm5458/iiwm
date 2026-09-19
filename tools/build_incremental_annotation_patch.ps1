@@ -1,6 +1,6 @@
 ﻿param(
-    [string]$FullVersion = "0.1.19",
-    [string]$LiteVersion = "0.1.11",
+    [string]$FullVersion = "0.1.20",
+    [string]$LiteVersion = "0.1.12",
     [string]$PatchDate = (Get-Date -Format "yyyy-MM-dd")
 )
 
@@ -48,6 +48,16 @@ function Write-Checksums([string]$PatchRoot) {
             "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash, $relative
         }
     Write-Utf8Text (Join-Path $PatchRoot "SHA256SUMS.txt") ($lines -join [Environment]::NewLine)
+}
+
+function Write-ReleaseChecksums([string[]]$ArtifactPaths, [string]$OutputPath) {
+    $lines = foreach ($artifactPath in $ArtifactPaths) {
+        if (-not (Test-Path -LiteralPath $artifactPath)) {
+            throw "Release artifact is missing: $artifactPath"
+        }
+        "{0}  {1}" -f (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash, (Split-Path -Leaf $artifactPath)
+    }
+    Write-Utf8Text $OutputPath ($lines -join [Environment]::NewLine)
 }
 
 function Write-ApplyScripts(
@@ -110,7 +120,7 @@ function Merge-RosterAdditions {
     }
 
     $changed = $false
-    foreach ($field in @("names", "protected_names")) {
+    foreach ($field in @("names", "special_names", "protected_names")) {
         $current = [System.Collections.Generic.List[string]]::new()
         $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
         foreach ($value in Get-StringList $roster $field) {
@@ -132,7 +142,11 @@ function Merge-RosterAdditions {
         }
     }
 
-    foreach ($mapping in @{ "names" = "count"; "protected_names" = "protected_count" }.GetEnumerator()) {
+    foreach ($mapping in @{
+        "names" = "count"
+        "special_names" = "special_count"
+        "protected_names" = "protected_count"
+    }.GetEnumerator()) {
         $count = @(Get-StringList $roster $mapping.Key).Count
         if ($roster.PSObject.Properties.Name -contains $mapping.Value) {
             if ([int]$roster.($mapping.Value) -ne $count) { $changed = $true }
@@ -140,6 +154,19 @@ function Merge-RosterAdditions {
         } else {
             $roster | Add-Member -NotePropertyName $mapping.Value -NotePropertyValue $count
             $changed = $true
+        }
+    }
+
+    if ($additions.PSObject.Properties.Name -contains "updated_at") {
+        $updatedAt = [string]$additions.updated_at
+        if (-not [string]::IsNullOrWhiteSpace($updatedAt)) {
+            if ($roster.PSObject.Properties.Name -contains "updated_at") {
+                if ([string]$roster.updated_at -ne $updatedAt) { $changed = $true }
+                $roster.updated_at = $updatedAt
+            } else {
+                $roster | Add-Member -NotePropertyName "updated_at" -NotePropertyValue $updatedAt
+                $changed = $true
+            }
         }
     }
 
@@ -231,13 +258,19 @@ function Build-IncrementalPatch(
             throw "Release roster is missing: $releaseRoster"
         }
         $roster = Get-Content -LiteralPath $releaseRoster -Raw -Encoding utf8 | ConvertFrom-Json
-        $newName = "德雷克：终极反派"
-        if ($newName -notin @(Get-RosterList $roster "names") -or $newName -notin @(Get-RosterList $roster "protected_names")) {
+        $newName = "吉尔提：神力兔女郎"
+        if (
+            $newName -notin @(Get-RosterList $roster "names") -or
+            $newName -notin @(Get-RosterList $roster "special_names") -or
+            $newName -notin @(Get-RosterList $roster "protected_names")
+        ) {
             throw "Release roster does not include the required new Nikke: $newName"
         }
         $additions = [ordered]@{
             names = @($newName)
+            special_names = @($newName)
             protected_names = @($newName)
+            updated_at = [string]$roster.updated_at
         } | ConvertTo-Json -Depth 4
         Write-Utf8Text (Join-Path $patchRoot "roster_additions.json") ($additions + [Environment]::NewLine)
     }
@@ -261,43 +294,46 @@ New-Item -ItemType Directory -Force -Path $UpdatesRoot | Out-Null
 $fullLog = @(
     "NIKKE C ARENA Tool 完整版 本轮增量更新日志",
     "目标版本：$FullVersion",
-    "适用基线：完整版 0.1.18。",
+    "适用基线：完整版 0.1.19。",
     "发布日期：$ReleaseTimestamp。",
     "",
-    "1. TOP8 冠军争霸赛与双方赛果截图新增自动胜负标记。",
-    "启用详细赛果与胜负标记后，截图会按照本次实际使用的国服、国际服或港澳台服逻辑自动判定胜负，并直接导出标记后的图片；标记成功后不保留原始未标记图，失败时会保留原图并提示。",
-    "TOP8 自动标记仅允许冠亚军截图；选择 8 强、4 强或一图流时会给出提示，避免对非双人详细赛果图执行错误标记。",
+    "1. 国际服与港澳台服自动截图改为人工左键确认推进。",
+    "程序仍会把光标定位到当前操作目标，但每一步都等待指挥官亲自按下鼠标左键后才继续；国服原有自动点击逻辑不变。点偏时会把光标放回目标位置，不会误推进截图流程。",
+    "缘由：适应海外客户端更新后对程序注入式点击兼容性下降的情况，让截图流程继续可用，同时保持用户对每一次操作的可见控制。",
     "",
-    "2. 自动胜负标记与图像工具设置同步。",
-    "自动路径现在读取图像工具当前的《灰化失败妮姬队伍》开关和 WIN/LOSE 像素文字大小。设置控件不可用或值异常时，才回退为灰化失败队伍与中号文字；截图运行日志会记录实际设置来源、灰化状态和字号。",
+    "2. 人工确认提示音改为原创霓虹 8bit 音序。",
+    "提示音由方波主音、轻微八度与五度泛音组成，并在后台队列中播放；不阻塞截图，不会连续叠音，也不携带外部音频文件或受版权保护的游戏旋律。",
+    "缘由：让连续人工点击更容易跟上节奏，同时避免单调蜂鸣和版权音乐分发风险。",
     "",
-    "3. OCR 标准妮姬名单新增《德雷克：终极反派》。",
-    "增量补丁仅将该条目追加合并至用户现有的主名单与受保护名单，不覆盖用户手动维护的名单或其他 OCR 配置。",
+    "3. OCR 标准妮姬名单新增《吉尔提：神力兔女郎》。",
+    "完整版本补丁会把该角色追加合并到主名单、受保护名单与带冒号特殊名集合；运行时会自动生成安全别名，支持完整名与滚动时可见片段的校准。",
+    "缘由：让新角色可被 OCR 正确识别，同时不影响用户自行维护的名单和珍藏品设定。",
     "",
-    "补丁范围：仅替换本轮相关启动器与版本信息，并增量合并上述妮姬名称；不覆盖截图参数、主题、赛区选择、背景、截图、导出数据或运行日志，也不替换任何 Python、OCR runtime、Paddle 依赖与离线模型。"
+    "补丁范围：仅替换本轮相关启动器、截图核心与版本信息，并增量合并上述妮姬名称；不覆盖截图参数、主题、赛区选择、背景、截图、导出数据或运行日志，也不替换任何 Python、OCR runtime、Paddle 依赖与离线模型。"
 ) -join [Environment]::NewLine
 
 $liteLog = @(
     "NIKKE C ARENA 截图工具 轻量版 本轮增量更新日志",
     "目标版本：$LiteVersion",
-    "适用基线：轻量版 0.1.10。",
+    "适用基线：轻量版 0.1.11。",
     "发布日期：$ReleaseTimestamp。",
     "",
-    "1. TOP8 冠军争霸赛与双方赛果截图新增自动胜负标记。",
-    "启用详细赛果与胜负标记后，截图会按照本次实际使用的国服、国际服或港澳台服逻辑自动判定胜负，并直接导出标记后的图片；标记成功后不保留原始未标记图，失败时会保留原图并提示。",
-    "TOP8 自动标记仅允许冠亚军截图；选择 8 强、4 强或一图流时会给出提示，避免对非双人详细赛果图执行错误标记。",
+    "1. 国际服与港澳台服自动截图改为人工左键确认推进。",
+    "程序仍会把光标定位到当前操作目标，但每一步都等待指挥官亲自按下鼠标左键后才继续；国服原有自动点击逻辑不变。点偏时会把光标放回目标位置，不会误推进截图流程。",
+    "缘由：适应海外客户端更新后对程序注入式点击兼容性下降的情况，让截图流程继续可用，同时保持用户对每一次操作的可见控制。",
     "",
-    "2. 自动胜负标记与图像工具设置同步。",
-    "自动路径现在读取图像工具当前的《灰化失败妮姬队伍》开关和 WIN/LOSE 像素文字大小。设置控件不可用或值异常时，才回退为灰化失败队伍与中号文字；截图运行日志会记录实际设置来源、灰化状态和字号。",
+    "2. 人工确认提示音改为原创霓虹 8bit 音序。",
+    "提示音由方波主音、轻微八度与五度泛音组成，并在后台队列中播放；不阻塞截图，不会连续叠音，也不携带外部音频文件或受版权保护的游戏旋律。",
+    "缘由：让连续人工点击更容易跟上节奏，同时避免单调蜂鸣和版权音乐分发风险。",
     "",
-    "补丁范围：仅替换本轮相关启动器与版本信息，不覆盖截图参数、主题、赛区选择、背景、截图或运行日志，也不替换任何 Python 或截图运行依赖。"
+    "补丁范围：仅替换本轮相关启动器、截图核心与版本信息，不覆盖截图参数、主题、赛区选择、背景、截图或运行日志，也不替换任何 Python 或截图运行依赖。"
 ) -join [Environment]::NewLine
 
 $fullUsage = @(
-    "NIKKE C ARENA Tool 完整版 0.1.19 增量更新补丁使用说明",
+    "NIKKE C ARENA Tool 完整版 0.1.20 增量更新补丁使用说明",
     "",
-    "适用基线：完整版 0.1.18。",
-    "本补丁只包含本轮自动胜负标记、标记设置同步和名单新增所需文件，不用于补齐更早版本的全部更新。",
+    "适用基线：完整版 0.1.19。",
+    "本补丁只包含本轮海外服人工左键确认、原创 8bit 提示音和名单新增所需文件，不用于补齐更早版本的全部更新。",
     "",
     "1. 完全退出程序。",
     "2. 解压 ZIP。",
@@ -306,15 +342,15 @@ $fullUsage = @(
     "5. 显示《增量更新完成》后重新启动程序。",
     "",
     "不会覆盖：nikke_round_config.json、nikke_character_capture_config.json、用户妮姬名单、主题、赛区、背景、截图、OCR 导出和运行日志。",
-    "《德雷克：终极反派》只会追加进主名单和受保护名单；原有自定义条目会保留。",
-    "被替换的启动器与版本信息会备份至安装目录 update_backups\incremental_时间戳。"
+    "《吉尔提：神力兔女郎》只会追加进主名单、受保护名单和特殊名集合；原有自定义条目会保留。",
+    "被替换的启动器、截图核心与版本信息会备份至安装目录 update_backups\incremental_时间戳。"
 ) -join [Environment]::NewLine
 
 $liteUsage = @(
-    "NIKKE C ARENA 截图工具 轻量版 0.1.11 增量更新补丁使用说明",
+    "NIKKE C ARENA 截图工具 轻量版 0.1.12 增量更新补丁使用说明",
     "",
-    "适用基线：轻量版 0.1.10。",
-    "本补丁只包含本轮自动胜负标记与标记设置同步所需文件，不用于补齐更早版本的全部更新。",
+    "适用基线：轻量版 0.1.11。",
+    "本补丁只包含本轮海外服人工左键确认与原创 8bit 提示音所需文件，不用于补齐更早版本的全部更新。",
     "",
     "1. 完全退出程序。",
     "2. 解压 ZIP。",
@@ -323,7 +359,7 @@ $liteUsage = @(
     "5. 显示《增量更新完成》后重新启动程序。",
     "",
     "不会覆盖：nikke_round_config.json、nikke_character_capture_config.json、主题、赛区、背景、截图或运行日志。",
-    "被替换的启动器与版本信息会备份至安装目录 update_backups\incremental_时间戳。"
+    "被替换的启动器、截图核心与版本信息会备份至安装目录 update_backups\incremental_时间戳。"
 ) -join [Environment]::NewLine
 
 $fullPatch = @{
@@ -331,7 +367,7 @@ $fullPatch = @{
     ReleaseRoot = Join-Path $DistRoot ("r_$FullVersion")
     ExpectedLauncher = "run_gui.bat"
     ProductName = "NIKKE C ARENA Tool 完整版"
-    Files = @("nikke_gui_launcher.ps1", "RELEASE_INFO.json")
+    Files = @("nikke_gui_launcher.ps1", "nikke_round_stitcher.py", "RELEASE_INFO.json")
     UsageText = $fullUsage
     UpdateText = $fullLog
     RosterRelativePath = "dataanalysis\arena_ocr_tool\data\nikke_names.json"
@@ -343,7 +379,7 @@ $litePatch = @{
     ReleaseRoot = Join-Path $DistRoot ("lite_r_$LiteVersion")
     ExpectedLauncher = "run_capture_lite.bat"
     ProductName = "NIKKE C ARENA 截图工具 轻量版"
-    Files = @("nikke_capture_lite_launcher.ps1", "RELEASE_INFO.json")
+    Files = @("nikke_capture_lite_launcher.ps1", "nikke_round_stitcher.py", "RELEASE_INFO.json")
     UsageText = $liteUsage
     UpdateText = $liteLog
 }
@@ -358,6 +394,13 @@ $combinedLog = @(
     $liteLog
 ) -join [Environment]::NewLine
 Write-Utf8Text (Join-Path $UpdatesRoot ("更新日志_$PatchDate.txt")) $combinedLog
+
+Write-ReleaseChecksums @(
+    (Join-Path $DistRoot ("installer\NIKKE_Arena_Tool_Setup_{0}.exe" -f $FullVersion)),
+    (Join-Path $DistRoot ("installer\NIKKE_Arena_Capture_Lite_Setup_{0}.exe" -f $LiteVersion)),
+    $fullZip,
+    $liteZip
+) (Join-Path $UpdatesRoot ("SHA256SUMS_$PatchDate.txt"))
 
 Write-Host "完整版增量补丁：$fullZip"
 Write-Host "轻量版增量补丁：$liteZip"

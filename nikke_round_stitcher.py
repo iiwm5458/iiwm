@@ -7,12 +7,23 @@ import builtins
 import ctypes
 import difflib
 import gc
+import io
 import json
+import math
+import queue
 import re
+import struct
 import sys
 import time
+import threading
+import wave
 from datetime import datetime
 from pathlib import Path
+
+try:
+    import winsound
+except ImportError:
+    winsound = None
 
 try:
     from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageGrab
@@ -68,6 +79,20 @@ PLAYER_LINEUP_PAGE_READY_THRESHOLDS = {
     "tabs_cyan": 0.04,
     "lineup_bright": 0.35,
     "lineup_edges": 0.24,
+}
+
+MANUAL_CLICK_NEON_FREQUENCIES = (
+    392, 466, 523, 587, 523, 466,
+    392, 349, 392, 440, 466, 392,
+)
+MANUAL_CLICK_TONE_DURATION_MS = 90
+MANUAL_CLICK_TONE_SAMPLE_RATE = 11025
+MANUAL_CLICK_TONE_FADE_MS = 5
+DEFAULT_MANUAL_PROMPT_VOLUME_PERCENT = 25
+MANUAL_PROMPT_TIMBRES = ("8bit", "musicbox_chime")
+MANUAL_PROMPT_SOUND_DIRECTORY = Path(__file__).resolve().parent / "assets" / "manual_prompt_sounds"
+MANUAL_PROMPT_SOUND_FILES = {
+    "musicbox_chime": "prompt_musicbox.wav",
 }
 
 
@@ -361,6 +386,7 @@ MOUSEEVENTF_LEFTDOWN = 0x0002
 MOUSEEVENTF_LEFTUP = 0x0004
 KEYEVENTF_KEYUP = 0x0002
 VK_ESCAPE = 0x1B
+VK_LBUTTON = 0x01
 
 
 class MOUSEINPUT(ctypes.Structure):
@@ -466,6 +492,15 @@ class WindowCaptureContext:
 
 
 ACTIVE_WINDOW_CAPTURE = None
+MANUAL_LEFT_CLICK = False
+MANUAL_CLICK_RADIUS_PX = 40
+MANUAL_PROMPT_NOTE_INDEX = 0
+MANUAL_PROMPT_TONE_QUEUE = queue.Queue(maxsize=1)
+MANUAL_PROMPT_TONE_WORKER = None
+MANUAL_PROMPT_TONE_LOCK = threading.Lock()
+MANUAL_PROMPT_TONE_CACHE = {}
+MANUAL_PROMPT_VOLUME_PERCENT = DEFAULT_MANUAL_PROMPT_VOLUME_PERCENT
+MANUAL_PROMPT_TIMBRE = "8bit"
 
 
 def enable_window_capture(handle):
@@ -581,9 +616,209 @@ def click_screen_point(x, y, duration=0.06):
         x, y = ACTIVE_WINDOW_CAPTURE.to_screen_point(x, y)
     user32.SetCursorPos(x, y)
     time.sleep(max(duration, 0.08))
+    if MANUAL_LEFT_CLICK:
+        wait_for_manual_left_click(x, y)
+        return
     send_mouse(MOUSEEVENTF_LEFTDOWN)
     time.sleep(max(duration, 0.08))
     send_mouse(MOUSEEVENTF_LEFTUP)
+
+
+def left_button_is_down():
+    return bool(user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+
+
+def cursor_position():
+    point = POINT()
+    if not user32.GetCursorPos(ctypes.byref(point)):
+        raise RuntimeError("could not read the mouse cursor position")
+    return int(point.x), int(point.y)
+
+
+def load_manual_prompt_sound(timbre, volume_percent, frequency):
+    """Load a bundled CC0 prompt WAV with volume and note pitch applied in memory."""
+    sound_name = MANUAL_PROMPT_SOUND_FILES.get(timbre)
+    if not sound_name:
+        return None
+    sound_path = MANUAL_PROMPT_SOUND_DIRECTORY / sound_name
+    if not sound_path.is_file():
+        return None
+
+    try:
+        with wave.open(str(sound_path), "rb") as source_wav:
+            params = source_wav.getparams()
+            frames = bytearray(source_wav.readframes(source_wav.getnframes()))
+    except (OSError, wave.Error):
+        return None
+
+    volume_scale = max(0.0, min(100.0, float(volume_percent))) / 100.0
+    if params.sampwidth == 2 and volume_scale != 1.0:
+        for offset in range(0, len(frames), 2):
+            sample = int.from_bytes(frames[offset:offset + 2], "little", signed=True)
+            adjusted = int(max(-32768, min(32767, sample * volume_scale)))
+            frames[offset:offset + 2] = adjusted.to_bytes(2, "little", signed=True)
+
+    # Preserve the original short asset while stepping through the existing
+    # prompt-note phrase. Changing the WAV sample rate shifts its pitch without
+    # adding another runtime audio dependency.
+    target_rate = int(params.framerate * max(0.5, min(2.0, float(frequency) / 440.0)))
+    params = params._replace(framerate=target_rate)
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as output_wav:
+        output_wav.setparams(params)
+        output_wav.writeframes(frames)
+    return buffer.getvalue()
+
+
+def build_manual_prompt_tone(frequency, volume_percent=None):
+    """Build the original short 8-bit prompt tone entirely in memory."""
+    if volume_percent is None:
+        volume_percent = MANUAL_PROMPT_VOLUME_PERCENT
+    volume_scale = max(0.0, min(100.0, float(volume_percent))) / 100.0
+    frame_count = int(MANUAL_CLICK_TONE_SAMPLE_RATE * MANUAL_CLICK_TONE_DURATION_MS / 1000)
+    fade_frames = max(
+        1,
+        int(MANUAL_CLICK_TONE_SAMPLE_RATE * MANUAL_CLICK_TONE_FADE_MS / 1000),
+    )
+    payload = bytearray()
+    for frame_index in range(frame_count):
+        time_seconds = frame_index / MANUAL_CLICK_TONE_SAMPLE_RATE
+        envelope = min(
+            1.0,
+            frame_index / fade_frames,
+            (frame_count - frame_index - 1) / fade_frames,
+        )
+        square = 1.0 if math.sin(math.tau * frequency * time_seconds) >= 0 else -1.0
+        octave = 1.0 if math.sin(math.tau * frequency * 2 * time_seconds) >= 0 else -1.0
+        fifth = 1.0 if math.sin(math.tau * frequency * 1.5 * time_seconds) >= 0 else -1.0
+        wave_sample = 0.72 * square + 0.16 * octave + 0.08 * fifth
+        sample = wave_sample * envelope * volume_scale
+        payload.extend(struct.pack("<h", int(max(-1.0, min(1.0, sample)) * 32767)))
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(MANUAL_CLICK_TONE_SAMPLE_RATE)
+        wav_file.writeframes(payload)
+    return buffer.getvalue()
+
+
+def manual_prompt_tone_worker():
+    while True:
+        sound = MANUAL_PROMPT_TONE_QUEUE.get()
+        try:
+            winsound.PlaySound(sound, winsound.SND_MEMORY)
+        except (OSError, RuntimeError):
+            pass
+        finally:
+            MANUAL_PROMPT_TONE_QUEUE.task_done()
+
+
+def enqueue_manual_prompt_tone(frequency):
+    """Queue a tone without letting repeated prompts overlap or block capture."""
+    global MANUAL_PROMPT_TONE_WORKER
+    if winsound is None:
+        return False
+    if MANUAL_PROMPT_VOLUME_PERCENT <= 0:
+        return True
+
+    cache_key = (MANUAL_PROMPT_TIMBRE, MANUAL_PROMPT_VOLUME_PERCENT, frequency)
+    sound = MANUAL_PROMPT_TONE_CACHE.get(cache_key)
+    if sound is None:
+        sound = None
+        if MANUAL_PROMPT_TIMBRE == "musicbox_chime":
+            sound = load_manual_prompt_sound(
+                MANUAL_PROMPT_TIMBRE,
+                MANUAL_PROMPT_VOLUME_PERCENT,
+                frequency,
+            )
+        if sound is None:
+            sound = build_manual_prompt_tone(
+                frequency,
+                MANUAL_PROMPT_VOLUME_PERCENT,
+            )
+        MANUAL_PROMPT_TONE_CACHE[cache_key] = sound
+
+    try:
+        MANUAL_PROMPT_TONE_QUEUE.put_nowait(sound)
+    except queue.Full:
+        return False
+
+    with MANUAL_PROMPT_TONE_LOCK:
+        if MANUAL_PROMPT_TONE_WORKER is None or not MANUAL_PROMPT_TONE_WORKER.is_alive():
+            MANUAL_PROMPT_TONE_WORKER = threading.Thread(
+                target=manual_prompt_tone_worker,
+                name="manual-click-prompt",
+                daemon=True,
+            )
+            MANUAL_PROMPT_TONE_WORKER.start()
+    return True
+
+
+def play_next_manual_prompt_tone():
+    """Queue the next note in the original neon 8-bit prompt phrase."""
+    global MANUAL_PROMPT_NOTE_INDEX
+    frequency = MANUAL_CLICK_NEON_FREQUENCIES[
+        MANUAL_PROMPT_NOTE_INDEX % len(MANUAL_CLICK_NEON_FREQUENCIES)
+    ]
+    if enqueue_manual_prompt_tone(frequency):
+        MANUAL_PROMPT_NOTE_INDEX += 1
+
+
+def play_manual_prompt_preview():
+    """Play one prompt note synchronously for the GUI settings preview."""
+    if winsound is None or MANUAL_PROMPT_VOLUME_PERCENT <= 0:
+        return
+    frequency = MANUAL_CLICK_NEON_FREQUENCIES[0]
+    sound = None
+    if MANUAL_PROMPT_TIMBRE == "musicbox_chime":
+        sound = load_manual_prompt_sound(
+            MANUAL_PROMPT_TIMBRE,
+            MANUAL_PROMPT_VOLUME_PERCENT,
+            frequency,
+        )
+    if sound is None:
+        sound = build_manual_prompt_tone(
+            frequency,
+            MANUAL_PROMPT_VOLUME_PERCENT,
+        )
+    try:
+        winsound.PlaySound(sound, winsound.SND_MEMORY)
+    except (OSError, RuntimeError):
+        pass
+
+
+def wait_for_manual_left_click(target_x, target_y):
+    """Wait for a physical left click near the cursor target without injecting input."""
+    while left_button_is_down():
+        time.sleep(0.02)
+
+    play_next_manual_prompt_tone()
+    print(f"waiting for manual left click at ({target_x}, {target_y})")
+    radius_squared = MANUAL_CLICK_RADIUS_PX * MANUAL_CLICK_RADIUS_PX
+    while True:
+        if not left_button_is_down():
+            time.sleep(0.02)
+            continue
+
+        click_x, click_y = cursor_position()
+        is_target_click = (
+            (click_x - target_x) * (click_x - target_x)
+            + (click_y - target_y) * (click_y - target_y)
+            <= radius_squared
+        )
+        while left_button_is_down():
+            time.sleep(0.02)
+        if is_target_click:
+            print(f"manual left click confirmed at ({click_x}, {click_y})")
+            return
+        user32.SetCursorPos(target_x, target_y)
+        print(
+            f"manual click ignored at ({click_x}, {click_y}); "
+            f"waiting near ({target_x}, {target_y})"
+        )
 
 
 def click_screen_ratio(ratio, image_size, duration=0.06):
@@ -3140,6 +3375,29 @@ def parse_args():
         help="NIKKE client server code. Global and HMT dismiss popups by clicking their backdrop.",
     )
     parser.add_argument(
+        "--manual-left-click",
+        action="store_true",
+        help="Wait for a user left click at each target instead of injecting left mouse input.",
+    )
+    parser.add_argument(
+        "--manual-prompt-volume",
+        type=int,
+        default=DEFAULT_MANUAL_PROMPT_VOLUME_PERCENT,
+        metavar="0-100",
+        help="Manual-click prompt volume percentage. Zero mutes the prompt.",
+    )
+    parser.add_argument(
+        "--manual-prompt-timbre",
+        choices=MANUAL_PROMPT_TIMBRES,
+        default="8bit",
+        help="Manual-click prompt timbre.",
+    )
+    parser.add_argument(
+        "--play-manual-prompt-tone",
+        action="store_true",
+        help="Play one manual-click prompt tone, then exit.",
+    )
+    parser.add_argument(
         "--window-handle",
         type=lambda value: int(value, 0),
         default=None,
@@ -3164,10 +3422,19 @@ def parse_args():
 
 
 def main():
+    global MANUAL_LEFT_CLICK, MANUAL_PROMPT_NOTE_INDEX
+    global MANUAL_PROMPT_TIMBRE, MANUAL_PROMPT_VOLUME_PERCENT
+
     set_dpi_aware()
     args = parse_args()
     if args.quiet:
         builtins.print = lambda *args, **kwargs: None
+
+    MANUAL_PROMPT_VOLUME_PERCENT = max(0, min(100, int(args.manual_prompt_volume)))
+    MANUAL_PROMPT_TIMBRE = str(args.manual_prompt_timbre)
+    if args.play_manual_prompt_tone:
+        play_manual_prompt_preview()
+        return
 
     if args.mouse_pos:
         mouse_pos_loop()
@@ -3175,6 +3442,14 @@ def main():
 
     config = load_config(args.config)
     config["runtime_server"] = args.server
+    MANUAL_LEFT_CLICK = bool(
+        args.manual_left_click and args.server in {"global", "hmt"}
+    )
+    if MANUAL_LEFT_CLICK:
+        MANUAL_PROMPT_NOTE_INDEX = 0
+        print("manual left-click confirmation is enabled for this overseas capture")
+    elif args.manual_left_click:
+        print("manual left-click confirmation is ignored outside global/hmt capture")
     if args.window_handle is not None:
         enable_window_capture(args.window_handle)
     if args.low_memory:

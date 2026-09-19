@@ -29,6 +29,8 @@ function Reset-ReleaseLauncherSettings {
     }
     $config.launcher_settings.ocr_performance_mode = "cpu"
     $config.launcher_settings.ocr_thermal_mode = "safe"
+    $config.launcher_settings.manual_click_prompt_volume = 25
+    $config.launcher_settings.manual_click_prompt_timbre = "8bit"
     [IO.File]::WriteAllText(
         $configPath,
         (($config | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
@@ -44,6 +46,8 @@ foreach ($item in @(
     "nikke_character_capture.py",
     "nikke_round_config.json",
     "assets",
+    "assets\manual_prompt_sounds\prompt_musicbox.wav",
+    "assets\manual_prompt_sounds\LICENSE.md",
     "runtime_core\python.exe"
 )) {
     Require-Path $item | Out-Null

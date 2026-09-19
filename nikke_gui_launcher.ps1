@@ -350,6 +350,8 @@ $ConfiguredRoundRobinGroupSwitchDelaySeconds = $null
 $ConfiguredRoundRobinCaptureGap = $null
 $ConfiguredRoundRobinBackground = "white"
 $ConfiguredImageToolStitchBackground = "white"
+$ConfiguredManualClickPromptVolume = 25
+$ConfiguredManualClickPromptTimbre = "8bit"
 try {
     if (Test-Path $RoundConfigPath) {
         $configJson = Get-Content -LiteralPath $RoundConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -424,6 +426,12 @@ try {
             if ($configJson.launcher_settings.PSObject.Properties["image_tool_stitch_background"] -and $null -ne $configJson.launcher_settings.image_tool_stitch_background) {
                 $ConfiguredImageToolStitchBackground = [string]$configJson.launcher_settings.image_tool_stitch_background
             }
+            if ($configJson.launcher_settings.PSObject.Properties["manual_click_prompt_volume"] -and $null -ne $configJson.launcher_settings.manual_click_prompt_volume) {
+                try { $ConfiguredManualClickPromptVolume = [int]$configJson.launcher_settings.manual_click_prompt_volume } catch {}
+            }
+            if ($configJson.launcher_settings.PSObject.Properties["manual_click_prompt_timbre"] -and $null -ne $configJson.launcher_settings.manual_click_prompt_timbre) {
+                $ConfiguredManualClickPromptTimbre = [string]$configJson.launcher_settings.manual_click_prompt_timbre
+            }
         }
     }
 } catch {}
@@ -473,6 +481,13 @@ $script:ImageToolStitchBackground = if ($ConfiguredImageToolStitchBackground -in
     $ConfiguredImageToolStitchBackground
 } else {
     "white"
+}
+$script:ManualClickPromptVolume = [Math]::Max(0, [Math]::Min(100, [int]$ConfiguredManualClickPromptVolume))
+$script:ManualClickPromptTimbre = switch ($ConfiguredManualClickPromptTimbre) {
+    "piano" { "musicbox_chime"; break }
+    "musicbox_chime" { "musicbox_chime"; break }
+    "8bit" { "8bit"; break }
+    default { "8bit" }
 }
 $script:MinimizedCaptureMonitorActive = $false
 $script:CaptureWindowRestoreTriggered = $false
@@ -1977,12 +1992,17 @@ try {
           </StackPanel>
         </Button>
 
-        <Button x:Name="ImageToolsButton" Grid.Row="10" Height="52" Style="{StaticResource DarkButton}" Margin="0,0,0,20">
-          <StackPanel>
-            <TextBlock Text="&#22270;&#20687;&#24037;&#20855;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
-            <TextBlock Text="&#21387;&#32553; PNG &#25110;&#25353;&#26041;&#21521;&#25340;&#25509;&#22270;&#20687;" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-          </StackPanel>
-        </Button>
+        <StackPanel Grid.Row="10" Margin="0,0,0,20">
+          <Button x:Name="ImageToolsButton" Height="52" Style="{StaticResource DarkButton}" Margin="0,0,0,8">
+            <StackPanel>
+              <TextBlock Text="&#22270;&#20687;&#24037;&#20855;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#21387;&#32553; PNG &#25110;&#25353;&#26041;&#21521;&#25340;&#25509;&#22270;&#20687;" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+            </StackPanel>
+          </Button>
+          <Button x:Name="ManualPromptAudioSettingsButton" Height="38" Style="{StaticResource DarkButton}">
+            <TextBlock Text="&#38899;&#37327;&#35774;&#32622;" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+          </Button>
+        </StackPanel>
 
         <Button x:Name="SettingsButton" Grid.Row="2" Height="48" Style="{StaticResource DarkButton}" Margin="0,0,0,16">
           <TextBlock Text="&#25130;&#22270;&#19982;&#22270;&#20687;&#35782;&#21035;&#21442;&#25968;&#35774;&#32622;" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -2140,6 +2160,7 @@ $OcrStatusGroup16 = $Window.FindName("OcrStatusGroup16")
 $OcrStatusGroup32 = $Window.FindName("OcrStatusGroup32")
 $OcrStatusGroup64 = $Window.FindName("OcrStatusGroup64")
 $ImageToolsButton = $Window.FindName("ImageToolsButton")
+$ManualPromptAudioSettingsButton = $Window.FindName("ManualPromptAudioSettingsButton")
 $ImageToolsPanel = $Window.FindName("ImageToolsPanel")
 $ImageToolsUploadPanel = $Window.FindName("ImageToolsUploadPanel")
 $ImageToolSlotsResetButton = $Window.FindName("ImageToolSlotsResetButton")
@@ -2951,6 +2972,7 @@ function Update-ModeButtonStyles {
     Set-Style $RoundRobinButton $darkStyle
     Set-Style $PostDataOcrButton $darkStyle
     Set-Style $ImageToolsButton $darkStyle
+    Set-Style $ManualPromptAudioSettingsButton $darkStyle
 
     if ($CurrentTheme -eq "pink") {
         if ($CurrentCaptureMode -eq "support") { Set-Style $SupportButton $primaryStyle }
@@ -3049,6 +3071,7 @@ function Apply-Theme($Theme) {
         Set-Brush $BattleAnnotationPanel BorderBrush "#FFFFBCD5"
         Set-Brush $BattleAnnotationPanel Background "#74FFF6FA"
         Set-Style $ImageToolsButton "PinkDarkButton"
+        Set-Style $ManualPromptAudioSettingsButton "PinkDarkButton"
         Set-Style $ImageToolCompressButton "PinkPrimaryButton"
         Set-Brush $ImageToolCompressionLabel Foreground "#6D344B"
         Set-Style $ImageToolCompressionHighRadio "PinkCompressionMode"
@@ -3220,6 +3243,7 @@ function Apply-Theme($Theme) {
         Set-Brush $BattleAnnotationPanel BorderBrush "#5EDCFF"
         Set-Brush $BattleAnnotationPanel Background "#44101A2A"
         Set-Style $ImageToolsButton "DarkButton"
+        Set-Style $ManualPromptAudioSettingsButton "DarkButton"
         Set-Style $ImageToolCompressButton "PrimaryButton"
         Set-Brush $ImageToolCompressionLabel Foreground "#D7E8F6"
         Set-Style $ImageToolCompressionHighRadio "DarkCompressionMode"
@@ -3398,6 +3422,7 @@ function Set-Running($Running) {
     $RoundRobinButton.IsEnabled = -not $Running
     $PostDataOcrButton.IsEnabled = -not $Running
     $ImageToolsButton.IsEnabled = -not $Running
+    $ManualPromptAudioSettingsButton.IsEnabled = -not $Running
     $ExecuteButton.IsEnabled = -not $Running
     $SupportResultExecuteButton.IsEnabled = -not $Running
     $RoundRobinExecuteButton.IsEnabled = -not $Running
@@ -3681,6 +3706,8 @@ function Save-CaptureTimingSettings {
         Set-JsonProperty $configJson.launcher_settings "capture_parameters_preflight_suppressed_month" ([string]$script:CaptureParametersPreflightSuppressedMonth)
         Set-JsonProperty $configJson.launcher_settings "battle_annotation_label_size" ([string]$script:BattleAnnotationLabelSize)
         Set-JsonProperty $configJson.launcher_settings "image_tool_stitch_background" ([string]$script:ImageToolStitchBackground)
+        Set-JsonProperty $configJson.launcher_settings "manual_click_prompt_volume" ([int]$script:ManualClickPromptVolume)
+        Set-JsonProperty $configJson.launcher_settings "manual_click_prompt_timbre" ([string]$script:ManualClickPromptTimbre)
         Set-JsonProperty $configJson.launcher_settings "capture_window_mode" ([string]$script:CaptureWindowMode)
 
         $json = $configJson | ConvertTo-Json -Depth 20
@@ -4930,6 +4957,10 @@ $FolderButton.Add_Click({
 $ImageToolsButton.Add_Click({
     Set-SubPageMode "image-tools"
     Show-SubPage
+})
+
+$ManualPromptAudioSettingsButton.Add_Click({
+    Show-ManualPromptAudioSettingsDialog
 })
 
 $SettingsButton.Add_Click({
@@ -6655,6 +6686,197 @@ function Close-ImageToolProgressWindow {
     $script:ImageToolProgressWindow = $null
 }
 
+function Show-ManualPromptAudioSettingsDialog {
+    $isPink = ($script:CurrentTheme -eq "pink")
+    $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
+    $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
+    $titleColor = if ($isPink) { "#6D344B" } else { "#F7FBFF" }
+    $bodyColor = if ($isPink) { "#805065" } else { "#D7E8F6" }
+    $secondaryColor = if ($isPink) { "#FFF2F7FB" } else { "#1B2D43" }
+    $secondaryBorderColor = if ($isPink) { "#F3AFC5" } else { "#4D708E" }
+    $accentColor = if ($isPink) { "#FFFFBBD3" } else { "#29C7FF" }
+    $accentTextColor = if ($isPink) { "#6D344B" } else { "#06151F" }
+
+    $dialog = New-Object Windows.Window
+    $dialog.Title = "音量设置"
+    $dialog.Width = 440
+    $dialog.MinHeight = 300
+    $dialog.SizeToContent = "Height"
+    $dialog.ResizeMode = "NoResize"
+    $dialog.WindowStyle = "None"
+    $dialog.AllowsTransparency = $true
+    $dialog.Background = [Windows.Media.Brushes]::Transparent
+    $dialog.WindowStartupLocation = "CenterOwner"
+    $dialog.ShowInTaskbar = $false
+    try { $dialog.Owner = $Window } catch {}
+
+    $border = New-Object Windows.Controls.Border
+    $border.Padding = [Windows.Thickness]::new(22)
+    $border.CornerRadius = [Windows.CornerRadius]::new(10)
+    $border.BorderThickness = [Windows.Thickness]::new(1)
+    $border.Background = New-WpfBrush $panelBackgroundColor
+    $border.BorderBrush = New-WpfBrush $panelBorderColor
+    $shadow = New-Object Windows.Media.Effects.DropShadowEffect
+    $shadow.Color = [Windows.Media.Colors]::Black
+    $shadow.BlurRadius = 20
+    $shadow.ShadowDepth = 7
+    $shadow.Opacity = 0.35
+    $border.Effect = $shadow
+    $dialog.Content = $border
+
+    $stack = New-Object Windows.Controls.StackPanel
+    $border.Child = $stack
+
+    $header = New-Object Windows.Controls.DockPanel
+    $header.Margin = [Windows.Thickness]::new(0, 0, 0, 8)
+    $stack.Children.Add($header) | Out-Null
+    $closeButton = New-Object Windows.Controls.Button
+    $closeButton.Content = "×"
+    $closeButton.Width = 28
+    $closeButton.Height = 28
+    $closeButton.FontSize = 18
+    $closeButton.FontWeight = "Bold"
+    $closeButton.Foreground = New-WpfBrush $titleColor
+    $closeButton.Background = [Windows.Media.Brushes]::Transparent
+    $closeButton.BorderThickness = [Windows.Thickness]::new(0)
+    [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
+    $header.Children.Add($closeButton) | Out-Null
+    $title = New-Object Windows.Controls.TextBlock
+    $title.Text = "音量设置"
+    $title.FontFamily = "Microsoft YaHei UI"
+    $title.FontSize = 18
+    $title.FontWeight = "Bold"
+    $title.Foreground = New-WpfBrush $titleColor
+    $title.VerticalAlignment = "Center"
+    $header.Children.Add($title) | Out-Null
+
+    $hint = New-Object Windows.Controls.TextBlock
+    $hint.Text = "仅用于国际服与港澳台服的手动左键确认提示音。"
+    $hint.FontFamily = "Microsoft YaHei UI"
+    $hint.FontSize = 12
+    $hint.Foreground = New-WpfBrush $bodyColor
+    $hint.Margin = [Windows.Thickness]::new(0, 0, 0, 18)
+    $stack.Children.Add($hint) | Out-Null
+
+    $volumeHeader = New-Object Windows.Controls.DockPanel
+    $volumeHeader.Margin = [Windows.Thickness]::new(0, 0, 0, 7)
+    $stack.Children.Add($volumeHeader) | Out-Null
+    $volumeLabel = New-Object Windows.Controls.TextBlock
+    $volumeLabel.Text = "提示音音量"
+    $volumeLabel.FontFamily = "Microsoft YaHei UI"
+    $volumeLabel.FontSize = 13
+    $volumeLabel.FontWeight = "Bold"
+    $volumeLabel.Foreground = New-WpfBrush $titleColor
+    $volumeHeader.Children.Add($volumeLabel) | Out-Null
+    $volumeText = New-Object Windows.Controls.TextBlock
+    $volumeText.Text = ("{0}%" -f [int]$script:ManualClickPromptVolume)
+    $volumeText.FontFamily = "Consolas"
+    $volumeText.FontSize = 13
+    $volumeText.FontWeight = "Bold"
+    $volumeText.Foreground = New-WpfBrush $accentColor
+    [Windows.Controls.DockPanel]::SetDock($volumeText, "Right")
+    $volumeHeader.Children.Add($volumeText) | Out-Null
+
+    $volumeSlider = New-Object Windows.Controls.Slider
+    $volumeSlider.Minimum = 0
+    $volumeSlider.Maximum = 100
+    $volumeSlider.TickFrequency = 5
+    $volumeSlider.IsSnapToTickEnabled = $true
+    $volumeSlider.Value = [int]$script:ManualClickPromptVolume
+    $volumeSlider.AutoToolTipPlacement = "TopLeft"
+    $volumeSlider.Margin = [Windows.Thickness]::new(0, 0, 0, 20)
+    $stack.Children.Add($volumeSlider) | Out-Null
+    $volumeSlider.Add_ValueChanged({
+        param($sender, $eventArgs)
+        $volumeText.Text = ("{0}%" -f [int][Math]::Round($sender.Value))
+    })
+
+    $timbreLabel = New-Object Windows.Controls.TextBlock
+    $timbreLabel.Text = "提示音音色"
+    $timbreLabel.FontFamily = "Microsoft YaHei UI"
+    $timbreLabel.FontSize = 13
+    $timbreLabel.FontWeight = "Bold"
+    $timbreLabel.Foreground = New-WpfBrush $titleColor
+    $timbreLabel.Margin = [Windows.Thickness]::new(0, 0, 0, 8)
+    $stack.Children.Add($timbreLabel) | Out-Null
+
+    $timbrePanel = New-Object Windows.Controls.StackPanel
+    $timbrePanel.Orientation = "Horizontal"
+    $timbrePanel.Margin = [Windows.Thickness]::new(0, 0, 0, 22)
+    $stack.Children.Add($timbrePanel) | Out-Null
+    $bitRadio = New-Object Windows.Controls.RadioButton
+    $bitRadio.Content = "8bit"
+    $bitRadio.GroupName = "ManualPromptTimbre"
+    $bitRadio.FontFamily = "Microsoft YaHei UI"
+    $bitRadio.Foreground = New-WpfBrush $bodyColor
+    $bitRadio.Margin = [Windows.Thickness]::new(0, 0, 22, 0)
+    $bitRadio.IsChecked = ($script:ManualClickPromptTimbre -eq "8bit")
+    $timbrePanel.Children.Add($bitRadio) | Out-Null
+    $musicboxRadio = New-Object Windows.Controls.RadioButton
+    $musicboxRadio.Content = "八音盒"
+    $musicboxRadio.GroupName = "ManualPromptTimbre"
+    $musicboxRadio.FontFamily = "Microsoft YaHei UI"
+    $musicboxRadio.Foreground = New-WpfBrush $bodyColor
+    $musicboxRadio.IsChecked = ($script:ManualClickPromptTimbre -eq "musicbox_chime")
+    $timbrePanel.Children.Add($musicboxRadio) | Out-Null
+    $getSelectedTimbre = {
+        if ($musicboxRadio.IsChecked) { return "musicbox_chime" }
+        return "8bit"
+    }
+
+    $buttonPanel = New-Object Windows.Controls.StackPanel
+    $buttonPanel.Orientation = "Horizontal"
+    $buttonPanel.HorizontalAlignment = "Right"
+    $stack.Children.Add($buttonPanel) | Out-Null
+    $previewButton = New-Object Windows.Controls.Button
+    $previewButton.Content = "试听"
+    $previewButton.Width = 76
+    $previewButton.Height = 34
+    $previewButton.FontFamily = "Microsoft YaHei UI"
+    $previewButton.FontWeight = "Bold"
+    $previewButton.Foreground = New-WpfBrush $bodyColor
+    $previewButton.Background = New-WpfBrush $secondaryColor
+    $previewButton.BorderBrush = New-WpfBrush $secondaryBorderColor
+    $previewButton.Margin = [Windows.Thickness]::new(0, 0, 10, 0)
+    $buttonPanel.Children.Add($previewButton) | Out-Null
+    $saveButton = New-Object Windows.Controls.Button
+    $saveButton.Content = "保存并关闭"
+    $saveButton.Width = 116
+    $saveButton.Height = 34
+    $saveButton.FontFamily = "Microsoft YaHei UI"
+    $saveButton.FontWeight = "Bold"
+    $saveButton.Foreground = New-WpfBrush $accentTextColor
+    $saveButton.Background = New-WpfBrush $accentColor
+    $saveButton.BorderBrush = New-WpfBrush $accentColor
+    $saveButton.IsDefault = $true
+    $buttonPanel.Children.Add($saveButton) | Out-Null
+
+    $closeButton.Tag = $dialog
+    $closeButton.Add_Click({ param($sender, $eventArgs) $sender.Tag.Close() })
+    $previewButton.Add_Click({
+        $volume = [int][Math]::Round($volumeSlider.Value)
+        $timbre = & $getSelectedTimbre
+        if (-not $PythonExe -or -not (Test-Path -LiteralPath $PythonExe)) {
+            Show-ImageToolMessage "当前运行环境无法播放提示音试听。" "音量设置" "Warning"
+            return
+        }
+        try {
+            $previewArguments = "`"$StitcherPath`" --play-manual-prompt-tone --manual-prompt-volume $volume --manual-prompt-timbre $timbre --quiet"
+            Start-Process -FilePath $PythonExe -ArgumentList $previewArguments -WindowStyle Hidden | Out-Null
+        } catch {
+            Show-ImageToolMessage ("提示音试听失败：" + $_.Exception.Message) "音量设置" "Warning"
+        }
+    })
+    $saveButton.Add_Click({
+        $script:ManualClickPromptVolume = [int][Math]::Round($volumeSlider.Value)
+        $script:ManualClickPromptTimbre = & $getSelectedTimbre
+        Save-CaptureTimingSettings
+        Append-Log ("手动确认提示音已更新：{0}，{1}%" -f $script:ManualClickPromptTimbre, $script:ManualClickPromptVolume)
+        $dialog.Close()
+    })
+    $dialog.ShowDialog() | Out-Null
+}
+
 function Show-ImageToolMessage([string]$Message, [string]$Title = "图像工具", [string]$Severity = "Information") {
     $isPink = ($script:CurrentTheme -eq "pink")
     $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
@@ -8196,6 +8418,14 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         # shared Python worker accepts every regional code explicitly.
         if (-not $useRoundWorkerExe -and $serverCode -in @("cn", "global", "hmt")) {
             $arguments += " --server $serverCode"
+        }
+        if (-not $useRoundWorkerExe -and $serverCode -in @("global", "hmt")) {
+            $arguments += " --manual-left-click"
+            $arguments += " --manual-prompt-volume $([int]$script:ManualClickPromptVolume)"
+            $arguments += " --manual-prompt-timbre $([string]$script:ManualClickPromptTimbre)"
+            Append-Log "海外服截图：光标将定位至每一步目标，等待指挥官亲自左键确认。"
+            Add-CaptureDiagnosticsLog $captureLogPath "manual_left_click_confirmation=true"
+            Add-CaptureDiagnosticsLog $captureLogPath ("manual_prompt_audio={0}/{1}%" -f $script:ManualClickPromptTimbre, $script:ManualClickPromptVolume)
         }
         if ($isWindowedCapture) {
             $arguments += " --window-handle $($captureWindowInfo.Handle.ToInt64())"
