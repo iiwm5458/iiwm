@@ -60,10 +60,22 @@ $required = @(
     "dataanalysis\arena_ocr_tool\main.py",
     "dataanalysis\arena_ocr_tool\recognizer",
     "dataanalysis\arena_ocr_tool\data\nikke_names.json",
+    "dataanalysis\arena_ocr_tool\data\nikke_names.backup.json",
     "dataanalysis\arena_ocr_tool\models\paddle_default\whl\det\ch\ch_PP-OCRv4_det_infer\inference.pdmodel",
     "dataanalysis\arena_ocr_tool\models\paddle_default\whl\rec\ch\ch_PP-OCRv4_rec_infer\inference.pdmodel"
 )
 foreach ($item in $required) { Require-Path $item | Out-Null }
+
+$rosterPath = Require-Path "dataanalysis\arena_ocr_tool\data\nikke_names.json"
+$rosterBackupPath = Require-Path "dataanalysis\arena_ocr_tool\data\nikke_names.backup.json"
+if ((Get-FileHash -LiteralPath $rosterPath -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $rosterBackupPath -Algorithm SHA256).Hash) {
+    throw "Bundled roster backup does not match the default roster"
+}
+$ocrToolRoot = Require-Path "dataanalysis\arena_ocr_tool"
+foreach ($pattern in @("*.bak*", "nikke_names.corrupted_*.json", "*.disabled_*")) {
+    $developmentFile = Get-ChildItem -LiteralPath $ocrToolRoot -Recurse -File -Filter $pattern -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($developmentFile) { throw "Release contains a development backup: $($developmentFile.FullName)" }
+}
 
 $corePython = Require-Path "runtime_core\python.exe"
 $cpuPython = Require-Path "runtime_cpu\python.exe"

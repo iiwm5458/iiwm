@@ -1990,7 +1990,7 @@ def make_support_status_part(img, config, target_width):
 
 
 def should_click_modal_backdrop(config):
-    return str(config.get("runtime_server", "cn")).strip().lower() in {"global", "hmt"}
+    return str(config.get("runtime_server", "cn")).strip().lower() in {"cn", "global", "hmt"}
 
 
 def dismiss_current_popup(config, count=1):
@@ -1998,7 +1998,7 @@ def dismiss_current_popup(config, count=1):
     side_points = config.get("clicks", {}).get("modal_dismiss_side_points", [])
     use_backdrop_click = should_click_modal_backdrop(config)
     if use_backdrop_click and not side_points:
-        raise SystemExit("modal_dismiss_side_points is required for Global and HMT popup dismissal")
+        raise SystemExit("modal_dismiss_side_points is required for CN, Global and HMT popup dismissal")
 
     for index in range(max(1, int(count))):
         if use_backdrop_click:
@@ -2412,7 +2412,7 @@ def run_round_robin_capture(config, output_path, parts_dir, include_post_result=
         )
 
         # Return to the overview after every player, including the last one.
-        # CN uses Esc; Global and HMT reuse the established backdrop-click path.
+        # All supported servers use the established backdrop-click path.
         print("round-robin: returning to overview")
         press_escape_twice(config)
         transform = get_transform(config, screenshot().size)
@@ -2514,8 +2514,8 @@ def capture_round_robin_group_image(config, parts_dir, group_index, include_post
             )
         )
 
-        # Return to the selected overview after every profile. CN uses Esc;
-        # Global/HMT reuse the existing safe backdrop-click route.
+        # Return to the selected overview after every profile using the
+        # shared backdrop-click route for CN, Global and HMT.
         print(f"round-robin: GROUP{group_index:02d} returning to overview")
         press_escape_twice(config)
         transform = get_transform(config, screenshot().size)
@@ -2676,13 +2676,9 @@ def click_config_point_or_ratio(config, point_key, ratio_key=None):
 
 def navigate_from_group_to_top8(config):
     print("season: returning to championship arena selection")
-    server = str(config.get("runtime_server", "cn")).strip().lower()
-    if server in {"global", "hmt"}:
-        # The lower-left return control is anchored to the full screen.  Its
-        # ratio stays clear of the homepage button immediately to its right.
-        click_config_point_or_ratio(config, "season_return_button", "season_return_button_ratio")
-    else:
-        press_escape(config, 1)
+    # All supported servers use the lower-left return control. Its screen
+    # ratio stays clear of the homepage button immediately to its right.
+    click_config_point_or_ratio(config, "season_return_button", "season_return_button_ratio")
     time.sleep(SEASON_TRANSITION_BACK_WAIT_SECONDS)
     print("season: opening TOP8 championship bracket")
     click_config_point_or_ratio(config, "season_top8_entry", "season_top8_entry_ratio")

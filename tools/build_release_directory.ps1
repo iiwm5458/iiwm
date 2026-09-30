@@ -65,6 +65,10 @@ function Remove-ReleaseDevelopmentFiles {
         Remove-Item -Recurse -Force
     Get-ChildItem -LiteralPath $resolvedDestination -Recurse -Force -File -Filter "*.pyc" -ErrorAction SilentlyContinue |
         Remove-Item -Force
+    foreach ($pattern in @("*.bak*", "nikke_names.corrupted_*.json", "*.disabled_*")) {
+        Get-ChildItem -LiteralPath $toolRoot -Recurse -File -Filter $pattern -ErrorAction SilentlyContinue |
+            Remove-Item -Force
+    }
 }
 
 New-Item -ItemType Directory -Force -Path $DistRoot | Out-Null
@@ -143,6 +147,10 @@ try {
         Copy-RequiredFile $file
     }
     Remove-ReleaseDevelopmentFiles
+    # The working copy's recovery file is user/runtime data and may lag behind
+    # the bundled roster. Seed a fresh-install recovery copy from this release.
+    $releaseDataRoot = Join-Path $resolvedDestination "dataanalysis\arena_ocr_tool\data"
+    Copy-Item -LiteralPath (Join-Path $releaseDataRoot "nikke_names.json") -Destination (Join-Path $releaseDataRoot "nikke_names.backup.json") -Force
 
     foreach ($directory in @("screenshots", "custom_backgrounds", "support_custom_backgrounds", "group_custom_backgrounds")) {
         New-Item -ItemType Directory -Force -Path (Join-Path $resolvedDestination $directory) | Out-Null
