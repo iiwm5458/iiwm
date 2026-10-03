@@ -50,9 +50,10 @@ Source: "{#ReleaseRoot}\run_all_characters.bat"; DestDir: "{app}"; Flags: ignore
 Source: "{#ReleaseRoot}\nikke_gui_bootstrap.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_gui_launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_round_stitcher.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ReleaseRoot}\nikke_input_plugins.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_image_tools.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#ReleaseRoot}\nikke_character_capture.py"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#ReleaseRoot}\nikke_round_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
+Source: "{#ReleaseRoot}\nikke_round_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "{#ReleaseRoot}\nikke_character_capture_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
 Source: "{#ReleaseRoot}\RELEASE_INFO.json"; DestDir: "{app}"; Flags: ignoreversion
 

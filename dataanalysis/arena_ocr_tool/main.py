@@ -482,6 +482,7 @@ def parse_args() -> argparse.Namespace:
 def initialize_ocr(args: argparse.Namespace, base_dir: Path, logger: RunLogger):
     ocr = ArenaOCRRecognizer(use_gpu=args.use_gpu)
     logger.info(f"ocr_engine={ocr.engine_name}")
+    logger.info("ocr_angle_classification=False")
     print(f"[ocr] engine={ocr.engine_name} use_gpu={args.use_gpu}", flush=True)
     if not ocr.available:
         logger.warning(ocr.error or "No OCR engine is available; text fields will be unknown.")
@@ -785,6 +786,7 @@ def recognize_image_records(
                     source_profile=source_profile,
                     force_detailed_results=args.force_detailed_results,
                     client_profile=args.client_profile,
+                    power_anomaly_callback=logger.warning,
                 )
                 if not block_records:
                     block_records = fallback_records(stage_name, block, source_name)
@@ -991,6 +993,7 @@ def run_manifest(args: argparse.Namespace, manifest_path: Path, output_dir: Path
                 source_profile=source_profile,
                 force_detailed_results=args.force_detailed_results,
                 client_profile=args.client_profile,
+                power_anomaly_callback=logger.warning,
             )
             if not block_records:
                 block_records = fallback_records(stage_name, block, source_name)
@@ -1176,6 +1179,7 @@ def main() -> int:
                     source_profile=source_profile_from_path(image_path) or run_source_profile,
                     force_detailed_results=args.force_detailed_results,
                     client_profile=args.client_profile,
+                    power_anomaly_callback=logger.warning,
                 )
             )
         except Exception as exc:

@@ -91,6 +91,7 @@ try {
         "nikke_gui_bootstrap.ps1",
         "nikke_gui_launcher.ps1",
         "nikke_round_stitcher.py",
+        "nikke_input_plugins.py",
         "nikke_image_tools.py",
         "nikke_character_capture.py",
         "nikke_character_capture_config.json",
@@ -118,6 +119,13 @@ try {
     $roundConfig.launcher_settings.ocr_thermal_mode = "safe"
     $roundConfig.launcher_settings.manual_click_prompt_volume = 25
     $roundConfig.launcher_settings.manual_click_prompt_timbre = "8bit"
+    # A clean official install always starts with the built-in mouse input.
+    # A separately installed extension may be selected by the user later.
+    if ($roundConfig.launcher_settings.PSObject.Properties.Name -contains "input_plugin_id") {
+        $roundConfig.launcher_settings.input_plugin_id = ""
+    } else {
+        $roundConfig.launcher_settings | Add-Member -NotePropertyName input_plugin_id -NotePropertyValue ""
+    }
     $roundConfigJson = $roundConfig | ConvertTo-Json -Depth 100
     [IO.File]::WriteAllText(
         (Join-Path $resolvedDestination "nikke_round_config.json"),
@@ -160,7 +168,8 @@ try {
         product = "NIKKE C ARENA Tool"
         version = $Version
         built_at = (Get-Date).ToString("o")
-        components = @("runtime_core", "runtime_cpu", "runtime_python310_base", "offline_paddle_models", "gpu_setup_scripts")
+        components = @("runtime_core", "runtime_cpu", "runtime_python310_base", "offline_paddle_models", "gpu_setup_scripts", "input_plugin_host_v1")
+        input_plugin_api_major = 1
     }
     $info | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $resolvedDestination "RELEASE_INFO.json") -Encoding utf8
     Write-Step "Release directory is ready: $resolvedDestination"

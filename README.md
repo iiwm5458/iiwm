@@ -15,7 +15,7 @@ battle-image OCR exports. The repository contains both supported products:
 Installers are built under `dist` and distributed through GitHub Releases,
 rather than committed to the Git repository:
 
-- Full edition: `NIKKE_Arena_Tool_Setup_0.1.22.exe`
+- Full edition: `NIKKE_Arena_Tool_Setup_0.1.24.exe`
 - Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.14.exe`
 
 ## Repository Scope
@@ -28,6 +28,23 @@ runtimes, built installers, and GPU/CUDA runtime components.
 
 The full edition provides optional GPU setup scripts and documentation only.
 Users configure any NVIDIA/CUDA/Paddle GPU environment themselves.
+
+Full-edition OCR treats game text as upright and disables 180-degree angle
+classification. See [the fixed-orientation OCR repair note](docs/OCR_FIXED_ORIENTATION_20261003.md)
+for power safeguards, missing-slot export behavior, and diagnostic logging.
+
+The full edition has a narrowly restricted input-extension host. Its ordinary
+capture mode still uses the existing mouse behavior. The separate Logitech
+click MOD is distributed as its own archive and is not included in official
+installers or update patches. The host accepts only the project-approved MOD
+payload with pinned file hashes. Capture Lite has no input-extension host.
+Installed MOD files live outside the program directory under
+`%LOCALAPPDATA%\NIKKE C ARENA Tool\mods`; official updates preserve that
+directory and the user's selection. A replacement MOD payload requires a
+matching host update and review before it can be loaded.
+Maintainers should follow [the input MOD release policy](docs/INPUT_MOD_POLICY.md).
+To install the separate MOD, extract its ZIP and double-click `Install_MOD.bat`;
+choose the full-edition directory containing `run_gui.bat` when prompted.
 
 Do not bundle NVIDIA CUDA, cuDNN, GPU Paddle runtimes, or other NVIDIA
 redistributables into an installer or update patch without an independent,
@@ -73,7 +90,13 @@ licenses and rightsholders' terms.
 - **完整版 `NIKKE C ARENA Tool`：** 自动截图、拼图、图像工具、本地 CPU OCR、可选的用户自行配置 GPU OCR、Excel/JSON 导出与妮姬名单维护。
 - **轻量版 `NIKKE C ARENA 截图工具 轻量版`：** 自动截图、拼图与图像工具；战斗图像识别页仅用于展示完整版能力。
 
-当前版本：完整版 `0.1.22`，轻量版 `0.1.14`。安装包与升级补丁通过 GitHub Releases 提供，不直接提交到 Git 仓库。
+当前版本：完整版 `0.1.24`，轻量版 `0.1.14`。安装包与升级补丁通过 GitHub Releases 提供，不直接提交到 Git 仓库。
+
+完整版 `0.1.24` 修复固定方向截图中的战力漏识别，并提供从全部历史完整版直接升级的补丁。改动和原因见[发布说明](RELEASE_NOTES_0.1.24.md)。本次未重新封装轻量版。
+
+完整版内置受限的输入扩展入口，但默认仍按原有方式点击。可选的“借用罗技驱动”MOD 单独封装，不进入正式版安装包或升级补丁。入口只接受本项目核准并固定文件哈希的该 MOD；轻量版不提供扩展入口。MOD 安装在 `%LOCALAPPDATA%\NIKKE C ARENA Tool\mods`，与程序安装目录分开；正式版覆盖更新会保留该目录和用户设置。若将来修改 MOD 文件，需要先审核并更新宿主校验值。
+后续封装和兼容性要求见 [输入 MOD 发布约定](docs/INPUT_MOD_POLICY.md)。
+安装独立 MOD 时，应解压 ZIP 后双击 `Install_MOD.bat`，在弹窗中选择直接包含 `run_gui.bat` 的完整版目录。
 
 ## 开发与封装
 
@@ -83,6 +106,8 @@ licenses and rightsholders' terms.
 2. [PROJECT_DEVELOPER_HANDOFF_20260711.md](PROJECT_DEVELOPER_HANDOFF_20260711.md)
 
 仓库不会提交用户截图、OCR 输出、日志、备份、安装包、Python/Paddle 运行时、CUDA/cuDNN 或 NVIDIA GPU 运行库。完整版的 GPU 配置脚本与文档仅供用户自行配置环境，不随项目分发 GPU 运行时。
+
+完整版 OCR 按固定正向截图识别，关闭 180° 方向分类，保留五位战力不能补空及不能覆盖六位数的原有规则。修复原因、导出空位与异常日志说明见[固定方向 OCR 修复记录](docs/OCR_FIXED_ORIENTATION_20261003.md)。
 
 ### GPU 运行时分发边界
 
@@ -94,7 +119,7 @@ licenses and rightsholders' terms.
 
 ## 运行方式与免责声明
 
-本工具通过**可见屏幕画面截图、图像像素识别，以及 Windows 标准鼠标键盘输入**完成操作。
+正式版默认通过**可见屏幕画面截图、图像像素识别，以及 Windows 标准鼠标键盘输入**完成操作。单独安装并启用可选 MOD 时，鼠标按键可由用户自行安装的 G HUB 虚拟设备提供；光标定位仍由原有程序完成。
 
 - 本工具不读取、写入或扫描游戏内存；不注入 DLL；不 Hook 游戏进程；不附加调试器；不修改游戏文件、网络通信或客户端数据。
 - 本工具的开发初心是方便玩家整理、交流 NIKKE C ARENA 竞技场截图、阵容与对局心得，不提供影响游戏公平性或破坏游戏客户端的功能。

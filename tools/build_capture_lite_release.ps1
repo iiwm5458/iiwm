@@ -79,6 +79,11 @@ try {
     $roundConfig.launcher_settings.ocr_thermal_mode = "safe"
     $roundConfig.launcher_settings.manual_click_prompt_volume = 25
     $roundConfig.launcher_settings.manual_click_prompt_timbre = "8bit"
+    # The shared source configuration may have full-edition extension settings.
+    # They are not part of the lightweight product.
+    if ($roundConfig.launcher_settings.PSObject.Properties.Name -contains "input_plugin_id") {
+        [void]$roundConfig.launcher_settings.PSObject.Properties.Remove("input_plugin_id")
+    }
     $roundConfigJson = $roundConfig | ConvertTo-Json -Depth 100
     [IO.File]::WriteAllText(
         (Join-Path $resolvedDestination "nikke_round_config.json"),

@@ -7,6 +7,7 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import Callable
 
 import cv2
 import numpy as np
@@ -2863,6 +2864,48 @@ def _power_strip_value(items: list[OCRItem]) -> int | None:
     return value
 
 
+def _power_diagnostic_raw(items: list[OCRItem]) -> list[dict]:
+    """Keep compact raw evidence, including numbers rejected by the range gate."""
+    evidence: list[dict] = []
+    for item in items:
+        normalized = _normalize_power_text(item.text)
+        numbers = [int(match.group(1)) for match in re.finditer(r"(?<!\d)(\d{4,6})(?!\d)", normalized)]
+        evidence.append(
+            {
+                "text": str(item.text or ""),
+                "confidence": round(float(item.confidence or 0.0), 6),
+                "candidates": [value for value in numbers if MIN_CARD_POWER <= value <= MAX_CARD_POWER],
+                "rejected": [
+                    {"value": value, "reason": "below_minimum" if value < MIN_CARD_POWER else "above_maximum"}
+                    for value in numbers
+                    if not MIN_CARD_POWER <= value <= MAX_CARD_POWER
+                ],
+            }
+        )
+    return evidence
+
+
+def _power_row_diagnostic_raw(
+    items: list[OCRItem],
+    image_width: int,
+    image_height: int,
+    centers: tuple[float, ...],
+) -> list[list[dict]]:
+    """Use the same slot geometry as the parser without discarding bad text."""
+    grouped: list[list[OCRItem]] = [[] for _ in centers]
+    for item in items:
+        if not item.bbox:
+            continue
+        x_ratio = sum(point[0] for point in item.bbox) / len(item.bbox) / max(1, image_width)
+        y_ratio = sum(point[1] for point in item.bbox) / len(item.bbox) / max(1, image_height)
+        if not 0.70 <= y_ratio <= 0.90:
+            continue
+        slot = min(range(len(centers)), key=lambda index: abs(x_ratio - centers[index]))
+        if abs(x_ratio - centers[slot]) <= 0.09:
+            grouped[slot].append(item)
+    return [_power_diagnostic_raw(slot_items) for slot_items in grouped]
+
+
 def _has_valid_power_observation(
     items: list[OCRItem],
     min_confidence: float = SHORT_NAME_POWER_PROBE_MIN_CONFIDENCE,
@@ -2905,6 +2948,7 @@ def _recognize_power_strip_rows(
     centers: tuple[float, ...],
     ocr: ArenaOCRRecognizer,
     side: str,
+    diagnostics: list[dict] | None = None,
 ) -> list[list[int | None]]:
     bands: list[Image.Image] = []
     region_names: list[str] = []
@@ -2928,10 +2972,24 @@ def _recognize_power_strip_rows(
     prepared_bands = [prepare_for_ocr(band) for band in bands]
     prepared_items = ocr.recognize_text_lines(prepared_bands, region_names, batch_size=POWER_STRIP_BATCH_SIZE)
     values: list[int | None] = []
-    for native, prepared in zip(native_items, prepared_items):
+    for index, (native, prepared) in enumerate(zip(native_items, prepared_items)):
         native_value = _power_strip_value(native)
         prepared_value = _power_strip_value(prepared)
-        values.append(native_value if native_value is not None and native_value == prepared_value else None)
+        candidate = native_value if native_value is not None and native_value == prepared_value else None
+        values.append(candidate)
+        if diagnostics is not None:
+            diagnostics.append(
+                {
+                    "team": index // len(centers) + 1,
+                    "slot": index % len(centers) + 1,
+                    "strip_native_raw": _power_diagnostic_raw(native),
+                    "strip_attempted": True,
+                    "strip_prepared_raw": _power_diagnostic_raw(prepared),
+                    "strip_native_candidate": native_value,
+                    "strip_prepared_candidate": prepared_value,
+                    "strip_candidate": candidate,
+                }
+            )
     return [values[index : index + len(centers)] for index in range(0, len(values), len(centers))]
 
 
@@ -3456,6 +3514,7 @@ def recognize_team_rows(
     block_height: int | None = None,
     source_profile: str = "",
     client_profile: str = CLIENT_PROFILE_CN,
+    power_diagnostics: list[dict] | None = None,
 ) -> tuple[list[list[str]], list[list[int | None]], list[list[str]]]:
     teams: list[list[str]] = []
     powers: list[list[int | None]] = []
@@ -3466,6 +3525,7 @@ def recognize_team_rows(
     name_profile = _name_profile_from_block_height(block_height)
     power_strip_enabled = include_power and _power_strip_verify_enabled(ocr)
     power_strip_rows: list[Image.Image] = []
+    diagnostic_rows: list[list[dict]] = []
 
     # The first playable card row starts below the sync-level strip. The bottom
     # team stats row is intentionally excluded to avoid matching research names.
@@ -3524,6 +3584,32 @@ def recognize_team_rows(
                 reading.value is not None and MIN_CARD_POWER <= int(reading.value) <= MAX_CARD_POWER
                 for reading in presence_readings
             ]
+
+        row_diagnostics: list[dict] = []
+        if include_power and power_diagnostics is not None:
+            row_raw = _power_row_diagnostic_raw(items, prepared.width, prepared.height, row_power_centers)
+            row_diagnostics = [
+                {
+                    "side": side,
+                    "team": row + 1,
+                    "slot": slot + 1,
+                    "initial": power_slots[slot],
+                    "ocr_mode": power_mode,
+                    "row_raw": row_raw[slot],
+                    "refinement_attempted": False,
+                    "refined": None,
+                    "refined_support": 0.0,
+                    "before_strip": power_slots[slot],
+                    "strip_native_raw": [],
+                    "strip_attempted": False,
+                    "strip_prepared_raw": [],
+                    "strip_native_candidate": None,
+                    "strip_prepared_candidate": None,
+                    "strip_candidate": None,
+                }
+                for slot in range(5)
+            ]
+            diagnostic_rows.append(row_diagnostics)
 
         # Retry only blank slots with a tighter single-card crop. This improves
         # small/long labels without multiplying OCR work for every card.
@@ -3683,11 +3769,26 @@ def recognize_team_rows(
                     refined_support=precise_support,
                     allow_strong_replace=allow_strong_replace,
                 )
+                if row_diagnostics:
+                    row_diagnostics[slot].update(
+                        refinement_attempted=True,
+                        refined=precise_power,
+                        refined_support=round(float(precise_support), 6),
+                    )
+        for slot, diagnostic in enumerate(row_diagnostics):
+            diagnostic["before_strip"] = power_slots[slot]
         teams.append(slots)
         powers.append(power_slots)
         collections.append(collection_slots)
     if power_strip_enabled:
-        strip_rows = _recognize_power_strip_rows(power_strip_rows, power_centers, ocr, side)
+        strip_diagnostics: list[dict] | None = [] if diagnostic_rows else None
+        strip_rows = _recognize_power_strip_rows(
+            power_strip_rows, power_centers, ocr, side, diagnostics=strip_diagnostics
+        )
+        for diagnostic in strip_diagnostics or []:
+            row_index = diagnostic["team"] - 1
+            slot_index = diagnostic["slot"] - 1
+            diagnostic_rows[row_index][slot_index].update(diagnostic)
         for row_index, strip_slots in enumerate(strip_rows):
             if row_index >= len(powers):
                 break
@@ -3695,6 +3796,11 @@ def recognize_team_rows(
                 if slot_index >= len(powers[row_index]):
                     break
                 powers[row_index][slot_index] = _merge_power_strip_value(powers[row_index][slot_index], candidate)
+    if power_diagnostics is not None:
+        for row_index, row_diagnostics in enumerate(diagnostic_rows):
+            for slot_index, diagnostic in enumerate(row_diagnostics):
+                diagnostic["final"] = powers[row_index][slot_index]
+                power_diagnostics.append(diagnostic)
     return teams, powers, collections
 
 
@@ -4817,6 +4923,99 @@ def detect_round_winner(
     return _detect_round_winner_by_color(round_image)
 
 
+def _power_anomaly_payload(diagnostic: dict, final_name: str) -> dict | None:
+    """Describe missing occupied slots or real disagreements, never normal slots."""
+    initial = diagnostic.get("initial")
+    refined = diagnostic.get("refined")
+    before_strip = diagnostic.get("before_strip")
+    native = diagnostic.get("strip_native_candidate")
+    prepared = diagnostic.get("strip_prepared_candidate")
+    strip = diagnostic.get("strip_candidate")
+    final = diagnostic.get("final")
+    occupied = bool(final_name) or any(value is not None for value in (initial, refined, native, prepared))
+    missing = occupied and final is None
+    conflicts: list[str] = []
+    if initial is not None and refined is not None and initial != refined:
+        conflicts.append("row_refinement_disagreement")
+    if native is not None and prepared is not None and native != prepared:
+        conflicts.append("strip_native_prepared_disagreement")
+    if before_strip is not None and strip is not None and before_strip != strip:
+        conflicts.append("resolved_strip_disagreement")
+    row_candidates = {
+        value
+        for raw in diagnostic.get("row_raw", [])
+        for value in raw.get("candidates", [])
+    }
+    if len(row_candidates) > 1:
+        conflicts.append("row_candidate_disagreement")
+    for field in ("strip_native_raw", "strip_prepared_raw"):
+        candidates = {value for raw in diagnostic.get(field, []) for value in raw.get("candidates", [])}
+        if len(candidates) > 1:
+            conflicts.append(field + "_candidate_disagreement")
+    if not missing and not conflicts:
+        return None
+
+    rejection_reasons: list[str] = []
+    if initial is None and any(raw.get("rejected") for raw in diagnostic.get("row_raw", [])):
+        rejection_reasons.append("row_numbers_outside_allowed_range")
+    if diagnostic.get("refinement_attempted") and refined is None:
+        rejection_reasons.append("refinement_no_valid_candidate")
+    if _is_high_risk_power(initial) and before_strip is None:
+        rejection_reasons.append("high_risk_initial_not_confirmed")
+    if initial is not None and refined is not None and initial != refined:
+        if before_strip == refined:
+            rejection_reasons.append("row_candidate_replaced_by_refinement")
+        elif before_strip == initial:
+            rejection_reasons.append("refined_candidate_not_selected_by_existing_rules")
+    if diagnostic.get("strip_attempted") and (native != prepared or native is None):
+        rejection_reasons.append("strip_no_agreed_candidate")
+    if strip is not None and before_strip is None and len(str(strip)) < 6:
+        rejection_reasons.append("strip_empty_fill_requires_six_digits")
+    elif strip is not None and before_strip is not None and len(str(strip)) < len(str(before_strip)):
+        rejection_reasons.append("strip_shorter_candidate_ignored")
+    elif strip is not None and before_strip is not None and before_strip != strip and final == strip:
+        rejection_reasons.append("resolved_candidate_replaced_by_agreed_strip")
+    if missing and not rejection_reasons:
+        rejection_reasons.append("no_accepted_power_candidate")
+    payload = dict(diagnostic)
+    payload.update(
+        name=final_name,
+        issue="missing_power" if missing else "candidate_conflict",
+        conflicts=conflicts,
+        rejection_reasons=rejection_reasons,
+    )
+    return payload
+
+
+def _emit_power_anomalies(
+    diagnostics: list[dict],
+    teams_by_side: dict[str, list[list[str]]],
+    player_ids: dict[str, str],
+    block: ImageBlock,
+    source_name: str,
+    stage_name: str,
+    callback: Callable[[str], None],
+) -> None:
+    for diagnostic in diagnostics:
+        side = diagnostic["side"]
+        row = diagnostic["team"] - 1
+        slot = diagnostic["slot"] - 1
+        teams = teams_by_side.get(side, [])
+        final_name = teams[row][slot] if row < len(teams) and slot < len(teams[row]) else ""
+        payload = _power_anomaly_payload(diagnostic, final_name)
+        if payload is None:
+            continue
+        context = {
+            "source_image": source_name,
+            "stage": stage_name,
+            "group": block.group_index,
+            "match": block.match_index,
+            "player_id": player_ids.get(side, ""),
+        }
+        context.update(payload)
+        callback("power_anomaly=" + json.dumps(context, ensure_ascii=False, separators=(",", ":")))
+
+
 def recognize_match_block(
     block: ImageBlock,
     source_name: str,
@@ -4831,6 +5030,7 @@ def recognize_match_block(
     source_profile: str = "",
     force_detailed_results: bool = False,
     client_profile: str = CLIENT_PROFILE_CN,
+    power_anomaly_callback: Callable[[str], None] | None = None,
 ) -> list[dict]:
     regions: MatchRegions = split_match_block(block.image)
     if debug_dir:
@@ -4839,6 +5039,7 @@ def recognize_match_block(
     attacker_image = regions.attacker_area[0]
     center_image = regions.center_result_area[0]
     defender_image = regions.defender_area[0]
+    power_diagnostics: list[dict] | None = [] if include_power and power_anomaly_callback is not None else None
 
     attacker_id = recognize_player_id(
         attacker_image,
@@ -4920,6 +5121,7 @@ def recognize_match_block(
             block_height=block.image.height,
             source_profile=source_profile,
             client_profile=client_profile,
+            power_diagnostics=power_diagnostics,
         )
         defender_teams, defender_powers, defender_collections = recognize_team_rows(
             defender_image,
@@ -4933,6 +5135,7 @@ def recognize_match_block(
             block_height=block.image.height,
             source_profile=source_profile,
             client_profile=client_profile,
+            power_diagnostics=power_diagnostics,
         )
     else:
         attacker_stat_levels = []
@@ -4963,6 +5166,17 @@ def recognize_match_block(
         )
         attacker_teams = _merge_team_sources(attacker_teams, detail_attacker, attacker_scores, matcher)
         defender_teams = _merge_team_sources(defender_teams, detail_defender, defender_scores, matcher)
+
+    if power_diagnostics and power_anomaly_callback is not None:
+        _emit_power_anomalies(
+            power_diagnostics,
+            {"attacker": attacker_teams, "defender": defender_teams},
+            {"attacker": attacker_id, "defender": defender_id},
+            block,
+            source_name,
+            stage_name,
+            power_anomaly_callback,
+        )
 
     if include_collection:
         attacker_collections = [

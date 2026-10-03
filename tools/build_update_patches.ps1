@@ -1,12 +1,16 @@
 ﻿param(
-    [string]$FullVersion = "0.1.22",
-    [string]$LiteVersion = "0.1.14"
+    [string]$FullVersion = "0.1.24",
+    [string]$LiteVersion = "0.1.14",
+    [switch]$FullOnly
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $DistRoot = Join-Path $ProjectRoot "dist"
 $UpdatesRoot = Join-Path $DistRoot "updates"
+
+& (Join-Path $ProjectRoot "runtime_core\python.exe") (Join-Path $ProjectRoot "tools\test_input_plugin_host.py")
+if ($LASTEXITCODE -ne 0) { throw "Approved input MOD compatibility tests failed" }
 
 function Write-Step([string]$Message) {
     Write-Host ("[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $Message)
@@ -58,15 +62,19 @@ function Write-UpgradeScripts(
     [string]$RosterRelativePath
 ) {
     $applyScript = @'
+param([string]$InstallRoot = "")
+
 $ErrorActionPreference = "Stop"
 $ExpectedLauncher = "__EXPECTED_LAUNCHER__"
 $ProductName = "__PRODUCT_NAME__"
 $RosterRelativePath = "__ROSTER_RELATIVE_PATH__"
 $PatchRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PayloadRoot = Join-Path $PatchRoot "payload"
+$MissingOnlyRoot = Join-Path $PatchRoot "missing_only"
 $RosterDefaultsPath = Join-Path $PatchRoot "roster_defaults\nikke_names.json"
 
 function Select-InstallRoot {
+    if ($InstallRoot) { return [IO.Path]::GetFullPath($InstallRoot) }
     if (Test-Path -LiteralPath (Join-Path $PatchRoot $ExpectedLauncher)) { return $PatchRoot }
     Add-Type -AssemblyName System.Windows.Forms
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -86,7 +94,8 @@ if (-not (Test-Path -LiteralPath $PayloadRoot)) {
     throw "升级补丁内容不完整：未找到 payload 目录。"
 }
 
-$BackupRoot = Join-Path $InstallRoot ("update_backups\\" + (Get-Date -Format "yyyyMMdd_HHmmss"))
+$backupName = (Get-Date -Format "yyyyMMdd_HHmmss_fff") + "_" + [Guid]::NewGuid().ToString("N").Substring(0, 8)
+$BackupRoot = Join-Path $InstallRoot ("update_backups\\" + $backupName)
 function Backup-ExistingFile([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) { return }
     $relative = $Path.Substring($InstallRoot.Length).TrimStart([char[]]@('\', '/'))
@@ -110,6 +119,21 @@ foreach ($payloadFile in (Get-ChildItem -LiteralPath $PayloadRoot -Recurse -File
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
     Backup-ExistingFile $destination
     Copy-Item -LiteralPath $payloadFile.FullName -Destination $destination -Force
+}
+
+# The earliest full release did not include the plain Python GPU setup base.
+# Add it only when absent, preserving every existing runtime and user GPU setup.
+$baseSource = Join-Path $MissingOnlyRoot "runtime_python310_base"
+if (Test-Path -LiteralPath $baseSource -PathType Container) {
+    $baseDestination = Join-Path $InstallRoot "runtime_python310_base"
+    if (Test-Path -LiteralPath $baseDestination -PathType Container) {
+        Write-Host "保留已有 Python 基础目录：runtime_python310_base"
+    } elseif (Test-Path -LiteralPath $baseDestination) {
+        throw "Python 基础目录位置被文件占用：$baseDestination"
+    } else {
+        Copy-Item -LiteralPath $baseSource -Destination $InstallRoot -Recurse
+        Write-Host "已补齐缺失的纯 Python 基础目录；未安装 GPU 依赖或驱动。"
+    }
 }
 
 function Get-RosterValues($Roster, [string]$PropertyName) {
@@ -228,11 +252,13 @@ function Write-PatchDocuments(
         "",
         "本补丁直接覆盖程序文件，支持从任意已发布的同产品版本升级。",
         "不会覆盖或删除：截图参数、OCR 设置、赛区选择、主题、窗口处理方式、自定义背景、截图、导出数据和运行日志。",
-        "不会重装或替换 runtime_core、CPU OCR runtime、内置 Python、Paddle 依赖和离线模型。",
+        "不会重装或替换已有 runtime_core、CPU OCR runtime、Python 基础目录或 Paddle 依赖；会刷新程序、模板和离线模型资源。",
         "补丁会自动备份被替换的程序文件到安装目录的 update_backups 文件夹。"
     )
     if ($HasRosterMerge) {
+        $usageLines += "最早版本若缺少 runtime_python310_base，会补齐配置 GPU 环境所需的纯 Python 基础目录；已有目录完整保留。补丁不含 GPU runtime、CUDA、cuDNN、G HUB 或罗技 MOD。"
         $usageLines += "完整版会合并最新标准妮姬名单：保留用户手动增加的条目，补齐《森：疾速兔女郎》等新版条目，并同步更新本地恢复备份。"
+        $usageLines += "完整版的独立输入 MOD 位于本地应用数据目录；本补丁不包含也不覆盖 MOD 文件，并保留现有选择设置。"
     }
     $usageLines += "不需要重新运行安装包。"
     Write-TextFile (Join-Path $PatchRoot "升级补丁使用说明.txt") ($usageLines -join "`n")
@@ -263,13 +289,27 @@ function Build-Patch(
 ) {
     if (-not (Test-Path -LiteralPath $ReleaseRoot)) { throw "Release directory is missing: $ReleaseRoot" }
     $patchRoot = Join-Path $UpdatesRoot $PatchName
-    if (Test-Path -LiteralPath $patchRoot) { Remove-Item -LiteralPath $patchRoot -Recurse -Force }
+    if (Test-Path -LiteralPath $patchRoot) { throw "Patch output already exists: $patchRoot" }
     New-Item -ItemType Directory -Force -Path $patchRoot | Out-Null
     $payloadRoot = Join-Path $patchRoot "payload"
     New-Item -ItemType Directory -Force -Path $payloadRoot | Out-Null
 
     foreach ($file in $Files) { Copy-PayloadFile $ReleaseRoot $payloadRoot $file }
     foreach ($directory in $Directories) { Copy-PayloadDirectory $ReleaseRoot $payloadRoot $directory }
+
+    if ($ProductName -eq "NIKKE C ARENA Tool 完整版") {
+        $missingOnlyRoot = Join-Path $patchRoot "missing_only"
+        New-Item -ItemType Directory -Force -Path $missingOnlyRoot | Out-Null
+        Copy-PayloadDirectory $ReleaseRoot $missingOnlyRoot "runtime_python310_base"
+    }
+
+    # Independent input providers live outside the installation directory.
+    # A future official patch must never silently absorb one into its payload.
+    foreach ($forbidden in @("mods", "nikke_logitech_mouse.py")) {
+        if (Test-Path -LiteralPath (Join-Path $payloadRoot $forbidden)) {
+            throw "Official patch contains an optional input provider: $forbidden"
+        }
+    }
 
     $hasRosterMerge = -not [string]::IsNullOrWhiteSpace($RosterSource)
     if ($hasRosterMerge) {
@@ -293,7 +333,7 @@ function Build-Patch(
     Write-Checksums $patchRoot
 
     $zipPath = Join-Path $UpdatesRoot ("{0}.zip" -f $PatchName)
-    if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
+    if (Test-Path -LiteralPath $zipPath) { throw "Patch archive already exists: $zipPath" }
     Compress-Archive -LiteralPath $patchRoot -DestinationPath $zipPath -CompressionLevel Optimal
     Write-Step "Upgrade patch is ready: $zipPath"
 }
@@ -317,15 +357,24 @@ $fullLog = @(
     "更新方式：替换程序资源，保留用户配置、截图、导出数据、日志和自定义背景；妮姬名单采用专用合并。",
     "",
     "1. 国服自动截图的弹层关闭改为点击两侧空白处。",
-    "关闭一层时点击左侧；关闭两层时依次点击左侧和右侧。赛季组赛进入 TOP8 前，点击左下返回按钮。国服仍由程序自动左键点击；国际服和港澳台服继续由用户人工左键确认。",
+    "关闭一层时点击左侧；关闭两层时依次点击左侧和右侧。赛季组赛进入 TOP8 前，点击左下返回按钮。默认情况下，国服仍由程序自动左键点击；国际服和港澳台服继续由用户人工左键确认。",
     "更新原因：本次国服客户端更新后 Esc 无法关闭资料卡，原截图流程会停留在弹层，影响后续玩家和战果采集。",
     "",
     "2. 本地妮姬名单新增《森：疾速兔女郎》。",
     "该名字加入内置名单、冒号名和受保护名单；使用现有安全别名规则区分基础角色《森》与新版本，不加入珍藏品资格名单。升级补丁会保留用户手动新增的名字。",
     "更新原因：新角色缺席本地名单时，截图 OCR 可能漏识别或误归为基础角色《森》。",
     "",
-    "补丁说明：本补丁可从任意已发布完整版直接升级；已安装的 Python、CPU OCR runtime、Paddle 依赖与离线模型不会被替换。被替换文件会先备份到 update_backups。"
+    "3. 完整版新增受限鼠标按键扩展接口（API v1）。",
+    "默认仍使用原有点击方式。接口仅接受本项目核准且文件哈希匹配的独立罗技 MOD，由设置页检测并按需启用；MOD 本体与第三方驱动不包含在本安装包或升级补丁中。轻量版不提供该接口。",
+    "更新原因：让有需要的用户单独测试该点击方式，同时确保正式版的默认行为稳定，防止任意第三方代码经扩展入口加载，并使日后正式版更新保留已安装 MOD 和选择设置。",
+    "",
+    "补丁说明：本补丁可从任意已发布完整版直接升级；保留已有 Python、CPU OCR runtime 与 Paddle 依赖，刷新程序、模板和离线模型。缺少纯 Python 基础目录的最早版本会补齐该目录。被替换文件会先备份到独立的 update_backups 子目录。"
 ) -join "`n"
+
+$releaseNotesPath = Join-Path $ProjectRoot ("RELEASE_NOTES_{0}.md" -f $FullVersion)
+if (Test-Path -LiteralPath $releaseNotesPath -PathType Leaf) {
+    $fullLog = Get-Content -LiteralPath $releaseNotesPath -Raw -Encoding utf8
+}
 
 $liteLog = @(
     "NIKKE C ARENA 截图工具 轻量版 跨版本升级补丁更新日志",
@@ -347,7 +396,7 @@ $fullPatch = @{
     ProductName = "NIKKE C ARENA Tool 完整版"
     Files = @(
         "run_gui.bat", "run_stitcher.bat", "run_character_capture.bat", "run_all_characters.bat",
-        "nikke_gui_bootstrap.ps1", "nikke_gui_launcher.ps1", "nikke_round_stitcher.py", "nikke_image_tools.py",
+        "nikke_gui_bootstrap.ps1", "nikke_gui_launcher.ps1", "nikke_round_stitcher.py", "nikke_input_plugins.py", "nikke_image_tools.py",
         "nikke_character_capture.py", "RELEASE_INFO.json",
         "setup_gpu_runtime.bat", "setup_gpu_runtime_cn.bat", "setup_gpu_runtime_aliyun.bat", "setup_gpu_runtime.ps1",
         "GPU_OCR_RUNTIME_SETUP_GUIDE.md", "GPU_OCR_RUNTIME_SETUP_GUIDE.pdf",
@@ -355,7 +404,7 @@ $fullPatch = @{
         "dataanalysis\\arena_ocr_tool\\requirements-ocr-cpu.lock.txt", "dataanalysis\\arena_ocr_tool\\requirements-ocr-gpu.txt"
     )
     Directories = @(
-        "assets", "dataanalysis\\arena_ocr_tool\\recognizer", "dataanalysis\\arena_ocr_tool\\data",
+        "assets", "vendor", "dataanalysis\\arena_ocr_tool\\recognizer", "dataanalysis\\arena_ocr_tool\\data",
         "dataanalysis\\arena_ocr_tool\\models"
     )
     LogContent = $fullLog
@@ -377,7 +426,7 @@ $litePatch = @{
     LogContent = $liteLog
     ReleaseDate = $releaseDate
 }
-Build-Patch @litePatch
+if (-not $FullOnly) { Build-Patch @litePatch }
 
 $combinedLog = @(
     "NIKKE C ARENA Tool 本次发布汇总更新日志",
@@ -389,12 +438,18 @@ $combinedLog = @(
     "",
     "轻量版说明：轻量版包含本次国服自动截图修复；OCR 识别、妮姬名单维护、GPU 配置与数据导出仍仅由完整版提供。"
 ) -join "`n"
-Write-TextFile (Join-Path $UpdatesRoot ("更新日志_{0}.txt" -f $releaseDate)) $combinedLog
+if (-not $FullOnly) {
+    Write-TextFile (Join-Path $UpdatesRoot ("更新日志_{0}.txt" -f $releaseDate)) $combinedLog
+} else {
+    Write-TextFile (Join-Path $UpdatesRoot ("更新日志_完整版_{0}_{1}.txt" -f $releaseDate, $FullVersion)) $fullLog
+}
 
 $releaseArtifacts = @(
     (Join-Path $DistRoot ("installer\\NIKKE_Arena_Tool_Setup_{0}.exe" -f $FullVersion)),
-    (Join-Path $DistRoot ("installer\\NIKKE_Arena_Capture_Lite_Setup_{0}.exe" -f $LiteVersion)),
-    (Join-Path $UpdatesRoot ("NIKKE_C_ARENA_Tool_完整版_升级补丁_{0}.zip" -f $FullVersion)),
-    (Join-Path $UpdatesRoot ("NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_{0}.zip" -f $LiteVersion))
+    (Join-Path $UpdatesRoot ("NIKKE_C_ARENA_Tool_完整版_升级补丁_{0}.zip" -f $FullVersion))
 )
-Write-ReleaseChecksums $releaseArtifacts (Join-Path $UpdatesRoot ("SHA256SUMS_{0}.txt" -f $releaseDate))
+if (-not $FullOnly) {
+    $releaseArtifacts += (Join-Path $DistRoot ("installer\\NIKKE_Arena_Capture_Lite_Setup_{0}.exe" -f $LiteVersion))
+    $releaseArtifacts += (Join-Path $UpdatesRoot ("NIKKE_C_ARENA_Capture_Lite_轻量版_升级补丁_{0}.zip" -f $LiteVersion))
+}
+Write-ReleaseChecksums $releaseArtifacts (Join-Path $UpdatesRoot ("SHA256SUMS_{0}_{1}.txt" -f $releaseDate, $FullVersion))

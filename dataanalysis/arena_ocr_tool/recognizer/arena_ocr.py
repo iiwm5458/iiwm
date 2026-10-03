@@ -49,7 +49,9 @@ class ArenaOCRRecognizer:
 
             model_dirs = self._default_model_dirs("ch")
             options: dict[str, Any] = {
-                "use_angle_cls": True,
+                # All supported game screenshots have a fixed text direction.
+                # A classifier can otherwise flip upright short digit strings.
+                "use_angle_cls": False,
                 "lang": "ch",
                 "use_gpu": self.use_gpu,
                 "show_log": False,
@@ -139,7 +141,7 @@ class ArenaOCRRecognizer:
         arr = np.array(rgb)
         try:
             if self.engine_name == "paddleocr":
-                raw = self.reader.ocr(arr, cls=True)
+                raw = self.reader.ocr(arr, cls=False)
                 items: list[OCRItem] = []
                 for page in raw or []:
                     for entry in page or []:

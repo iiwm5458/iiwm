@@ -54,6 +54,9 @@ foreach ($item in @(
 }
 
 foreach ($forbidden in @(
+    "nikke_input_plugins.py",
+    "nikke_logitech_mouse.py",
+    "mods",
     "runtime_cpu",
     "runtime_python310_base",
     "runtime_gpu",
@@ -68,6 +71,11 @@ foreach ($forbidden in @(
     if (Test-Path -LiteralPath (Join-Path $ReleaseRoot $forbidden)) {
         throw "Lightweight release contains excluded OCR/GPU resource: $forbidden"
     }
+}
+
+$liteConfig = Get-Content -LiteralPath (Require-Path "nikke_round_config.json") -Raw -Encoding utf8 | ConvertFrom-Json
+if ($liteConfig.launcher_settings.PSObject.Properties.Name -contains "input_plugin_id") {
+    throw "Lightweight release contains the full-edition input provider setting"
 }
 
 $corePython = Require-Path "runtime_core\python.exe"

@@ -305,6 +305,7 @@ $SeasonMemoryWarnGb = 8.0
 $CurrentTheme = "dark"
 $CurrentCaptureMode = "single"
 $ActiveCaptureProcess = $null
+$script:ActiveCaptureInputPluginId = ""
 $StopRequested = $false
 $OcrThermalMode = "safe"
 $OcrSafeCooldownSeconds = 0.30
@@ -352,6 +353,7 @@ $ConfiguredRoundRobinBackground = "white"
 $ConfiguredImageToolStitchBackground = "white"
 $ConfiguredManualClickPromptVolume = 25
 $ConfiguredManualClickPromptTimbre = "8bit"
+$ConfiguredInputPluginId = ""
 try {
     if (Test-Path $RoundConfigPath) {
         $configJson = Get-Content -LiteralPath $RoundConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -432,6 +434,9 @@ try {
             if ($configJson.launcher_settings.PSObject.Properties["manual_click_prompt_timbre"] -and $null -ne $configJson.launcher_settings.manual_click_prompt_timbre) {
                 $ConfiguredManualClickPromptTimbre = [string]$configJson.launcher_settings.manual_click_prompt_timbre
             }
+            if ($configJson.launcher_settings.PSObject.Properties["input_plugin_id"] -and $null -ne $configJson.launcher_settings.input_plugin_id) {
+                $ConfiguredInputPluginId = [string]$configJson.launcher_settings.input_plugin_id
+            }
         }
     }
 } catch {}
@@ -500,6 +505,10 @@ if ($null -ne $ConfiguredBracketResultDelaySeconds) {
     $BracketResultDelaySeconds = 1.0
 }
 $script:SettingsInitialized = $false
+$script:SelectedInputPluginId = ""
+$script:InputPluginOptionsUpdating = $false
+$script:InputPluginOptionsLoaded = $false
+$script:InputPluginManifests = @{}
 $script:ActiveNikkeServer = "unknown"
 $script:DetectedNikkeServer = "unknown"
 # Server overrides deliberately reset to automatic detection on every launch.
@@ -1412,6 +1421,10 @@ try {
               <RadioButton x:Name="CaptureWindowHideRadio" Content="&#25130;&#22270;&#26102;&#38544;&#34255;&#31383;&#21475;" GroupName="CaptureWindowMode" IsChecked="True" Style="{StaticResource DarkCompressionMode}" ToolTip="沿用当前稳定的隐藏窗口截图逻辑。"/>
               <RadioButton x:Name="CaptureWindowMinimizeRadio" Content="&#25130;&#22270;&#26102;&#26368;&#23567;&#21270;&#31383;&#21475;" GroupName="CaptureWindowMode" Style="{StaticResource DarkCompressionMode}" ToolTip="保留任务栏图标；恢复窗口将自动终止截图任务。"/>
             </StackPanel>
+            <StackPanel x:Name="InputPluginOptionsPanel" Visibility="Collapsed" Margin="0,4,0,4">
+              <TextBlock Text="点击方式扩展" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,0,0,2"/>
+              <StackPanel x:Name="InputPluginOptionsList"/>
+            </StackPanel>
             <TextBlock Text="&#32858;&#28966;&#28216;&#25103;&#31383;&#21475;&#21518;&#65292;&#24320;&#22987;&#33258;&#21160;&#21270;&#25130;&#22270;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" TextWrapping="Wrap" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,4,0,2"/>
             <Grid>
               <Grid.ColumnDefinitions>
@@ -2237,6 +2250,8 @@ $ReservedButton2 = $Window.FindName("ReservedButton2")
 $SourceAttributionText = $Window.FindName("SourceAttributionText")
 $ExampleBorder = $Window.FindName("ExampleBorder")
 $SettingsPanel = $Window.FindName("SettingsPanel")
+$InputPluginOptionsPanel = $Window.FindName("InputPluginOptionsPanel")
+$InputPluginOptionsList = $Window.FindName("InputPluginOptionsList")
 $FrameOptionsPanel = $Window.FindName("FrameOptionsPanel")
 $FrameOptionsTitleText = $Window.FindName("FrameOptionsTitleText")
 $FrameOptionsGrid = $Window.FindName("FrameOptionsGrid")
@@ -3369,6 +3384,12 @@ function Apply-Theme($Theme) {
         $Window.Resources["ScrollTrackBrush"].Color = [Windows.Media.ColorConverter]::ConvertFromString("#22324A")
         Update-ModeButtonStyles
     }
+    if ($InputPluginOptionsPanel -and $InputPluginOptionsList) {
+        $pluginStyle = if ($CurrentTheme -eq "pink") { "PinkOptionCheck" } else { "DarkOptionCheck" }
+        foreach ($option in $InputPluginOptionsList.Children) { Set-Style $option $pluginStyle }
+        $pluginLabelColor = if ($CurrentTheme -eq "pink") { "#6D344B" } else { "#D7E8F6" }
+        Set-Brush $InputPluginOptionsPanel.Children[0] Foreground $pluginLabelColor
+    }
 }
 
 function Set-Log($Text) {
@@ -3423,6 +3444,9 @@ function Set-Running($Running) {
     $PostDataOcrButton.IsEnabled = -not $Running
     $ImageToolsButton.IsEnabled = -not $Running
     $ManualPromptAudioSettingsButton.IsEnabled = -not $Running
+    if ($InputPluginOptionsList) {
+        foreach ($option in $InputPluginOptionsList.Children) { $option.IsEnabled = -not $Running }
+    }
     $ExecuteButton.IsEnabled = -not $Running
     $SupportResultExecuteButton.IsEnabled = -not $Running
     $RoundRobinExecuteButton.IsEnabled = -not $Running
@@ -3709,12 +3733,166 @@ function Save-CaptureTimingSettings {
         Set-JsonProperty $configJson.launcher_settings "manual_click_prompt_volume" ([int]$script:ManualClickPromptVolume)
         Set-JsonProperty $configJson.launcher_settings "manual_click_prompt_timbre" ([string]$script:ManualClickPromptTimbre)
         Set-JsonProperty $configJson.launcher_settings "capture_window_mode" ([string]$script:CaptureWindowMode)
+        Set-JsonProperty $configJson.launcher_settings "input_plugin_id" ([string]$script:SelectedInputPluginId)
 
         $json = $configJson | ConvertTo-Json -Depth 20
         $encoding = [Text.UTF8Encoding]::new($false)
         [IO.File]::WriteAllText($RoundConfigPath, $json + [Environment]::NewLine, $encoding)
     } catch {
         Append-Log ("Failed to save capture settings: " + $_.Exception.Message)
+    }
+}
+
+function Invoke-InputPluginWorker([string]$Action, [string]$PluginId = "") {
+    if ($Action -notin @("list", "check", "release")) {
+        return [pscustomobject]@{ Success = $false; Output = ""; Message = "未知的点击扩展操作。" }
+    }
+    if ($Action -ne "list" -and $PluginId -notmatch '^[a-z][a-z0-9_-]{0,63}$') {
+        return [pscustomobject]@{ Success = $false; Output = ""; Message = "点击扩展标识无效。" }
+    }
+    if (-not $PythonExe -or -not (Test-Path -LiteralPath $PythonExe) -or -not (Test-Path -LiteralPath $StitcherPath)) {
+        return [pscustomobject]@{ Success = $false; Output = ""; Message = "截图程序或 Python 运行环境不可用。" }
+    }
+    $switch = switch ($Action) {
+        "list" { "--list-input-plugins"; break }
+        "check" { "--check-input-plugin $PluginId"; break }
+        "release" { "--release-input-plugin $PluginId"; break }
+    }
+    $process = $null
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $PythonExe
+        $psi.Arguments = "`"$StitcherPath`" $switch"
+        $psi.WorkingDirectory = $ScriptDir
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
+        $psi.StandardErrorEncoding = [Text.Encoding]::UTF8
+        $psi.EnvironmentVariables["PYTHONUTF8"] = "1"
+        $psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8"
+        $process = [System.Diagnostics.Process]::Start($psi)
+        if (-not $process.WaitForExit(10000)) {
+            try { $process.Kill() } catch {}
+            return [pscustomobject]@{ Success = $false; Output = ""; Message = "点击扩展检测超时。" }
+        }
+        $stdout = $process.StandardOutput.ReadToEnd().Trim()
+        $stderr = $process.StandardError.ReadToEnd().Trim()
+        $detail = if ($stderr) { $stderr } elseif ($stdout) { $stdout } else { "返回码 $($process.ExitCode)" }
+        return [pscustomobject]@{ Success = ($process.ExitCode -eq 0); Output = $stdout; Message = $detail }
+    } catch {
+        return [pscustomobject]@{ Success = $false; Output = ""; Message = $_.Exception.Message }
+    } finally {
+        if ($process) { $process.Dispose() }
+    }
+}
+
+function Get-VerifiedInputPluginManifests {
+    $result = Invoke-InputPluginWorker "list"
+    if (-not $result.Success) { return @() }
+    try {
+        $verified = $result.Output | ConvertFrom-Json
+        foreach ($manifest in $verified) {
+            $id = [string]$manifest.id
+            $displayName = [string]$manifest.display_name
+            if ($id -notmatch '^[a-z][a-z0-9_-]{0,63}$' -or [string]::IsNullOrWhiteSpace($displayName) -or $displayName.Length -gt 80) { continue }
+            [pscustomobject]@{
+                Id = $id
+                DisplayName = $displayName
+                Warning = [string]$manifest.warning
+            }
+        }
+    } catch {
+        return @()
+    }
+}
+
+function Refresh-InputPluginOptions {
+    if (-not $InputPluginOptionsPanel -or -not $InputPluginOptionsList) { return }
+    $manifests = @(Get-VerifiedInputPluginManifests)
+    $script:InputPluginManifests = @{}
+    foreach ($manifest in $manifests) { $script:InputPluginManifests[$manifest.Id] = $manifest }
+    if (-not $script:InputPluginOptionsLoaded) {
+        if ($ConfiguredInputPluginId -match '^[a-z][a-z0-9_-]{0,63}$') {
+            $script:SelectedInputPluginId = $ConfiguredInputPluginId
+        }
+        $script:InputPluginOptionsLoaded = $true
+    }
+    $script:InputPluginOptionsUpdating = $true
+    try {
+        $InputPluginOptionsList.Children.Clear()
+        foreach ($manifest in $manifests) {
+            $check = New-Object Windows.Controls.CheckBox
+            $check.Content = $manifest.DisplayName
+            $check.Tag = $manifest.Id
+            $check.Margin = [Windows.Thickness]::new(0, 3, 0, 2)
+            $check.HorizontalAlignment = [Windows.HorizontalAlignment]::Left
+            $check.ToolTip = "启用后，截图时使用已安装的点击方式扩展。"
+            $styleName = if ($CurrentTheme -eq "pink") { "PinkOptionCheck" } else { "DarkOptionCheck" }
+            $check.Style = $Window.FindResource($styleName)
+            $check.Add_Checked({
+                param($sender, $eventArgs)
+                if ($script:InputPluginOptionsUpdating) { return }
+                $id = [string]$sender.Tag
+                $plugin = $script:InputPluginManifests[$id]
+                if (-not $plugin) {
+                    $script:InputPluginOptionsUpdating = $true
+                    try { $sender.IsChecked = $false } finally { $script:InputPluginOptionsUpdating = $false }
+                    return
+                }
+                if (-not [string]::IsNullOrWhiteSpace($plugin.Warning)) {
+                    $decision = [System.Windows.MessageBox]::Show($Window, $plugin.Warning, $plugin.DisplayName, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+                    if ($decision -ne [System.Windows.MessageBoxResult]::Yes) {
+                        $script:InputPluginOptionsUpdating = $true
+                        try { $sender.IsChecked = $false } finally { $script:InputPluginOptionsUpdating = $false }
+                        return
+                    }
+                }
+                $script:InputPluginOptionsUpdating = $true
+                try {
+                    foreach ($other in $InputPluginOptionsList.Children) {
+                        if ($other -ne $sender) { $other.IsChecked = $false }
+                    }
+                } finally { $script:InputPluginOptionsUpdating = $false }
+                $script:SelectedInputPluginId = $id
+                Save-CaptureTimingSettings
+                Refresh-InputPluginOptions
+            })
+            $check.Add_Unchecked({
+                param($sender, $eventArgs)
+                if ($script:InputPluginOptionsUpdating) { return }
+                if ($script:SelectedInputPluginId -eq [string]$sender.Tag) {
+                    $script:SelectedInputPluginId = ""
+                    Save-CaptureTimingSettings
+                }
+            })
+            $check.IsChecked = ($script:SelectedInputPluginId -eq $manifest.Id)
+            [void]$InputPluginOptionsList.Children.Add($check)
+        }
+        if ($script:SelectedInputPluginId -and -not $script:InputPluginManifests.ContainsKey($script:SelectedInputPluginId)) {
+            $unavailableCheck = New-Object Windows.Controls.CheckBox
+            $unavailableCheck.Content = "已选点击方式扩展（暂不可用，取消勾选可关闭）"
+            $unavailableCheck.Tag = $script:SelectedInputPluginId
+            $unavailableCheck.Margin = [Windows.Thickness]::new(0, 3, 0, 2)
+            $unavailableCheck.HorizontalAlignment = [Windows.HorizontalAlignment]::Left
+            $styleName = if ($CurrentTheme -eq "pink") { "PinkOptionCheck" } else { "DarkOptionCheck" }
+            $unavailableCheck.Style = $Window.FindResource($styleName)
+            $unavailableCheck.IsChecked = $true
+            $unavailableCheck.Add_Unchecked({
+                param($sender, $eventArgs)
+                if ($script:InputPluginOptionsUpdating) { return }
+                if ($script:SelectedInputPluginId -eq [string]$sender.Tag) {
+                    $script:SelectedInputPluginId = ""
+                    Save-CaptureTimingSettings
+                    Refresh-InputPluginOptions
+                }
+            })
+            [void]$InputPluginOptionsList.Children.Add($unavailableCheck)
+        }
+        $InputPluginOptionsPanel.Visibility = if ($InputPluginOptionsList.Children.Count -gt 0) { "Visible" } else { "Collapsed" }
+    } finally {
+        $script:InputPluginOptionsUpdating = $false
     }
 }
 
@@ -4102,6 +4280,7 @@ Update-OcrRuntimeControls
 Set-OcrPerformanceMode $ConfiguredOcrPerformanceMode
 Set-OcrThermalMode $ConfiguredOcrThermalMode $true
 $script:SettingsInitialized = $true
+Refresh-InputPluginOptions
 
 # NIKKE_DISABLED_OCR_PERFORMANCE_LIMITS_20260701:
 # The previous performance profiles are parked here. The launcher no longer
@@ -4795,6 +4974,7 @@ function Set-SubPageMode($Mode) {
         Set-PostDataControlsForMode "season"
         $CustomFrameTooltipText.Text = $TextCustomSeasonTip
     } elseif ($Mode -eq "settings") {
+        Refresh-InputPluginOptions
         $SubPageHelpText.Text = $TextSettingsHelp
         $ExampleBorder.Visibility = "Collapsed"
         $SettingsPanel.Visibility = "Visible"
@@ -6003,11 +6183,38 @@ function Get-UsableCaptureWindowInfo([string]$ServerCode, $GroupSize, [bool]$Top
     return $windowInfo
 }
 
+function Test-InputPluginReady([string]$PluginId, [string]$CaptureLogPath) {
+    $result = Invoke-InputPluginWorker "check" $PluginId
+    if ($result.Success) {
+        Add-CaptureDiagnosticsLog $CaptureLogPath ("input_plugin_preflight=ok; id={0}" -f $PluginId)
+        return $true
+    }
+    $plugin = $script:InputPluginManifests[$PluginId]
+    $name = if ($plugin) { [string]$plugin.DisplayName } else { "点击方式扩展" }
+    $message = "已选用的点击方式扩展不可用，截图未启动。请确认扩展已安装且运行环境正常后重试。`n`n原因：" + $result.Message
+    Add-CaptureDiagnosticsLog $CaptureLogPath ("input_plugin_preflight=failed; id={0}; reason={1}" -f $PluginId, $result.Message)
+    Append-Log $message
+    Show-TopMessage $message $name ([System.Windows.MessageBoxImage]::Warning)
+    return $false
+}
+
+function Release-InputPluginButtons([string]$PluginId) {
+    if (-not $PluginId) { return }
+    $result = Invoke-InputPluginWorker "release" $PluginId
+    if (-not $result.Success) {
+        Append-Log ("点击方式扩展的左键释放未确认：" + $result.Message)
+    }
+}
+
 function Stop-ActiveCapture {
     if ($script:ActiveCaptureProcess -and -not $script:ActiveCaptureProcess.HasExited) {
         try {
             $script:StopRequested = $true
             $script:ActiveCaptureProcess.Kill()
+            if ($script:ActiveCaptureInputPluginId -and $script:ActiveCaptureProcess.WaitForExit(5000)) {
+                Release-InputPluginButtons $script:ActiveCaptureInputPluginId
+                $script:ActiveCaptureInputPluginId = ""
+            }
             Append-Log "Capture stopped by Alt+2."
             Show-TopMessage $TextStopMessage $TextStopTitle ([System.Windows.MessageBoxImage]::Warning)
         } catch {
@@ -8296,8 +8503,21 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
     if ($CurrentCaptureMode -eq "season") {
         Warn-LowMemoryForSeason
     }
+    $selectedInputPluginId = [string]$script:SelectedInputPluginId
+    if ($selectedInputPluginId) {
+        if (-not (Test-InputPluginReady $selectedInputPluginId $captureLogPath)) { return }
+        Add-CaptureDiagnosticsLog $captureLogPath ("click_backend=input_plugin; id={0}" -f $selectedInputPluginId)
+    } elseif ($serverCode -in @("global", "hmt")) {
+        Add-CaptureDiagnosticsLog $captureLogPath "click_backend=manual_left_click"
+    } else {
+        Add-CaptureDiagnosticsLog $captureLogPath "click_backend=existing_automatic_click"
+    }
     Set-Running $true
     Set-Log "Preparing capture..."
+    if ($selectedInputPluginId) {
+        $selectedPlugin = $script:InputPluginManifests[$selectedInputPluginId]
+        if ($selectedPlugin) { Append-Log ("点击方式：" + $selectedPlugin.DisplayName) }
+    }
     Refresh-Ui
     $completed = $false
     $automaticBattleAnnotationWarning = $null
@@ -8419,7 +8639,11 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         if (-not $useRoundWorkerExe -and $serverCode -in @("cn", "global", "hmt")) {
             $arguments += " --server $serverCode"
         }
-        if (-not $useRoundWorkerExe -and $serverCode -in @("global", "hmt")) {
+        if ($selectedInputPluginId) {
+            if ($useRoundWorkerExe) { throw "点击方式扩展需要 Python 截图程序。" }
+            $arguments += " --input-plugin $selectedInputPluginId"
+            Add-CaptureDiagnosticsLog $captureLogPath "manual_left_click_confirmation=false"
+        } elseif (-not $useRoundWorkerExe -and $serverCode -in @("global", "hmt")) {
             $arguments += " --manual-left-click"
             $arguments += " --manual-prompt-volume $([int]$script:ManualClickPromptVolume)"
             $arguments += " --manual-prompt-timbre $([string]$script:ManualClickPromptTimbre)"
@@ -8497,6 +8721,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
 
         $proc = [System.Diagnostics.Process]::Start($psi)
         $script:ActiveCaptureProcess = $proc
+        $script:ActiveCaptureInputPluginId = $selectedInputPluginId
         if ($CurrentCaptureMode -eq "top8" -and $Top8Pyramid) {
             $timeoutSeconds = 1800
         } elseif ($CurrentCaptureMode -eq "season") {
@@ -8526,6 +8751,9 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         }
         if (-not $proc.HasExited) {
             try { $proc.Kill() } catch {}
+            if ($script:ActiveCaptureInputPluginId) {
+                try { [void]$proc.WaitForExit(5000) } catch {}
+            }
             if ($script:CaptureWindowRestoreTriggered) {
                 Append-Log "Capture was terminated after the launcher window was restored."
             } else {
@@ -8617,6 +8845,10 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         Append-Log ("Failed: " + $_.Exception.Message)
         Add-CaptureDiagnosticsLog $captureLogPath ("launcher_exception: " + $_.Exception.ToString())
     } finally {
+        if ($script:ActiveCaptureInputPluginId) {
+            Release-InputPluginButtons $script:ActiveCaptureInputPluginId
+            $script:ActiveCaptureInputPluginId = ""
+        }
         Add-CaptureDiagnosticsLog $captureLogPath ("capture_finished; completed={0}; stopped={1}" -f $completed, $script:StopRequested)
         Set-Running $false
         $script:ActiveCaptureProcess = $null
@@ -8729,6 +8961,17 @@ if ($OcrOpenFolderButton) {
 }
 
 if ($Check) {
+    $verifiedPluginOptions = @(Get-VerifiedInputPluginManifests)
+    $shownVerifiedOptions = @($InputPluginOptionsList.Children | Where-Object { $script:InputPluginManifests.ContainsKey([string]$_.Tag) })
+    if ($shownVerifiedOptions.Count -ne $verifiedPluginOptions.Count) {
+        throw "verified input plugin option count check failed"
+    }
+    foreach ($manifest in $verifiedPluginOptions) {
+        $shownOption = @($shownVerifiedOptions | Where-Object { [string]$_.Tag -eq $manifest.Id }) | Select-Object -First 1
+        if (-not $shownOption -or [string]$shownOption.Content -ne $manifest.DisplayName) {
+            throw "verified input plugin display check failed"
+        }
+    }
     $serverTitleChecks = @(
         @("胜利女神：妮姬", "hmt"),
         @("nikke.exe", "cn"),

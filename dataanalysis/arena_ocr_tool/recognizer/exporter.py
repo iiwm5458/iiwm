@@ -346,6 +346,16 @@ def _join_roster_values(values: list) -> str:
     return " / ".join(str(value) for value in (values or []) if value not in ("", None))
 
 
+def _join_roster_powers(values: list | None) -> str:
+    # A missing power must keep its P1-P5 slot so later values do not shift.
+    powers = list(values or [])[:5]
+    powers += [None] * (5 - len(powers))
+    return " / ".join(
+        "\u672a\u8bc6\u522b" if value in ("", None) else str(value)
+        for value in powers
+    )
+
+
 def _roster_entries(roster) -> list[dict]:
     if not roster:
         return []
@@ -381,7 +391,7 @@ def _roster_row(
         collection = collections.get(index) or collections.get(str(index)) or []
         row.append(_join_roster_values(team))
         if include_power:
-            row.append(_join_roster_values(power))
+            row.append(_join_roster_powers(power))
         if include_collection:
             row.append(_join_roster_values(collection))
     if include_stat_levels:

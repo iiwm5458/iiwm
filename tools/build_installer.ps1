@@ -29,6 +29,11 @@ if (-not $IsccPath -or -not (Test-Path -LiteralPath $IsccPath)) {
     throw "Inno Setup compiler ISCC.exe was not found. Install Inno Setup 6, then re-run with -IsccPath."
 }
 
+# A future official build must keep accepting the already-distributed,
+# reviewed MOD while rejecting modified or unrelated providers.
+& (Join-Path $ProjectRoot "runtime_core\python.exe") (Join-Path $ProjectRoot "tools\test_input_plugin_host.py")
+if ($LASTEXITCODE -ne 0) { throw "Approved input MOD compatibility tests failed" }
+
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "build_release_directory.ps1") -Version $Version -DestinationRoot $ReleaseRoot -ReplaceExisting
 if ($LASTEXITCODE -ne 0) { throw "Release directory build failed" }
 

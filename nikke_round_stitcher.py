@@ -3,10 +3,12 @@
 # [utf8-hex] 68747470733A2F2F737465616D636F6D6D756E6974792E636F6D2F73686172656466696C65732F66696C6564657461696C732F3F69643D33353436393635303538
 # [utf8-hex] 6A613DE4B896E7958CE5B9B3E5928C3B6B6F3DEC849CEAB38420ED8F89ED9994
 import argparse
+import atexit
 import builtins
 import ctypes
 import difflib
 import gc
+import importlib.util
 import io
 import json
 import math
@@ -493,6 +495,7 @@ class WindowCaptureContext:
 
 ACTIVE_WINDOW_CAPTURE = None
 MANUAL_LEFT_CLICK = False
+ACTIVE_INPUT_PLUGIN = None
 MANUAL_CLICK_RADIUS_PX = 40
 MANUAL_PROMPT_NOTE_INDEX = 0
 MANUAL_PROMPT_TONE_QUEUE = queue.Queue(maxsize=1)
@@ -501,6 +504,47 @@ MANUAL_PROMPT_TONE_LOCK = threading.Lock()
 MANUAL_PROMPT_TONE_CACHE = {}
 MANUAL_PROMPT_VOLUME_PERCENT = DEFAULT_MANUAL_PROMPT_VOLUME_PERCENT
 MANUAL_PROMPT_TIMBRE = "8bit"
+
+
+def load_input_plugin_host():
+    """Load the optional full-edition host in bundled Python's isolated mode."""
+    host_path = Path(__file__).resolve().with_name("nikke_input_plugins.py")
+    if not host_path.is_file():
+        raise SystemExit("Input plugins are unavailable in this edition")
+    spec = importlib.util.spec_from_file_location("_nikke_input_plugins", host_path)
+    if spec is None or spec.loader is None:
+        raise SystemExit("Could not load the input plugin host")
+    host = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(host)
+    except Exception as exc:
+        raise SystemExit(f"Could not initialize the input plugin host: {exc}") from exc
+    return host
+
+
+def connect_input_plugin(plugin_id):
+    host = load_input_plugin_host()
+    try:
+        return host.connect_input_plugin(plugin_id)
+    except host.InputPluginError as exc:
+        raise SystemExit(str(exc)) from exc
+
+
+def release_active_input_plugin_on_exit():
+    """Best-effort release on ordinary exit; the GUI also has a stop helper."""
+    global ACTIVE_INPUT_PLUGIN
+    provider, ACTIVE_INPUT_PLUGIN = ACTIVE_INPUT_PLUGIN, None
+    if provider is None:
+        return
+    try:
+        provider.release()
+    except Exception as exc:
+        sys.stderr.write(f"Input plugin button release failed on exit: {exc}\n")
+    finally:
+        try:
+            provider.close()
+        except Exception as exc:
+            sys.stderr.write(f"Input plugin close failed on exit: {exc}\n")
 
 
 def enable_window_capture(handle):
@@ -616,6 +660,16 @@ def click_screen_point(x, y, duration=0.06):
         x, y = ACTIVE_WINDOW_CAPTURE.to_screen_point(x, y)
     user32.SetCursorPos(x, y)
     time.sleep(max(duration, 0.08))
+    if ACTIVE_INPUT_PLUGIN is not None:
+        try:
+            ACTIVE_INPUT_PLUGIN.left_click(max(duration, 0.08))
+        except Exception:
+            try:
+                ACTIVE_INPUT_PLUGIN.release()
+            except Exception as release_error:
+                sys.stderr.write(f"Input plugin button release failed: {release_error}\n")
+            raise
+        return
     if MANUAL_LEFT_CLICK:
         wait_for_manual_left_click(x, y)
         return
@@ -3375,6 +3429,36 @@ def parse_args():
         action="store_true",
         help="Wait for a user left click at each target instead of injecting left mouse input.",
     )
+    # The shared capture worker is also shipped in the lite edition. Omit the
+    # entire extension CLI there: only full packages include the host module.
+    parser.set_defaults(
+        list_input_plugins=False,
+        input_plugin=None,
+        check_input_plugin=None,
+        release_input_plugin=None,
+    )
+    if here.joinpath("nikke_input_plugins.py").is_file():
+        input_plugin_mode = parser.add_mutually_exclusive_group()
+        input_plugin_mode.add_argument(
+            "--list-input-plugins",
+            action="store_true",
+            help="Print trusted installed input plugin metadata as JSON; connect to no device.",
+        )
+        input_plugin_mode.add_argument(
+            "--input-plugin",
+            metavar="ID",
+            help="Use an installed full-edition mouse-button plugin for clicks.",
+        )
+        input_plugin_mode.add_argument(
+            "--check-input-plugin",
+            metavar="ID",
+            help="Check whether an installed input plugin can connect; send no click.",
+        )
+        input_plugin_mode.add_argument(
+            "--release-input-plugin",
+            metavar="ID",
+            help="Send a best-effort all-buttons-up report through an installed input plugin.",
+        )
     parser.add_argument(
         "--manual-prompt-volume",
         type=int,
@@ -3420,6 +3504,7 @@ def parse_args():
 def main():
     global MANUAL_LEFT_CLICK, MANUAL_PROMPT_NOTE_INDEX
     global MANUAL_PROMPT_TIMBRE, MANUAL_PROMPT_VOLUME_PERCENT
+    global ACTIVE_INPUT_PLUGIN
 
     set_dpi_aware()
     args = parse_args()
@@ -3436,14 +3521,39 @@ def main():
         mouse_pos_loop()
         return
 
+    if args.list_input_plugins:
+        host = load_input_plugin_host()
+        sys.stdout.write(json.dumps(host.list_input_plugins(), ensure_ascii=True) + "\n")
+        return
+
+    if args.check_input_plugin:
+        provider = connect_input_plugin(args.check_input_plugin)
+        provider.close()
+        sys.stdout.write("Input plugin is available to this capture worker (no click sent).\n")
+        return
+    if args.release_input_plugin:
+        provider = connect_input_plugin(args.release_input_plugin)
+        try:
+            provider.release()
+        finally:
+            provider.close()
+        sys.stdout.write("Input plugin buttons released.\n")
+        return
+
     config = load_config(args.config)
     config["runtime_server"] = args.server
+    if args.input_plugin and not args.preview:
+        ACTIVE_INPUT_PLUGIN = connect_input_plugin(args.input_plugin)
+        atexit.register(release_active_input_plugin_on_exit)
+        print("input plugin is active for mouse-button clicks")
     MANUAL_LEFT_CLICK = bool(
-        args.manual_left_click and args.server in {"global", "hmt"}
+        args.manual_left_click and not args.input_plugin and args.server in {"global", "hmt"}
     )
     if MANUAL_LEFT_CLICK:
         MANUAL_PROMPT_NOTE_INDEX = 0
         print("manual left-click confirmation is enabled for this overseas capture")
+    elif args.manual_left_click and args.input_plugin:
+        print("manual left-click confirmation is superseded by the selected input plugin")
     elif args.manual_left_click:
         print("manual left-click confirmation is ignored outside global/hmt capture")
     if args.window_handle is not None:

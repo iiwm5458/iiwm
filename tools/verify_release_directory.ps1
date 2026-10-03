@@ -31,6 +31,11 @@ function Reset-ReleaseLauncherSettings {
     $config.launcher_settings.ocr_thermal_mode = "safe"
     $config.launcher_settings.manual_click_prompt_volume = 25
     $config.launcher_settings.manual_click_prompt_timbre = "8bit"
+    if ($config.launcher_settings.PSObject.Properties.Name -contains "input_plugin_id") {
+        $config.launcher_settings.input_plugin_id = ""
+    } else {
+        $config.launcher_settings | Add-Member -NotePropertyName input_plugin_id -NotePropertyValue ""
+    }
     [IO.File]::WriteAllText(
         $configPath,
         (($config | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
@@ -43,6 +48,7 @@ $required = @(
     "nikke_gui_bootstrap.ps1",
     "nikke_gui_launcher.ps1",
     "nikke_round_stitcher.py",
+    "nikke_input_plugins.py",
     "nikke_image_tools.py",
     "nikke_character_capture.py",
     "nikke_round_config.json",
@@ -65,6 +71,17 @@ $required = @(
     "dataanalysis\arena_ocr_tool\models\paddle_default\whl\rec\ch\ch_PP-OCRv4_rec_infer\inference.pdmodel"
 )
 foreach ($item in $required) { Require-Path $item | Out-Null }
+
+# Optional input providers are distributed separately from the official app.
+foreach ($forbidden in @("mods", "nikke_logitech_mouse.py")) {
+    if (Test-Path -LiteralPath (Join-Path $ReleaseRoot $forbidden)) {
+        throw "Official release contains an optional input provider: $forbidden"
+    }
+}
+$releaseInfo = Get-Content -LiteralPath (Require-Path "RELEASE_INFO.json") -Raw -Encoding utf8 | ConvertFrom-Json
+if ([int]$releaseInfo.input_plugin_api_major -ne 1) {
+    throw "Official release is missing the input provider API declaration"
+}
 
 $rosterPath = Require-Path "dataanalysis\arena_ocr_tool\data\nikke_names.json"
 $rosterBackupPath = Require-Path "dataanalysis\arena_ocr_tool\data\nikke_names.backup.json"
