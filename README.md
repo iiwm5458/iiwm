@@ -1,3 +1,18 @@
+**本工具仅用于方便指挥官整理、交流NIKKE C ARENA竞技场阵容与对局心得而开发，不提供影响游戏公平性或破坏游戏客户端的功能。
+This tool was developed solely to help Commanders organize and share NIKKE C ARENA lineups and match strategies; it does not provide any functions that compromise game fairness or tamper with the game client.
+이 도구는 지휘관님들이 NIKKE C ARENA의 라인업과 대전 전략을 구성하고 공유하는 것을 돕기 위해 개발되었으며, 게임의 공정성을 저해하거나 게임 클라이언트를 변조하는 기능은 제공하지 않습니다.
+本ツールは、指揮官の皆様が「NIKKE C ARENA」の編成や対戦の知見を整理・共有しやすくするために開発されたものであり、ゲームの公平性を損なったり、ゲームクライアントに悪影響を及ぼしたりする機能は提供しておりません。**
+
+**_完整版中的图像OCR功能仅适用于简体中文的截图，海外指挥官仅需安装轻量版（Lite版）即可。
+The image OCR feature in the full version supports only Simplified Chinese screenshots; overseas Commanders need only install the Lite version.
+정식 버전의 이미지 OCR 기능은 중국어 간체 스크린샷에만 작동합니다. 해외 지휘관은 경량 버전(라이트 버전)만 설치하면 됩니다.
+完全版の画像OCR機能は、簡体字中国語のスクリーンショットにのみ対応しています。海外の指揮官の皆様は、軽量版（Lite版）をインストールするだけでご利用いただけます。。_**
+
+由于国际服官方明确禁用了模拟鼠标输入，所以国际服的工具不再使用模拟鼠标点击输入，国际服与港澳台服截图采用人工左键确认推进。程序会自动定位光标并响起提示音，但只在指挥官亲自左键确认后才继续。
+As the official international server explicitly prohibits simulated mouse input, tools for this version no longer utilize simulated mouse clicks; instead, progression relies on the user manually confirming via left-click. The program automatically positions the cursor and plays an alert sound, but it only proceeds after the Commander manually confirms the action with a left-click.
+공식 글로벌 서버에서는 마우스 입력 시뮬레이션을 명시적으로 금지하고 있으므로, 해당 버전용 도구는 더 이상 마우스 클릭을 시뮬레이션하지 않습니다. 대신 사용자가 마우스 왼쪽 버튼을 클릭하여 직접 확인해야만 진행이 이루어집니다. 프로그램이 자동으로 커서를 위치시키고 알림음을 재생하기는 하지만, 지휘관이 마우스 왼쪽 버튼 클릭으로 해당 동작을 직접 확인한 후에야 비로소 다음 단계로 진행됩니다.
+グローバル版の公式がマウス入力のシミュレーションを明確に禁止しているため、グローバル版用ツールではマウスのクリック操作を模倣する入力は行われません。グローバル版および香港・マカオ・台湾版におけるスクリーンショット撮影では、手動で左クリックして進行を確定させる手順が採用されています。プログラムは自動的にカーソル位置を特定し、通知音を鳴らしますが、指揮官自身が左クリックで確定操作を行って初めて処理が続行されます。
+
 # NIKKE C ARENA Tool
 
 Windows tool for `NIKKE` C ARENA automated screenshots, image stitching, and
