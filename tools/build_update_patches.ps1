@@ -1,6 +1,6 @@
 ﻿param(
-    [string]$FullVersion = "0.1.24",
-    [string]$LiteVersion = "0.1.14",
+    [string]$FullVersion = "0.1.25",
+    [string]$LiteVersion = "0.1.15",
     [switch]$FullOnly
 )
 
@@ -258,7 +258,7 @@ function Write-PatchDocuments(
     if ($HasRosterMerge) {
         $usageLines += "最早版本若缺少 runtime_python310_base，会补齐配置 GPU 环境所需的纯 Python 基础目录；已有目录完整保留。补丁不含 GPU runtime、CUDA、cuDNN、G HUB 或罗技 MOD。"
         $usageLines += "完整版会合并最新标准妮姬名单：保留用户手动增加的条目，补齐《森：疾速兔女郎》等新版条目，并同步更新本地恢复备份。"
-        $usageLines += "完整版的独立输入 MOD 位于本地应用数据目录；本补丁不包含也不覆盖 MOD 文件，并保留现有选择设置。"
+        $usageLines += "完整版的独立输入 MOD 位于所选工具根目录的 mods 文件夹；本补丁不包含也不覆盖 MOD 文件，并保留现有选择设置。新版通用接口继续从工具根目录加载已核准 MOD。"
     }
     $usageLines += "不需要重新运行安装包。"
     Write-TextFile (Join-Path $PatchRoot "升级补丁使用说明.txt") ($usageLines -join "`n")
@@ -303,7 +303,7 @@ function Build-Patch(
         Copy-PayloadDirectory $ReleaseRoot $missingOnlyRoot "runtime_python310_base"
     }
 
-    # Independent input providers live outside the installation directory.
+    # Independent input providers live in the user's installation mods folder.
     # A future official patch must never silently absorb one into its payload.
     foreach ($forbidden in @("mods", "nikke_logitech_mouse.py")) {
         if (Test-Path -LiteralPath (Join-Path $payloadRoot $forbidden)) {
@@ -389,6 +389,11 @@ $liteLog = @(
     "补丁说明：本补丁可从任意已发布轻量版直接升级；不会替换轻量版已安装的 Python 或截图运行依赖。"
 ) -join "`n"
 
+$liteReleaseNotesPath = Join-Path $ProjectRoot ("RELEASE_NOTES_LITE_{0}.md" -f $LiteVersion)
+if (Test-Path -LiteralPath $liteReleaseNotesPath -PathType Leaf) {
+    $liteLog = Get-Content -LiteralPath $liteReleaseNotesPath -Raw -Encoding utf8
+}
+
 $fullPatch = @{
     PatchName = "NIKKE_C_ARENA_Tool_完整版_升级补丁_$FullVersion"
     ReleaseRoot = Join-Path $DistRoot "r_$FullVersion"
@@ -436,7 +441,7 @@ $combinedLog = @(
     "",
     $liteLog,
     "",
-    "轻量版说明：轻量版包含本次国服自动截图修复；OCR 识别、妮姬名单维护、GPU 配置与数据导出仍仅由完整版提供。"
+    "轻量版说明：轻量版提供截图和图像工具；OCR 识别、妮姬名单维护、GPU 配置与数据导出仍仅由完整版提供。"
 ) -join "`n"
 if (-not $FullOnly) {
     Write-TextFile (Join-Path $UpdatesRoot ("更新日志_{0}.txt" -f $releaseDate)) $combinedLog

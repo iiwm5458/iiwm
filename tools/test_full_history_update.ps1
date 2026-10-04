@@ -193,7 +193,9 @@ try {
         foreach ($relative in @(
             "screenshots\user_capture.txt", "custom_backgrounds\user_background.txt",
             "support_custom_backgrounds\user_support_background.txt", "group_custom_backgrounds\user_group_background.txt",
-            "exports\user_result.txt", "logs\user_run.log", "runtime_gpu\Scripts\user_runtime_keep.txt"
+            "exports\user_result.txt", "logs\user_run.log", "runtime_gpu\Scripts\user_runtime_keep.txt",
+            "mods\logitech_click\manifest.json", "mods\logitech_click\backend.py",
+            "mods\other_user_mod\nested\user_mod_keep.txt"
         )) {
             $path = Join-Path $installRoot $relative
             Write-TestText $path ($marker + " / " + $relative)
@@ -262,6 +264,7 @@ try {
             fixture = $installRoot
             program_payload_files_verified = $payloadHashes.Count
             preserved_user_runtime_files_verified = $protectedHashes.Count
+            preserved_root_mod_files_verified = 3
             python_base_behavior = $(if ($hadBase) { "existing_directory_preserved" } else { "missing_directory_installed" })
             python_base_files_verified = $(if ($hadBase) { 2 } else { $baseHashes.Count })
             original_program_backup = $mainBackup

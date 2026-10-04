@@ -493,7 +493,7 @@ $script:LiteTranslations = ConvertFrom-Json @'
   "只能选择 PNG 或 JPG 格式的图像文件。":{"zh":"只能选择 PNG 或 JPG 格式的图像文件。","ja":"PNGまたはJPG画像のみ選択できます。","en":"Only PNG or JPG image files can be selected.","ko":"PNG 또는 JPG 이미지만 선택할 수 있습니다."},
   "文件格式不支持":{"zh":"文件格式不支持","ja":"未対応のファイル形式","en":"Unsupported File Format","ko":"지원하지 않는 파일 형식"},
   "4个卡槽不得同时选择同名文件，请指挥官选择另一张图像。":{"zh":"4个卡槽不得同时选择同名文件，请指挥官选择另一张图像。","ja":"4つのスロットに同名ファイルは選べません。指揮官、別の画像を選んでください。","en":"The four slots cannot use the same filename. Commander, choose another image.","ko":"4개 슬롯에 같은 파일명을 사용할 수 없습니다. 지휘관, 다른 이미지를 선택하세요."},
-  "文件重复":{"zh":"文件重复","ja":"ファイル重複","en":"Duplicate File","ko":"중복 파일"},
+  "文件重复":{"zh":"文件重复","ja":"重複ファイル","en":"Duplicate File","ko":"중복 파일"},
   "卡槽仅选择 2 张或 3 张图时无法执行识别；请选择 1 张进行单图识别，或选择完整 4 张进行汇总识别。":{"zh":"卡槽仅选择 2 张或 3 张图时无法执行识别；请选择 1 张进行单图识别，或选择完整 4 张进行汇总识别。","ja":"2～3枚では認識を実行できません。1枚で単画像認識、または4枚すべてで集計認識を行ってください。","en":"Recognition needs either 1 image for single-image mode or all 4 images for season mode.","ko":"2~3장으로는 인식할 수 없습니다. 단일 인식은 1장, 시즌 인식은 4장을 선택하세요."},
   "需同时勾选赛后数据（详细）":{"zh":"需同时勾选赛后数据（详细）","ja":"試合後データ（詳細）を同時に選択してください","en":"Select Post-battle Data (Detailed) as well","ko":"전투 후 데이터(상세)도 함께 선택하세요"},
   "截图已暂停":{"zh":"截图已暂停","ja":"撮影を一時停止","en":"Capture Paused","ko":"캡처 일시 중지"},
@@ -508,15 +508,14 @@ $script:LiteTranslations = ConvertFrom-Json @'
   "未检测到游戏":{"zh":"未检测到游戏","ja":"ゲーム未検出","en":"Game Not Detected","ko":"게임 감지 안 됨"},
   "内存提醒":{"zh":"内存提醒","ja":"メモリー警告","en":"Memory Notice","ko":"메모리 알림"},
   "设置提示":{"zh":"设置提示","ja":"設定ヒント","en":"Settings Notice","ko":"설정 안내"},
-  "请指挥官右键该程序以管理员身份运行":{"zh":"请指挥官右键该程序以管理员身份运行","ja":"指揮官、このツールを右クリックして管理者として実行してください","en":"Commander, right-click this tool and run it as administrator","ko":"지휘관, 이 도구를 우클릭해 관리자 권한으로 실행하세요"},
-  "需要指挥官权限":{"zh":"需要指挥官权限","ja":"指揮官権限が必要です","en":"Commander Permission Required","ko":"지휘관 권한 필요"},
+  "请指挥官右键该程序以管理员身份运行":{"zh":"请指挥官右键该程序以管理员身份运行","ja":"このプログラムを右クリックし、管理者として実行してください。","en":"Right-click this program and run it as administrator.","ko":"이 프로그램을 오른쪽 클릭하여 관리자 권한으로 실행해 주세요."},
+  "需要指挥官权限":{"zh":"需要指挥官权限","ja":"管理者権限が必要です","en":"Administrator Permission Required","ko":"관리자 권한 필요"},
   "正在识别数据":{"zh":"正在识别数据","ja":"データを認識中","en":"Recognizing Data","ko":"데이터 인식 중"},
   "OCR 引擎启动中...":{"zh":"OCR 引擎启动中...","ja":"OCRエンジン起動中...","en":"Starting OCR engine...","ko":"OCR 엔진 시작 중..."},
   "OCR 导出完成，JSON / Excel 文件已生成。":{"zh":"OCR 导出完成，JSON / Excel 文件已生成。","ja":"OCR出力完了。JSON / Excelファイルを生成しました。","en":"OCR export complete. JSON / Excel files were created.","ko":"OCR 내보내기 완료. JSON / Excel 파일이 생성되었습니다."},
   "OCR 导出结束，但存在警告，请查看运行日志。":{"zh":"OCR 导出结束，但存在警告，请查看运行日志。","ja":"OCR出力は終了しましたが警告があります。実行ログを確認してください。","en":"OCR export finished with warnings. Check the operation log.","ko":"OCR 내보내기가 경고와 함께 끝났습니다. 실행 로그를 확인하세요."},
   "NIKKE C ARENA 截图工具 轻量版":{"zh":"NIKKE C ARENA 截图工具 轻量版","ja":"NIKKE C ARENA スクリーンショットツール Lite","en":"NIKKE C ARENA Capture Tool Lite","ko":"NIKKE C ARENA 캡처 도구 Lite"},
   "Arena Capture Console":{"zh":"Arena 截图控制台","ja":"Arena キャプチャ管制室","en":"Arena Capture Console","ko":"Arena 캡처 지휘실"},
-  "截图控制台 · 轻量版":{"zh":"截图控制台 · 轻量版","ja":"スクリーンショット管制室 · Lite","en":"Capture Command · Lite","ko":"스크린샷 지휘실 · Lite"},
   "Back":{"zh":"返回","ja":"戻る","en":"Back","ko":"뒤로"},
   "ALT + 2  紧急终止脚本运行":{"zh":"ALT + 2  紧急终止脚本运行","ja":"ALT + 2  緊急停止","en":"ALT + 2  Emergency Stop","ko":"ALT + 2  긴급 중지"},
   "Idle.":{"zh":"空闲。","ja":"待機中。","en":"Idle.","ko":"대기 중."},
@@ -538,7 +537,112 @@ $script:LiteTranslations = ConvertFrom-Json @'
   "极限 CPU":{"zh":"极限 CPU","ja":"極限CPU","en":"Extreme CPU","ko":"극한 CPU"},
   "战后数据":{"zh":"战后数据","ja":"試合後データ","en":"Post-battle Data","ko":"전투 후 데이터"},
   "执行识别":{"zh":"执行识别","ja":"認識を実行","en":"Run Recognition","ko":"인식 실행"},
-  "同时导出json数据块和excel数据":{"zh":"同时导出 JSON 数据块和 Excel 数据","ja":"JSONデータとExcelを同時に出力","en":"Export JSON data and Excel together","ko":"JSON 데이터와 Excel 동시 내보내기"}
+  "音量设置":{"zh":"音量设置","ja":"音量設定","en":"Sound Settings","ko":"음량 설정"},
+  "帮助":{"zh":"帮助","ja":"ヘルプ","en":"Help","ko":"도움말"},
+  "仅用于国际服与港澳台服的手动左键确认提示音。":{"zh":"仅用于国际服与港澳台服的手动左键确认提示音。","ja":"グローバル版と香港・マカオ・台湾版で、手動左クリック確認を促す通知音にのみ適用されます。","en":"Applies only to the manual left-click confirmation tone on Global and HMT servers.","ko":"글로벌 및 홍콩·마카오·대만 서버의 수동 왼쪽 클릭 확인 알림음에만 적용됩니다."},
+  "提示音音量":{"zh":"提示音音量","ja":"通知音の音量","en":"Prompt Volume","ko":"알림음 음량"},
+  "提示音音色":{"zh":"提示音音色","ja":"通知音の音色","en":"Prompt Sound","ko":"알림음 종류"},
+  "八音盒":{"zh":"八音盒","ja":"オルゴール","en":"Music Box","ko":"오르골"},
+  "试听":{"zh":"试听","ja":"試聴","en":"Preview","ko":"미리 듣기"},
+  "保存并关闭":{"zh":"保存并关闭","ja":"保存して閉じる","en":"Save and Close","ko":"저장 후 닫기"},
+  "当前运行环境无法播放提示音试听。":{"zh":"当前运行环境无法播放提示音试听。","ja":"現在の実行環境では通知音を試聴できません。","en":"The current runtime cannot play the prompt preview.","ko":"현재 실행 환경에서는 알림음을 미리 들을 수 없습니다."},
+  "提示音试听失败：{0}":{"zh":"提示音试听失败：{0}","ja":"通知音の試聴に失敗しました：{0}","en":"Prompt preview failed: {0}","ko":"알림음 미리 듣기 실패: {0}"},
+  "手动确认提示音已更新：{0}，{1}%":{"zh":"手动确认提示音已更新：{0}，{1}%","ja":"手動確認の通知音を更新しました：{0}、{1}%","en":"Manual confirmation tone updated: {0}, {1}%","ko":"수동 확인 알림음 업데이트: {0}, {1}%"},
+  "NIKKE C ARENA Tool 轻量版帮助":{"zh":"NIKKE C ARENA Tool 轻量版帮助","ja":"NIKKE C ARENA Tool Lite ヘルプ","en":"NIKKE C ARENA Tool Lite Help","ko":"NIKKE C ARENA Tool Lite 도움말"},
+  "功能简介":{"zh":"功能简介","ja":"機能概要","en":"Features","ko":"기능 소개"},
+  "运行方式":{"zh":"运行方式","ja":"動作方式","en":"How It Works","ko":"작동 방식"},
+  "开发初心":{"zh":"开发初心","ja":"開発の目的","en":"Purpose","ko":"개발 목적"},
+  "使用与风险提示":{"zh":"使用与风险提示","ja":"利用上の注意とリスク","en":"Usage and Risks","ko":"사용 및 위험 안내"},
+  "禁止用途":{"zh":"禁止用途","ja":"禁止される用途","en":"Prohibited Uses","ko":"금지된 용도"},
+  "GitHub 发布页：":{"zh":"GitHub 发布页：","ja":"GitHub リリースページ：","en":"GitHub releases: ","ko":"GitHub 릴리스 페이지: "},
+  "我已了解":{"zh":"我已了解","ja":"確認しました","en":"Understood","ko":"확인했습니다"},
+  "点击玩家头像到开始截取该玩家阵容页的等待时间（秒）":{"zh":"点击玩家头像到开始截取该玩家阵容页的等待时间（秒）","ja":"プレイヤーアイコンを押して編成ページを撮影するまでの待機時間（秒）","en":"Delay after clicking a player avatar before capturing their squads (sec)","ko":"플레이어 아이콘 클릭 후 편성 페이지 캡처까지 대기 시간(초)"},
+  "检测玩家五队阵容页，最长等待 10 秒；超时后仍会继续截图。":{"zh":"检测玩家五队阵容页，最长等待 10 秒；超时后仍会继续截图。","ja":"プレイヤーの5編成ページを最大10秒待ちます。時間切れでも撮影を続行します。","en":"Wait up to 10 seconds for the player’s five-squad page; capture continues after a timeout.","ko":"플레이어의 5개 편성 페이지를 최대 10초간 감지하며, 시간 초과 후에도 캡처를 계속합니다."},
+  "检测基础信息页，最长等待 10 秒；超时后仍会截取当前画面。":{"zh":"检测基础信息页，最长等待 10 秒；超时后仍会截取当前画面。","ja":"基本情報ページを最大10秒待ちます。時間切れでも現在の画面を撮影します。","en":"Wait up to 10 seconds for the basic profile page; capture the current screen after a timeout.","ko":"기본 정보 페이지를 최대 10초간 감지하며, 시간 초과 후에는 현재 화면을 캡처합니다."},
+  "沿用当前稳定的隐藏窗口截图逻辑。":{"zh":"沿用当前稳定的隐藏窗口截图逻辑。","ja":"従来の安定したウィンドウ非表示方式で撮影します。","en":"Use the existing capture flow that hides this window.","ko":"기존의 창 숨김 캡처 방식을 사용합니다."},
+  "保留任务栏图标；恢复窗口将自动终止截图任务。":{"zh":"保留任务栏图标；恢复窗口将自动终止截图任务。","ja":"タスクバーのアイコンを残します。ウィンドウを復元すると撮影を自動終了します。","en":"Keep the taskbar icon; restoring the window stops the capture task automatically.","ko":"작업 표시줄 아이콘을 유지하며, 창을 복원하면 캡처 작업이 자동으로 종료됩니다."},
+  "在四位玩家资料页前截取当前 GROUP 的四行战斗结果，并拼接到最左侧。":{"zh":"在四位玩家资料页前截取当前 GROUP 的四行战斗结果，并拼接到最左侧。","ja":"4名のプロフィール撮影前に現在のGROUPの4行の戦績を取得し、画像の左端に結合します。","en":"Capture this GROUP’s four result rows before the four player profiles, then stitch them at the far left.","ko":"4명의 프로필 페이지 전에 현재 GROUP의 전투 결과 4행을 캡처하여 맨 왼쪽에 합칩니다."},
+  "控制小组循环赛四名玩家资料页横向拼接时的间距。":{"zh":"控制小组循环赛四名玩家资料页横向拼接时的间距。","ja":"総当たり戦の4名のプロフィールを横に結合するときの間隔を指定します。","en":"Set the gap between the four round-robin player profiles when stitched horizontally.","ko":"조별 리그 4명의 프로필 페이지를 가로로 합칠 때 간격을 설정합니다."},
+  "仅控制小组循环赛四人拼图与循环赛图像拼接的背景颜色。":{"zh":"仅控制小组循环赛四人拼图与循环赛图像拼接的背景颜色。","ja":"総当たり戦の4名の合成画像と総当たり戦画像結合の背景色だけを変更します。","en":"Set only the background color for four-player round-robin captures and round-robin image stitching.","ko":"조별 리그 4인 합성 이미지와 조별 리그 이미지 병합의 배경색만 설정합니다."},
+  "选择全 Group 截图的起始 Group。":{"zh":"选择全 Group 截图的起始 Group。","ja":"全GROUP撮影の開始GROUPを選択します。","en":"Choose the starting GROUP for captures of all groups.","ko":"전체 GROUP 캡처를 시작할 GROUP을 선택합니다."},
+  "点击确认后等待 0.45 至 10 秒，再开始点击本 Group 的玩家头像。":{"zh":"点击确认后等待 0.45 至 10 秒，再开始点击本 Group 的玩家头像。","ja":"確認後に0.45～10秒待ってから、このGROUPのプレイヤーアイコンをクリックします。","en":"Wait 0.45 to 10 seconds after confirmation before clicking player avatars in this GROUP.","ko":"확인 클릭 후 0.45~10초 대기한 다음 이 GROUP의 플레이어 아이콘을 클릭합니다."},
+  "JPEG 质量 95，适合清晰分享与后续识图。":{"zh":"JPEG 质量 95，适合清晰分享与后续识图。","ja":"JPEG品質95。鮮明な共有や後の画像認識に適しています。","en":"JPEG quality 95, suitable for clear sharing and later image recognition.","ko":"JPEG 품질 95로, 선명한 공유 및 이후 이미지 인식에 적합합니다."},
+  "JPEG 质量 78，适合普通发送；不建议作为 OCR 输入。":{"zh":"JPEG 质量 78，适合普通发送；不建议作为 OCR 输入。","ja":"JPEG品質78。通常の共有向け。OCR入力には推奨しません。","en":"JPEG quality 78, suitable for general sharing; not recommended as OCR input.","ko":"JPEG 품질 78로, 일반 공유에 적합하며 OCR 입력으로는 권장하지 않습니다."},
+  "自动压缩到约 10 MiB，必要时缩小分辨率；不建议作为 OCR 输入。":{"zh":"自动压缩到约 10 MiB，必要时缩小分辨率；不建议作为 OCR 输入。","ja":"約10 MiBまで自動圧縮し、必要に応じて解像度を下げます。OCR入力には推奨しません。","en":"Compress automatically to about 10 MiB, reducing resolution if needed; not recommended as OCR input.","ko":"약 10 MiB로 자동 압축하며 필요하면 해상도를 줄입니다. OCR 입력으로는 권장하지 않습니다."},
+  "透明背景仅支持全部选择 PNG 图像；自定义背景使用 custom_backgrounds 中最新的一张图片。":{"zh":"透明背景仅支持全部选择 PNG 图像；自定义背景使用 custom_backgrounds 中最新的一张图片。","ja":"透明背景にはすべてPNG画像を選んでください。カスタム背景はcustom_backgrounds内の最新画像を使用します。","en":"Transparent backgrounds require all selected images to be PNGs. Custom backgrounds use the newest image in custom_backgrounds.","ko":"투명 배경은 선택한 이미지가 모두 PNG일 때만 지원합니다. 사용자 지정 배경은 custom_backgrounds의 최신 이미지를 사용합니다."},
+  "选择截图任务使用的赛区逻辑。":{"zh":"选择截图任务使用的赛区逻辑。","ja":"撮影タスクで使用するサーバーを選択します。","en":"Choose the server logic used for the capture task.","ko":"캡처 작업에 사용할 서버 방식을 선택합니다."},
+  "从当前双方赛果窗口采集资料与战果":{"zh":"从当前双方赛果窗口采集资料与战果","ja":"現在の両者戦果画面からプロフィールと戦果を取得","en":"Collect profiles and results from the current match window","ko":"현재 양측 전적 창에서 프로필 및 전적 수집"},
+  "查看功能说明与使用声明":{"zh":"查看功能说明与使用声明","ja":"機能説明と利用に関する声明を表示","en":"View feature information and usage terms","ko":"기능 설명 및 사용 안내 보기"},
+  "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg":{"zh":"PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg","ja":"PNG / JPG画像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg","en":"PNG / JPG images (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg","ko":"PNG / JPG 이미지 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"},
+  "本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。":{"zh":"本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。","ja":"{0}枚を選択しましたが、このスロット以降の空きは{1}個です。スロットを空にして再試行してください。","en":"You selected {0} images, but only {1} slots are available from this slot onward. Clear slots and try again.","ko":"이미지 {0}장을 선택했지만 현재 슬롯부터 사용 가능한 슬롯은 {1}개입니다. 슬롯을 비운 후 다시 시도하세요."},
+  "卡槽数量不足":{"zh":"卡槽数量不足","ja":"スロット不足","en":"Not Enough Slots","ko":"슬롯 부족"},
+  "未找到图像处理运行环境，请重新安装工具。":{"zh":"未找到图像处理运行环境，请重新安装工具。","ja":"画像処理の実行環境が見つかりません。ツールを再インストールしてください。","en":"The image-processing runtime was not found. Reinstall the tool.","ko":"이미지 처리 실행 환경을 찾지 못했습니다. 도구를 다시 설치하세요."},
+  "未找到自定义背景图。请将 JPG 或 PNG 图片放入 custom_backgrounds 后重试。":{"zh":"未找到自定义背景图。请将 JPG 或 PNG 图片放入 custom_backgrounds 后重试。","ja":"カスタム背景が見つかりません。custom_backgroundsにJPGまたはPNGを入れて再試行してください。","en":"No custom background was found. Put a JPG or PNG in custom_backgrounds and try again.","ko":"사용자 지정 배경을 찾지 못했습니다. custom_backgrounds에 JPG 또는 PNG를 넣고 다시 시도하세요."},
+  "不支持的图像工具操作。":{"zh":"不支持的图像工具操作。","ja":"未対応の画像処理操作です。","en":"Unsupported Image Tools operation.","ko":"지원하지 않는 이미지 도구 작업입니다."},
+  "无法启动图像处理：{0}":{"zh":"无法启动图像处理：{0}","ja":"画像処理を起動できません：{0}","en":"Cannot start image processing: {0}","ko":"이미지 처리를 시작할 수 없습니다: {0}"},
+  "图像处理失败，请检查所选图像后重试。":{"zh":"图像处理失败，请检查所选图像后重试。","ja":"画像処理に失敗しました。選択した画像を確認して再試行してください。","en":"Image processing failed. Check the selected images and try again.","ko":"이미지 처리에 실패했습니다. 선택한 이미지를 확인한 후 다시 시도하세요."},
+  "图像已处理完成，但无法读取输出信息。请打开截图文件夹查看结果。":{"zh":"图像已处理完成，但无法读取输出信息。请打开截图文件夹查看结果。","ja":"画像処理は完了しましたが、出力情報を読み取れません。撮影フォルダーで結果を確認してください。","en":"Image processing finished, but the output information could not be read. Open the capture folder to see the results.","ko":"이미지 처리는 완료됐지만 출력 정보를 읽지 못했습니다. 캡처 폴더에서 결과를 확인하세요."},
+  "压缩":{"zh":"压缩","ja":"圧縮","en":"compression","ko":"압축"},
+  "拼接":{"zh":"拼接","ja":"結合","en":"stitching","ko":"병합"},
+  "小组循环赛图像拼接":{"zh":"小组循环赛图像拼接","ja":"総当たり戦画像結合","en":"round-robin stitching","ko":"조별 리그 이미지 병합"},
+  "图像处理":{"zh":"图像处理","ja":"画像処理","en":"image processing","ko":"이미지 처리"},
+  "左侧玩家":{"zh":"左侧玩家","ja":"左のプレイヤー","en":"the left player","ko":"왼쪽 플레이어"},
+  "右侧玩家":{"zh":"右侧玩家","ja":"右のプレイヤー","en":"the right player","ko":"오른쪽 플레이어"},
+  "{0}已从中间详细战果页判断胜负：{1}获胜，已标记 2 位玩家。":{"zh":"{0}已从中间详细战果页判断胜负：{1}获胜，已标记 2 位玩家。","ja":"{0}中央の詳細戦績から勝敗を判定しました。勝者は{1}です。2名にマークを付けました。","en":"{0}The center detailed result identifies {1} as the winner. Both players have been marked.","ko":"{0}중앙 상세 전적에서 승패를 판정했습니다. {1}가 승리했으며, 플레이어 2명을 표시했습니다."},
+  "图像{0}完成，指挥官，已生成 {1} 个文件。{2}{3}{2}{4}":{"zh":"图像{0}完成，指挥官，已生成 {1} 个文件。{2}{3}{2}{4}","ja":"画像の{0}が完了しました。{1}個のファイルを出力しました。{2}{3}{2}{4}","en":"Image {0} finished, Commander. Created {1} file(s).{2}{3}{2}{4}","ko":"이미지 {0} 완료, 지휘관. 파일 {1}개를 생성했습니다.{2}{3}{2}{4}"},
+  "小组循环赛拼接背景：{0}":{"zh":"小组循环赛拼接背景：{0}","ja":"総当たり戦結合の背景：{0}","en":"Round-robin stitching background: {0}","ko":"조별 리그 병합 배경: {0}"},
+  "图像拼接背景：{0}":{"zh":"图像拼接背景：{0}","ja":"画像結合の背景：{0}","en":"Image stitching background: {0}","ko":"이미지 병합 배경: {0}"},
+  "图像拼接自定义背景：{0}":{"zh":"图像拼接自定义背景：{0}","ja":"画像結合のカスタム背景：{0}","en":"Custom image stitching background: {0}","ko":"이미지 병합 사용자 지정 배경: {0}"},
+  "小组循环赛拼图背景：{0}":{"zh":"小组循环赛拼图背景：{0}","ja":"総当たり戦合成の背景：{0}","en":"Round-robin capture background: {0}","ko":"조별 리그 합성 배경: {0}"},
+  "小组循环赛：将在四人资料页前截取战斗结果。":{"zh":"小组循环赛：将在四人资料页前截取战斗结果。","ja":"総当たり戦：4名のプロフィール撮影前に戦績を撮影します。","en":"Round-robin: capture results before the four player profiles.","ko":"조별 리그: 4명의 프로필 페이지 전에 전투 결과를 캡처합니다."},
+  "海外服截图：光标将定位至每一步目标，等待指挥官亲自左键确认。":{"zh":"海外服截图：光标将定位至每一步目标，等待指挥官亲自左键确认。","ja":"海外版撮影：各手順の対象へカーソルを移動し、指揮官の左クリック確認を待ちます。","en":"Overseas capture: the cursor moves to each target and waits for your left-click confirmation.","ko":"해외 서버 캡처: 각 단계의 대상으로 커서를 이동한 뒤 지휘관의 왼쪽 클릭 확인을 기다립니다."},
+  "无法读取NIKKE游戏窗口，请确认客户端未最小化后重试。":{"zh":"无法读取NIKKE游戏窗口，请确认客户端未最小化后重试。","ja":"NIKKEのゲーム画面を取得できません。最小化していないことを確認して再試行してください。","en":"Cannot read the NIKKE game window. Make sure the client is not minimized and try again.","ko":"NIKKE 게임 창을 읽지 못했습니다. 클라이언트가 최소화되지 않았는지 확인한 후 다시 시도하세요."},
+  "当前为窗口模式。此功能仅支持全屏模式，请切换至全屏后重试。\n\n窗口模式仅支持单人阵容、应援双方阵容、双方赛果、小组循环赛和冠军争霸赛冠亚军截图。":{"zh":"当前为窗口模式。此功能仅支持全屏模式，请切换至全屏后重试。\n\n窗口模式仅支持单人阵容、应援双方阵容、双方赛果、小组循环赛和冠军争霸赛冠亚军截图。","ja":"現在はウィンドウモードです。この機能には全画面モードが必要です。切り替えて再試行してください。\n\nウィンドウモードでは単人編成、応援双方編成、両者戦果、総当たり戦、チャンピオン決定戦の決勝撮影のみ対応します。","en":"The game is in windowed mode. This feature requires fullscreen; switch modes and try again.\n\nWindowed mode supports solo squads, support squads, match results, round-robin, and championship final captures.","ko":"현재 창 모드입니다. 이 기능은 전체 화면 모드가 필요합니다. 전환한 후 다시 시도하세요.\n\n창 모드는 단일 편성, 응원 양측 편성, 양측 전적, 조별 리그 및 챔피언십 결승 캡처만 지원합니다."},
+  "截图已完成，但胜负标记失败，原始截图已保留。\n\n原因：{0}":{"zh":"截图已完成，但胜负标记失败，原始截图已保留。\n\n原因：{0}","ja":"撮影は完了しましたが、勝敗マークに失敗しました。元画像は保持しました。\n\n原因：{0}","en":"Capture finished, but result marking failed. The original screenshot was kept.\n\nReason: {0}","ko":"캡처는 완료됐지만 승패 표시에 실패하여 원본 스크린샷을 유지했습니다.\n\n원인: {0}"},
+  "无法初始化程序单实例保护：{0}":{"zh":"无法初始化程序单实例保护：{0}","ja":"多重起動防止を初期化できません：{0}","en":"Cannot initialize single-instance protection: {0}","ko":"단일 실행 보호를 초기화할 수 없습니다: {0}"},
+  "NIKKE C ARENA Tool 已在运行。为避免重复截图，已阻止再次启动。":{"zh":"NIKKE C ARENA Tool 已在运行。为避免重复截图，已阻止再次启动。","ja":"NIKKE C ARENA Toolは実行中です。重複撮影を防ぐため、再起動をブロックしました。","en":"NIKKE C ARENA Tool is already running. A second instance was blocked to prevent duplicate captures.","ko":"NIKKE C ARENA Tool이 이미 실행 중입니다. 중복 캡처를 방지하기 위해 추가 실행을 차단했습니다."},
+  "Failed to save capture settings: {0}":{"zh":"Failed to save capture settings: {0}","ja":"撮影設定の保存に失敗しました：{0}","en":"Failed to save capture settings: {0}","ko":"캡처 설정 저장 실패: {0}"},
+  "Resuming round-robin batch: {0}":{"zh":"Resuming round-robin batch: {0}","ja":"総当たり戦の一括撮影を再開：{0}","en":"Resuming round-robin batch: {0}","ko":"조별 리그 일괄 캡처 재개: {0}"},
+  "Capture stopped by Alt+2.":{"zh":"Capture stopped by Alt+2.","ja":"Alt+2で撮影を停止しました。","en":"Capture stopped by Alt+2.","ko":"Alt+2로 캡처를 중지했습니다."},
+  "Stop failed: {0}":{"zh":"Stop failed: {0}","ja":"停止に失敗しました：{0}","en":"Stop failed: {0}","ko":"중지 실패: {0}"},
+  "Image tool failed: {0}":{"zh":"Image tool failed: {0}","ja":"画像処理に失敗しました：{0}","en":"Image tool failed: {0}","ko":"이미지 도구 실패: {0}"},
+  "Image tool {0} completed: {1} file(s) -> {2}":{"zh":"Image tool {0} completed: {1} file(s) -> {2}","ja":"画像の{0}が完了：{1}ファイル → {2}","en":"Image tool {0} completed: {1} file(s) -> {2}","ko":"이미지 {0} 완료: 파일 {1}개 → {2}"},
+  "Image tool result parsing failed: {0}":{"zh":"Image tool result parsing failed: {0}","ja":"画像処理結果の読み取りに失敗しました：{0}","en":"Image tool result parsing failed: {0}","ko":"이미지 도구 결과 읽기 실패: {0}"},
+  "Image tool launch failed: {0}":{"zh":"Image tool launch failed: {0}","ja":"画像処理の起動に失敗しました：{0}","en":"Image tool launch failed: {0}","ko":"이미지 도구 시작 실패: {0}"},
+  "Capture stopped because the minimized launcher window was restored.":{"zh":"Capture stopped because the minimized launcher window was restored.","ja":"最小化したウィンドウが復元されたため撮影を停止しました。","en":"Capture stopped because the minimized launcher window was restored.","ko":"최소화된 프로그램 창이 복원되어 캡처를 중지했습니다."},
+  "Focusing game window...":{"zh":"Focusing game window...","ja":"ゲーム画面にフォーカス中…","en":"Focusing game window...","ko":"게임 창에 포커스 중..."},
+  "Game window was not found.":{"zh":"Game window was not found.","ja":"ゲーム画面が見つかりません。","en":"Game window was not found.","ko":"게임 창을 찾지 못했습니다."},
+  "Group size was not selected.":{"zh":"Group size was not selected.","ja":"グループの人数が選択されていません。","en":"Group size was not selected.","ko":"그룹 인원이 선택되지 않았습니다."},
+  "TOP8 capture size was not selected.":{"zh":"TOP8 capture size was not selected.","ja":"TOP8撮影の人数が選択されていません。","en":"TOP8 capture size was not selected.","ko":"TOP8 캡처 인원이 선택되지 않았습니다."},
+  "Round-robin all GROUP capture: Group{0:00}-Group64 -> {1}":{"zh":"Round-robin all GROUP capture: Group{0:00}-Group64 -> {1}","ja":"総当たり戦の全GROUP撮影：Group{0:00}～Group64 → {1}","en":"Round-robin all GROUP capture: Group{0:00}-Group64 -> {1}","ko":"조별 리그 전체 GROUP 캡처: Group{0:00}~Group64 → {1}"},
+  "Running arena capture...":{"zh":"Running arena capture...","ja":"アリーナ撮影を実行中…","en":"Running arena capture...","ko":"아레나 캡처 실행 중..."},
+  "No usable Python with Pillow was found.":{"zh":"No usable Python with Pillow was found.","ja":"Pillowが使用可能なPythonが見つかりません。","en":"No usable Python with Pillow was found.","ko":"Pillow를 사용할 수 있는 Python을 찾지 못했습니다."},
+  "Worker: {0}":{"zh":"Worker: {0}","ja":"撮影プログラム：{0}","en":"Worker: {0}","ko":"캡처 프로그램: {0}"},
+  "Capture was terminated after the launcher window was restored.":{"zh":"Capture was terminated after the launcher window was restored.","ja":"ウィンドウが復元されたため撮影を終了しました。","en":"Capture was terminated after the launcher window was restored.","ko":"프로그램 창이 복원되어 캡처가 종료되었습니다."},
+  "Capture timed out after {0} seconds.":{"zh":"Capture timed out after {0} seconds.","ja":"撮影は{0}秒で時間切れになりました。","en":"Capture timed out after {0} seconds.","ko":"캡처가 {0}초 후 시간 초과되었습니다."},
+  "Stopped.":{"zh":"Stopped.","ja":"停止しました。","en":"Stopped.","ko":"중지되었습니다."},
+  "Done: GROUP{0:00}-GROUP64 saved to {1}":{"zh":"Done: GROUP{0:00}-GROUP64 saved to {1}","ja":"完了：GROUP{0:00}～GROUP64を{1}に保存しました。","en":"Done: GROUP{0:00}-GROUP64 saved to {1}","ko":"완료: GROUP{0:00}~GROUP64를 {1}에 저장했습니다."},
+  "Done: {0}":{"zh":"Done: {0}","ja":"完了：{0}","en":"Done: {0}","ko":"완료: {0}"},
+  "Done: {0}\nAlso saved: {1}":{"zh":"Done: {0}\nAlso saved: {1}","ja":"完了：{0}\n併せて保存：{1}","en":"Done: {0}\nAlso saved: {1}","ko":"완료: {0}\n추가 저장: {1}"},
+  "Capture failed:\n{0}":{"zh":"Capture failed:\n{0}","ja":"撮影に失敗しました：\n{0}","en":"Capture failed:\n{0}","ko":"캡처 실패:\n{0}"},
+  "Failed: {0}":{"zh":"Failed: {0}","ja":"失敗：{0}","en":"Failed: {0}","ko":"실패: {0}"},
+  "本工具用于整理 C ARENA 截图与对局资料：\n- 自动化截图、跨分辨率拼接和赛区适配。\n- 图像压缩、拼接、战果标记与截图文件管理。\n- 轻量版保留截图与图像工具；战斗图像识别页面用于展示完整版能力。":{"zh":"本工具用于整理 C ARENA 截图与对局资料：\n- 自动化截图、跨分辨率拼接和赛区适配。\n- 图像压缩、拼接、战果标记与截图文件管理。\n- 轻量版保留截图与图像工具；战斗图像识别页面用于展示完整版能力。","ja":"このツールはC ARENAのスクリーンショットと対戦資料を整理します。\n- 自動撮影、異なる解像度での画像結合、各サーバーへの対応。\n- 画像圧縮・結合、戦果マーク、撮影ファイル管理。\n- Lite版には撮影と画像ツールを搭載。戦闘画像認識ページは完全版の機能紹介です。","en":"This tool organizes C ARENA screenshots and match information:\n- Automated capture, stitching across resolutions, and server support.\n- Image compression, stitching, result marking, and screenshot management.\n- Lite includes capture and Image Tools; the recognition page demonstrates Full Edition features.","ko":"이 도구는 C ARENA 스크린샷과 대전 자료를 정리합니다.\n- 자동 캡처, 다양한 해상도의 이미지 병합 및 서버별 지원.\n- 이미지 압축·병합, 전적 표시 및 스크린샷 파일 관리.\n- Lite는 캡처와 이미지 도구를 제공합니다. 전투 이미지 인식 페이지는 정식판 기능을 소개합니다."},
+  "本工具通过可见屏幕画面截图、图像像素识别，以及 Windows 标准鼠标键盘输入完成操作。\n本工具不读取、写入或扫描游戏内存；不注入 DLL；不 Hook 游戏进程；不附加调试器；不修改游戏文件、网络通信或客户端数据。":{"zh":"本工具通过可见屏幕画面截图、图像像素识别，以及 Windows 标准鼠标键盘输入完成操作。\n本工具不读取、写入或扫描游戏内存；不注入 DLL；不 Hook 游戏进程；不附加调试器；不修改游戏文件、网络通信或客户端数据。","ja":"このツールは画面に表示された画像の撮影、画像ピクセルの認識、Windows標準のマウス・キーボード入力で動作します。\nゲームメモリの読み取り・書き込み・スキャン、DLL注入、ゲームプロセスのHook、デバッガーの接続は行いません。ゲームファイル、ネットワーク通信、クライアントデータも変更しません。","en":"The tool uses screenshots of the visible screen, image-pixel recognition, and standard Windows mouse and keyboard input.\nIt does not read, write, or scan game memory; inject DLLs; hook game processes; attach a debugger; or modify game files, network communications, or client data.","ko":"이 도구는 보이는 화면의 캡처, 이미지 픽셀 인식 및 Windows 표준 마우스·키보드 입력으로 작동합니다.\n게임 메모리를 읽거나 쓰거나 검색하지 않고, DLL 주입, 게임 프로세스 Hook 또는 디버거 연결을 하지 않으며 게임 파일, 네트워크 통신 및 클라이언트 데이터를 수정하지 않습니다."},
+  "本工具仅为方便玩家整理、交流 NIKKE C ARENA 竞技场截图、阵容与对局心得而开发，不提供影响游戏公平性或破坏游戏客户端的功能。":{"zh":"本工具仅为方便玩家整理、交流 NIKKE C ARENA 竞技场截图、阵容与对局心得而开发，不提供影响游戏公平性或破坏游戏客户端的功能。","ja":"このツールはNIKKE C ARENAの撮影画像、編成、対戦の感想を整理・共有しやすくするために開発しました。ゲームの公平性に影響を与えたり、ゲームクライアントを破壊したりする機能は提供しません。","en":"This tool was developed to help players organize and share NIKKE C ARENA screenshots, squads, and match insights. It provides no features designed to affect fair play or damage the game client.","ko":"이 도구는 플레이어가 NIKKE C ARENA 스크린샷, 편성 및 대전 경험을 정리하고 공유하기 편하도록 개발되었습니다. 게임의 공정성에 영향을 주거나 게임 클라이언트를 손상시키는 기능은 제공하지 않습니다."},
+  "- 请自行确认使用行为符合所在地法律法规、游戏平台规则及游戏运营规则。\n- 截图、拼接和自动化结果可能受网络、游戏版本、分辨率或界面变化影响，重要数据请自行复核。\n- 本工具按现状提供；因使用、操作失误、设备环境或第三方服务变化造成的损失与争议，使用者应自行承担相应责任。":{"zh":"- 请自行确认使用行为符合所在地法律法规、游戏平台规则及游戏运营规则。\n- 截图、拼接和自动化结果可能受网络、游戏版本、分辨率或界面变化影响，重要数据请自行复核。\n- 本工具按现状提供；因使用、操作失误、设备环境或第三方服务变化造成的损失与争议，使用者应自行承担相应责任。","ja":"- 利用が所在地の法令、ゲームプラットフォームの規則、ゲーム運営の規則に適合することをご自身で確認してください。\n- 撮影・結合・自動化の結果はネットワーク、ゲームバージョン、解像度、画面変更の影響を受けます。重要なデータは確認してください。\n- このツールは現状のまま提供します。利用、操作ミス、機器環境、第三者サービスの変更による損失や紛争について、利用者は相応の責任を負うものとします。","en":"- Confirm that your use complies with local laws and regulations, platform rules, and game operator rules.\n- Capture, stitching, and automation results may be affected by network conditions, game versions, resolutions, or interface changes. Verify important data yourself.\n- This tool is provided as is. Users bear the corresponding responsibility for losses or disputes arising from use, operating mistakes, device environments, or changes to third-party services.","ko":"- 사용 행위가 현지 법규, 게임 플랫폼 규칙 및 게임 운영 규칙을 준수하는지 직접 확인해 주세요.\n- 캡처, 병합 및 자동화 결과는 네트워크, 게임 버전, 해상도 및 화면 변경의 영향을 받을 수 있습니다. 중요한 데이터는 직접 확인해 주세요.\n- 이 도구는 현재 상태 그대로 제공됩니다. 사용, 조작 실수, 기기 환경 또는 타사 서비스 변경으로 인한 손실과 분쟁에 대해 사용자가 해당 책임을 부담합니다."},
+  "严禁将本工具、其代码、安装包或衍生成果用于读取或篡改他人数据、规避安全机制、制作外挂、侵犯计算机信息系统，或任何其他违法违规用途。\n用户自行修改、二次分发或违规使用本工具及其衍生成果所产生的后果，由相关行为人自行承担。":{"zh":"严禁将本工具、其代码、安装包或衍生成果用于读取或篡改他人数据、规避安全机制、制作外挂、侵犯计算机信息系统，或任何其他违法违规用途。\n用户自行修改、二次分发或违规使用本工具及其衍生成果所产生的后果，由相关行为人自行承担。","ja":"このツール、コード、インストーラー、派生成果を、他人のデータの読み取り・改ざん、安全機構の回避、不正ツールの作成、コンピューターシステムへの侵害、その他の違法または規則に違反する用途に使うことを禁止します。\n利用者による変更、再配布、規則に違反する利用および派生成果により生じる結果は、関係する行為者が責任を負うものとします。","en":"Do not use this tool, its code, installers, or derivative works to read or alter others’ data, bypass security mechanisms, create cheats, compromise computer systems, or for any other unlawful or prohibited purpose.\nThose responsible bear the consequences of modifying, redistributing, or misusing this tool or its derivative works.","ko":"이 도구, 코드, 설치 패키지 또는 파생 결과물을 타인의 데이터 읽기·변조, 보안 장치 우회, 치트 제작, 컴퓨터 정보 시스템 침해 및 기타 불법·규정 위반 용도로 사용하는 것을 금지합니다.\n사용자의 수정, 재배포 또는 이 도구와 파생 결과물의 규정 위반 사용으로 발생한 결과는 관련 행위자가 책임집니다."},
+  "正在进行{0}，请稍候":{"zh":"正在进行{0}，请稍候","ja":"{0}を実行中です。お待ちください。","en":"Running {0}. Please wait.","ko":"{0} 진행 중입니다. 잠시만 기다리세요."},
+  "高清压缩":{"zh":"高清压缩","ja":"高画質圧縮","en":"high-quality compression","ko":"고화질 압축"},
+  "深度压缩":{"zh":"深度压缩","ja":"高圧縮","en":"deep compression","ko":"고압축"},
+  "极限压缩（约 10 MiB）":{"zh":"极限压缩（约 10 MiB）","ja":"最大圧縮（約10 MiB）","en":"extreme compression (about 10 MiB)","ko":"최대 압축(약 10 MiB)"},
+  "正在拼接所选图像，请稍候":{"zh":"正在拼接所选图像，请稍候","ja":"選択した画像を結合しています。お待ちください。","en":"Stitching selected images. Please wait.","ko":"선택한 이미지를 합치는 중입니다. 잠시만 기다리세요."},
+  "Preparing capture...":{"zh":"Preparing capture...","ja":"撮影を準備中…","en":"Preparing capture...","ko":"캡처 준비 중..."},
+  "未找到待标记的截图。":{"zh":"未找到待标记的截图。","ja":"マーク対象の撮影画像が見つかりません。","en":"The screenshot to mark was not found.","ko":"표시할 스크린샷을 찾지 못했습니다."},
+  "未找到图像标记运行环境。":{"zh":"未找到图像标记运行环境。","ja":"画像マークの実行環境が見つかりません。","en":"The result-marking runtime was not found.","ko":"이미지 표시 실행 환경을 찾지 못했습니다."},
+  "胜负标记处理超时。":{"zh":"胜负标记处理超时。","ja":"勝敗マーク処理が時間切れになりました。","en":"Result marking timed out.","ko":"승패 표시 처리가 시간 초과되었습니다."},
+  "标记工具返回异常状态。":{"zh":"标记工具返回异常状态。","ja":"マークツールが異常な状態を返しました。","en":"The marking tool returned an error status.","ko":"표시 도구에서 오류 상태를 반환했습니다."},
+  "标记结果文件未生成。":{"zh":"标记结果文件未生成。","ja":"マーク結果ファイルが作成されませんでした。","en":"The marked output file was not created.","ko":"표시 결과 파일이 생성되지 않았습니다."},
+  "标记完成，但无法删除原始截图。":{"zh":"标记完成，但无法删除原始截图。","ja":"マークは完了しましたが、元の撮影画像を削除できません。","en":"Marking finished, but the original screenshot could not be deleted.","ko":"표시는 완료됐지만 원본 스크린샷을 삭제하지 못했습니다."}
 }
 '@
 
@@ -624,16 +728,22 @@ $script:LiteExtraTranslations = @{
 function Get-LiteLocalizedText([string]$Source) {
     if ($null -eq $Source) { return $Source }
     $text = [string]$Source
-    $entry = $script:LiteTranslations.PSObject.Properties[$text]
+    # Here-strings use the script's CRLF endings; JSON resources store LF.
+    $lookupText = $text.Replace("`r`n", "`n")
+    $entry = $script:LiteTranslations.PSObject.Properties[$lookupText]
     if ($entry) {
         $localized = $entry.Value.PSObject.Properties[$script:LiteLanguage]
         if ($localized) { return [string]$localized.Value }
     }
-    $extra = $script:LiteExtraTranslations[$text]
+    $extra = $script:LiteExtraTranslations[$lookupText]
     if ($extra -and $extra.ContainsKey($script:LiteLanguage)) {
         return [string]$extra[$script:LiteLanguage]
     }
     return $text
+}
+
+function Get-LiteLocalizedFormat([string]$Source, [object[]]$Values) {
+    return ((Get-LiteLocalizedText $Source) -f $Values)
 }
 
 $script:LiteSourceTexts = @{
@@ -685,8 +795,8 @@ if (-not $Check) {
         $adminMessage = '"\u8bf7\u6307\u6325\u5b98\u53f3\u952e\u8be5\u7a0b\u5e8f\u4ee5\u7ba1\u7406\u5458\u8eab\u4efd\u8fd0\u884c"' | ConvertFrom-Json
         $adminTitle = '"\u9700\u8981\u6307\u6325\u5b98\u6743\u9650"' | ConvertFrom-Json
         [System.Windows.MessageBox]::Show(
-            $adminMessage,
-            $adminTitle,
+            (Get-LiteLocalizedText $adminMessage),
+            (Get-LiteLocalizedText $adminTitle),
             [System.Windows.MessageBoxButton]::OK,
             [System.Windows.MessageBoxImage]::Warning
         ) | Out-Null
@@ -703,12 +813,12 @@ if (-not $Check) {
     try {
         $script:GuiInstanceMutex = [Threading.Mutex]::new($true, $script:GuiMutexName, [ref]$createdNew)
     } catch {
-        [System.Windows.MessageBox]::Show("无法初始化程序单实例保护：$($_.Exception.Message)", "NIKKE C ARENA Tool", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+        [System.Windows.MessageBox]::Show((Get-LiteLocalizedFormat "无法初始化程序单实例保护：{0}" @($_.Exception.Message)), "NIKKE C ARENA Tool", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
         exit 1
     }
     if (-not $createdNew) {
         try { $script:GuiInstanceMutex.Dispose() } catch {}
-        [System.Windows.MessageBox]::Show("NIKKE C ARENA Tool 已在运行。为避免重复截图，已阻止再次启动。", "NIKKE C ARENA Tool", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+        [System.Windows.MessageBox]::Show((Get-LiteLocalizedText "NIKKE C ARENA Tool 已在运行。为避免重复截图，已阻止再次启动。"), "NIKKE C ARENA Tool", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
         exit 0
     }
 }
@@ -1429,7 +1539,7 @@ try {
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0">
           <Button x:Name="BackButton" DockPanel.Dock="Right" Width="42" Height="28" Content="Back" Style="{StaticResource DarkButton}"/>
-          <TextBlock Text="C ARENA &#25130;&#22270;&#24037;&#20855; &#36731;&#37327;&#29256;" FontFamily="Segoe UI" FontWeight="Bold" FontSize="26" Foreground="#F7FBFF"/>
+          <TextBlock Text="C ARENA &#25130;&#22270;&#24037;&#20855; &#36731;&#37327;&#29256;" TextWrapping="Wrap" FontFamily="Segoe UI" FontWeight="Bold" FontSize="26" Foreground="#F7FBFF"/>
         </DockPanel>
         <TextBlock x:Name="SubPageHelpText" Grid.Row="1" Text="&#35831;&#25351;&#25381;&#23448;&#20808;&#25171;&#24320;&#20896;&#20891;&#31454;&#25216;&#22330;&#25351;&#23450;&#21442;&#36187;&#32773;&#20449;&#24687;&#65288;&#22914;&#22270;&#65289;&#21518;&#20877;&#25191;&#34892;&#25130;&#22270;" TextWrapping="Wrap"
                    FontFamily="Microsoft YaHei UI" FontSize="13" Foreground="#D7E8F6" Margin="0,4,0,6"/>
@@ -1439,7 +1549,7 @@ try {
         <Border x:Name="SettingsPanel" Grid.Row="2" CornerRadius="16" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="14,6" Visibility="Collapsed">
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True">
           <StackPanel>
-            <TextBlock Text="&#26222;&#36890;&#28857;&#20987;&#21518;&#31561;&#24453;&#33258;&#21160;&#25130;&#22270;&#30340;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" Margin="0,0,0,3"/>
+            <TextBlock Text="&#26222;&#36890;&#28857;&#20987;&#21518;&#31561;&#24453;&#33258;&#21160;&#25130;&#22270;&#30340;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" TextWrapping="Wrap" Margin="0,0,0,3"/>
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -1451,7 +1561,7 @@ try {
             </Grid>
             <Grid Margin="0,4,0,2">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <TextBlock Text="&#28857;&#20987;&#29609;&#23478;&#22836;&#20687;&#21040;&#24320;&#22987;&#25130;&#21462;&#35813;&#29609;&#23478;&#38453;&#23481;&#39029;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" VerticalAlignment="Center"/>
+              <TextBlock Text="&#28857;&#20987;&#29609;&#23478;&#22836;&#20687;&#21040;&#24320;&#22987;&#25130;&#21462;&#35813;&#29609;&#23478;&#38453;&#23481;&#39029;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" TextWrapping="Wrap" VerticalAlignment="Center"/>
               <CheckBox x:Name="PlayerLineupPollCheck" Grid.Column="1" Content="&#36718;&#35810;&#26816;&#27979;" Style="{StaticResource DarkOptionCheck}" FontSize="10" Margin="6,0,0,0" ToolTip="&#26816;&#27979;&#29609;&#23478;&#20116;&#38431;&#38453;&#23481;&#39029;&#65292;&#26368;&#38271;&#31561;&#24453; 10 &#31186;&#65307;&#36229;&#26102;&#21518;&#20173;&#20250;&#32487;&#32493;&#25130;&#22270;&#12290;"/>
             </Grid>
             <Grid>
@@ -1465,7 +1575,7 @@ try {
             </Grid>
             <Grid Margin="0,4,0,2">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-              <TextBlock Text="&#28857;&#20987;&#29992;&#25143;&#22836;&#20687;&#21518;&#21040;&#25130;&#21462;&#22522;&#26412;&#20449;&#24687;&#39029;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" VerticalAlignment="Center"/>
+              <TextBlock Text="&#28857;&#20987;&#29992;&#25143;&#22836;&#20687;&#21518;&#21040;&#25130;&#21462;&#22522;&#26412;&#20449;&#24687;&#39029;&#30340;&#31561;&#24453;&#26102;&#38388;&#65288;&#31186;&#65289;" FontFamily="Microsoft YaHei UI" FontSize="12" FontWeight="Bold" Foreground="#D7E8F6" TextWrapping="Wrap" VerticalAlignment="Center"/>
               <CheckBox x:Name="AvatarProfilePollCheck" Grid.Column="1" Content="&#36718;&#35810;&#26816;&#27979;" Style="{StaticResource DarkOptionCheck}" FontSize="10" Margin="6,0,0,0" ToolTip="检测基础信息页，最长等待 10 秒；超时后仍会截取当前画面。"/>
             </Grid>
             <Grid>
@@ -2366,8 +2476,28 @@ function Set-LiteLocalizedTextBlock($TextBlock, [string]$Source) {
     $TextBlock.Text = Get-LiteLocalizedText $Source
 }
 
+$script:LiteLocalizedPropertySources = @{}
+
 function Set-LiteLocalizedElementText($Element) {
     if ($null -eq $Element) { return }
+    if ($null -eq $script:LiteLocalizedPropertySources) { $script:LiteLocalizedPropertySources = @{} }
+    # Language buttons intentionally retain their native language names/glyphs.
+    if ($Element -is [Windows.FrameworkElement] -and $Element.Name -match '^Language(Zh|Ja|En|Ko)Button$') { return }
+    foreach ($propertyName in @("ToolTip", "Title")) {
+        if (-not $Element.PSObject.Properties[$propertyName]) { continue }
+        $value = $Element.$propertyName
+        if ($value -isnot [string]) { continue }
+        if (-not $script:LiteLocalizedPropertySources.ContainsKey($Element)) {
+            $script:LiteLocalizedPropertySources[$Element] = @{}
+        }
+        $propertySources = $script:LiteLocalizedPropertySources[$Element]
+        if (-not $propertySources.ContainsKey($propertyName) -and (Test-LiteTranslationKey $value)) {
+            $propertySources[$propertyName] = [string]$value
+        }
+        if ($propertySources.ContainsKey($propertyName)) {
+            $Element.$propertyName = Get-LiteLocalizedText $propertySources[$propertyName]
+        }
+    }
     $source = $null
     if ($Element.PSObject.Properties["Tag"] -and ([string]$Element.Tag).StartsWith("LiteI18n:")) {
         $source = ([string]$Element.Tag).Substring(9)
@@ -2397,6 +2527,8 @@ function Set-LiteLocalizedElementText($Element) {
 
 function Set-LiteLocalizedVisualTree($Root) {
     if ($null -eq $Root) { return }
+    # Templates contain unnamed TextBlocks; exclude the entire language button.
+    if ($Root -is [Windows.FrameworkElement] -and $Root.Name -match '^Language(Zh|Ja|En|Ko)Button$') { return }
     Set-LiteLocalizedElementText $Root
     try {
         $count = [Windows.Media.VisualTreeHelper]::GetChildrenCount($Root)
@@ -2408,6 +2540,7 @@ function Set-LiteLocalizedVisualTree($Root) {
 
 function Set-LiteLocalizedLogicalTree($Root) {
     if ($null -eq $Root) { return }
+    if ($Root -is [Windows.FrameworkElement] -and $Root.Name -match '^Language(Zh|Ja|En|Ko)Button$') { return }
     Set-LiteLocalizedElementText $Root
     try {
         foreach ($child in [Windows.LogicalTreeHelper]::GetChildren($Root)) {
@@ -2426,11 +2559,15 @@ function Update-LiteLanguageButtons {
         en = $LanguageEnButton
         ko = $LanguageKoButton
     }
+    $languageGlyphs = @{ zh = "中"; ja = "日"; en = "EN"; ko = "한" }
+    $languageNames = @{ zh = "简体中文"; ja = "日本語"; en = "English"; ko = "한국어" }
     $activeForeground = if ($script:CurrentTheme -eq "pink") { "#FF4F8B" } else { "#7EE6FF" }
     $inactiveForeground = if ($script:CurrentTheme -eq "pink") { "#9B7787" } else { "#7C93A7" }
     foreach ($key in $buttons.Keys) {
         $button = $buttons[$key]
         if (-not $button) { continue }
+        $button.Content = $languageGlyphs[$key]
+        $button.ToolTip = $languageNames[$key]
         $isActive = ($key -eq $active)
         $button.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString($(if ($isActive) { $activeForeground } else { $inactiveForeground }))
         $button.FontWeight = if ($isActive) { [Windows.FontWeights]::Bold } else { [Windows.FontWeights]::Normal }
@@ -3910,7 +4047,7 @@ function Save-CaptureTimingSettings {
         $encoding = [Text.UTF8Encoding]::new($false)
         [IO.File]::WriteAllText($RoundConfigPath, $json + [Environment]::NewLine, $encoding)
     } catch {
-        Append-Log ("Failed to save capture settings: " + $_.Exception.Message)
+        Append-Log (Get-LiteLocalizedFormat "Failed to save capture settings: {0}" @($_.Exception.Message))
     }
 }
 
@@ -4672,7 +4809,7 @@ function Get-RoundRobinAllOutputFolder([string]$DateFolder, [string]$ResolutionL
         )
         if ($candidates.Count -gt 0) {
             $folder = $candidates[0].FullName
-            Append-Log ("Resuming round-robin batch: " + $folder)
+            Append-Log (Get-LiteLocalizedFormat "Resuming round-robin batch: {0}" @($folder))
             return $folder
         }
     }
@@ -6129,7 +6266,7 @@ function Stop-ActiveCapture {
             Append-Log "Capture stopped by Alt+2."
             Show-TopMessage $TextStopMessage $TextStopTitle ([System.Windows.MessageBoxImage]::Warning)
         } catch {
-            Append-Log ("Stop failed: " + $_.Exception.Message)
+            Append-Log (Get-LiteLocalizedFormat "Stop failed: {0}" @($_.Exception.Message))
         }
     }
 }
@@ -6209,7 +6346,7 @@ function Set-OcrSlotBatchSelection([string]$SlotKey, [string[]]$Paths) {
 
     $targets = @(Get-OcrSlotBatchTargets $SlotKey)
     if ($Paths.Count -gt $targets.Count) {
-        Show-TopMessage ("本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。" -f $Paths.Count, $targets.Count) "卡槽数量不足" ([System.Windows.MessageBoxImage]::Warning)
+        Show-TopMessage (Get-LiteLocalizedFormat "本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。" @($Paths.Count, $targets.Count)) "卡槽数量不足" ([System.Windows.MessageBoxImage]::Warning)
         return $false
     }
 
@@ -6328,7 +6465,7 @@ function Update-OcrSeasonSlotStatuses {
 function Select-OcrImage([string]$SlotKey = $null) {
     $dialog = New-Object Microsoft.Win32.OpenFileDialog
     $dialog.Title = Get-LiteLocalizedText "选择赛季全部战斗数据图像"
-    $dialog.Filter = "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+    $dialog.Filter = Get-LiteLocalizedText "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
     $dialog.CheckFileExists = $true
     $dialog.Multiselect = [bool]$SlotKey
     $dialog.InitialDirectory = Get-OutputDateFolder
@@ -6516,7 +6653,7 @@ function Set-ImageToolBatchSelection([string]$SlotKey, [string[]]$Paths) {
 
     $targets = @(Get-ImageToolBatchTargets $SlotKey)
     if ($Paths.Count -gt $targets.Count) {
-        Show-ImageToolMessage ("本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。" -f $Paths.Count, $targets.Count) "卡槽数量不足" "Warning"
+        Show-ImageToolMessage (Get-LiteLocalizedFormat "本次选择了 {0} 张图像，但从当前卡槽起只剩 {1} 个可用卡槽。请先清空卡槽后重试。" @($Paths.Count, $targets.Count)) "卡槽数量不足" "Warning"
         return $false
     }
 
@@ -6553,7 +6690,7 @@ function Select-ImageToolImage([string]$SlotKey) {
     if (-not $SlotKey -or -not $script:ImageToolSlots.ContainsKey($SlotKey)) { return }
     $dialog = New-Object Microsoft.Win32.OpenFileDialog
     $dialog.Title = Get-LiteLocalizedText "选择要处理的图像"
-    $dialog.Filter = "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+    $dialog.Filter = Get-LiteLocalizedText "PNG / JPG 图像 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
     $dialog.CheckFileExists = $true
     $dialog.Multiselect = $true
     $dialog.InitialDirectory = Get-OutputDateFolder
@@ -6723,7 +6860,7 @@ function Close-ImageToolProgressWindow {
     $script:ImageToolProgressWindow = $null
 }
 
-function Show-ManualPromptAudioSettingsDialog {
+function New-ManualPromptAudioSettingsDialog {
     $isPink = ($script:CurrentTheme -eq "pink")
     $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
     $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
@@ -6735,7 +6872,7 @@ function Show-ManualPromptAudioSettingsDialog {
     $accentTextColor = if ($isPink) { "#6D344B" } else { "#06151F" }
 
     $dialog = New-Object Windows.Window
-    $dialog.Title = "音量设置"
+    $dialog.Title = Get-LiteLocalizedText "音量设置"
     $dialog.Width = 440
     $dialog.MinHeight = 300
     $dialog.SizeToContent = "Height"
@@ -6779,16 +6916,19 @@ function Show-ManualPromptAudioSettingsDialog {
     [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
     $header.Children.Add($closeButton) | Out-Null
     $title = New-Object Windows.Controls.TextBlock
-    $title.Text = "音量设置"
+    $title.Text = Get-LiteLocalizedText "音量设置"
     $title.FontFamily = "Microsoft YaHei UI"
     $title.FontSize = 18
     $title.FontWeight = "Bold"
     $title.Foreground = New-WpfBrush $titleColor
     $title.VerticalAlignment = "Center"
+    $title.TextWrapping = "Wrap"
     $header.Children.Add($title) | Out-Null
 
     $hint = New-Object Windows.Controls.TextBlock
-    $hint.Text = "仅用于国际服与港澳台服的手动左键确认提示音。"
+    $hint.Name = "AudioDialogHint"
+    $hint.TextWrapping = "Wrap"
+    $hint.Text = Get-LiteLocalizedText "仅用于国际服与港澳台服的手动左键确认提示音。"
     $hint.FontFamily = "Microsoft YaHei UI"
     $hint.FontSize = 12
     $hint.Foreground = New-WpfBrush $bodyColor
@@ -6799,7 +6939,7 @@ function Show-ManualPromptAudioSettingsDialog {
     $volumeHeader.Margin = [Windows.Thickness]::new(0, 0, 0, 7)
     $stack.Children.Add($volumeHeader) | Out-Null
     $volumeLabel = New-Object Windows.Controls.TextBlock
-    $volumeLabel.Text = "提示音音量"
+    $volumeLabel.Text = Get-LiteLocalizedText "提示音音量"
     $volumeLabel.FontFamily = "Microsoft YaHei UI"
     $volumeLabel.FontSize = 13
     $volumeLabel.FontWeight = "Bold"
@@ -6811,10 +6951,12 @@ function Show-ManualPromptAudioSettingsDialog {
     $volumeText.FontSize = 13
     $volumeText.FontWeight = "Bold"
     $volumeText.Foreground = New-WpfBrush $accentColor
+    $volumeText.HorizontalAlignment = "Right"
     [Windows.Controls.DockPanel]::SetDock($volumeText, "Right")
     $volumeHeader.Children.Add($volumeText) | Out-Null
 
     $volumeSlider = New-Object Windows.Controls.Slider
+    $volumeSlider.Name = "ManualPromptVolumeSlider"
     $volumeSlider.Minimum = 0
     $volumeSlider.Maximum = 100
     $volumeSlider.TickFrequency = 5
@@ -6823,13 +6965,14 @@ function Show-ManualPromptAudioSettingsDialog {
     $volumeSlider.AutoToolTipPlacement = "TopLeft"
     $volumeSlider.Margin = [Windows.Thickness]::new(0, 0, 0, 20)
     $stack.Children.Add($volumeSlider) | Out-Null
+    $volumeSlider.Tag = $volumeText
     $volumeSlider.Add_ValueChanged({
         param($sender, $eventArgs)
-        $volumeText.Text = ("{0}%" -f [int][Math]::Round($sender.Value))
+        $sender.Tag.Text = ("{0}%" -f [int][Math]::Round($sender.Value))
     })
 
     $timbreLabel = New-Object Windows.Controls.TextBlock
-    $timbreLabel.Text = "提示音音色"
+    $timbreLabel.Text = Get-LiteLocalizedText "提示音音色"
     $timbreLabel.FontFamily = "Microsoft YaHei UI"
     $timbreLabel.FontSize = 13
     $timbreLabel.FontWeight = "Bold"
@@ -6850,24 +6993,23 @@ function Show-ManualPromptAudioSettingsDialog {
     $bitRadio.IsChecked = ($script:ManualClickPromptTimbre -eq "8bit")
     $timbrePanel.Children.Add($bitRadio) | Out-Null
     $musicboxRadio = New-Object Windows.Controls.RadioButton
-    $musicboxRadio.Content = "八音盒"
+    $musicboxRadio.Content = Get-LiteLocalizedText "八音盒"
+    $musicboxRadio.Name = "ManualPromptMusicboxRadio"
     $musicboxRadio.GroupName = "ManualPromptTimbre"
     $musicboxRadio.FontFamily = "Microsoft YaHei UI"
     $musicboxRadio.Foreground = New-WpfBrush $bodyColor
     $musicboxRadio.IsChecked = ($script:ManualClickPromptTimbre -eq "musicbox_chime")
     $timbrePanel.Children.Add($musicboxRadio) | Out-Null
-    $getSelectedTimbre = {
-        if ($musicboxRadio.IsChecked) { return "musicbox_chime" }
-        return "8bit"
-    }
 
     $buttonPanel = New-Object Windows.Controls.StackPanel
     $buttonPanel.Orientation = "Horizontal"
     $buttonPanel.HorizontalAlignment = "Right"
     $stack.Children.Add($buttonPanel) | Out-Null
     $previewButton = New-Object Windows.Controls.Button
-    $previewButton.Content = "试听"
-    $previewButton.Width = 76
+    $previewButton.Content = Get-LiteLocalizedText "试听"
+    $previewButton.Name = "ManualPromptPreviewButton"
+    $previewButton.MinWidth = 76
+    $previewButton.Padding = [Windows.Thickness]::new(12, 0, 12, 0)
     $previewButton.Height = 34
     $previewButton.FontFamily = "Microsoft YaHei UI"
     $previewButton.FontWeight = "Bold"
@@ -6877,8 +7019,10 @@ function Show-ManualPromptAudioSettingsDialog {
     $previewButton.Margin = [Windows.Thickness]::new(0, 0, 10, 0)
     $buttonPanel.Children.Add($previewButton) | Out-Null
     $saveButton = New-Object Windows.Controls.Button
-    $saveButton.Content = "保存并关闭"
-    $saveButton.Width = 116
+    $saveButton.Content = Get-LiteLocalizedText "保存并关闭"
+    $saveButton.Name = "ManualPromptSaveButton"
+    $saveButton.MinWidth = 116
+    $saveButton.Padding = [Windows.Thickness]::new(12, 0, 12, 0)
     $saveButton.Height = 34
     $saveButton.FontFamily = "Microsoft YaHei UI"
     $saveButton.FontWeight = "Bold"
@@ -6890,9 +7034,14 @@ function Show-ManualPromptAudioSettingsDialog {
 
     $closeButton.Tag = $dialog
     $closeButton.Add_Click({ param($sender, $eventArgs) $sender.Tag.Close() })
+    $audioControls = [pscustomobject]@{ Dialog = $dialog; VolumeSlider = $volumeSlider; MusicboxRadio = $musicboxRadio }
+    $previewButton.Tag = $audioControls
+    $saveButton.Tag = $audioControls
     $previewButton.Add_Click({
-        $volume = [int][Math]::Round($volumeSlider.Value)
-        $timbre = & $getSelectedTimbre
+        param($sender, $eventArgs)
+        $controls = $sender.Tag
+        $volume = [int][Math]::Round($controls.VolumeSlider.Value)
+        $timbre = if ($controls.MusicboxRadio.IsChecked) { "musicbox_chime" } else { "8bit" }
         if (-not $PythonExe -or -not (Test-Path -LiteralPath $PythonExe)) {
             Show-ImageToolMessage "当前运行环境无法播放提示音试听。" "音量设置" "Warning"
             return
@@ -6901,16 +7050,24 @@ function Show-ManualPromptAudioSettingsDialog {
             $previewArguments = "`"$StitcherPath`" --play-manual-prompt-tone --manual-prompt-volume $volume --manual-prompt-timbre $timbre --quiet"
             Start-Process -FilePath $PythonExe -ArgumentList $previewArguments -WindowStyle Hidden | Out-Null
         } catch {
-            Show-ImageToolMessage ("提示音试听失败：" + $_.Exception.Message) "音量设置" "Warning"
+            Show-ImageToolMessage (Get-LiteLocalizedFormat "提示音试听失败：{0}" @($_.Exception.Message)) "音量设置" "Warning"
         }
     })
     $saveButton.Add_Click({
-        $script:ManualClickPromptVolume = [int][Math]::Round($volumeSlider.Value)
-        $script:ManualClickPromptTimbre = & $getSelectedTimbre
+        param($sender, $eventArgs)
+        $controls = $sender.Tag
+        $script:ManualClickPromptVolume = [int][Math]::Round($controls.VolumeSlider.Value)
+        $script:ManualClickPromptTimbre = if ($controls.MusicboxRadio.IsChecked) { "musicbox_chime" } else { "8bit" }
         Save-CaptureTimingSettings
-        Append-Log ("手动确认提示音已更新：{0}，{1}%" -f $script:ManualClickPromptTimbre, $script:ManualClickPromptVolume)
-        $dialog.Close()
+        $timbreLabel = if ($script:ManualClickPromptTimbre -eq "musicbox_chime") { Get-LiteLocalizedText "八音盒" } else { "8bit" }
+        Append-Log (Get-LiteLocalizedFormat "手动确认提示音已更新：{0}，{1}%" @($timbreLabel, $script:ManualClickPromptVolume))
+        $controls.Dialog.Close()
     })
+    return $dialog
+}
+
+function Show-ManualPromptAudioSettingsDialog {
+    $dialog = New-ManualPromptAudioSettingsDialog
     $dialog.ShowDialog() | Out-Null
 }
 
@@ -7186,7 +7343,7 @@ function Show-MonthlyPreflightDialog(
     return $dialog.Tag
 }
 
-function Show-ProgramHelpDialog {
+function New-ProgramHelpDialog {
     $isPink = ($script:CurrentTheme -eq "pink")
     $panelBackgroundColor = if ($isPink) { "#F7FFF8FC" } else { "#F40B1424" }
     $panelBorderColor = if ($isPink) { "#FFFFBCD5" } else { "#5EDCFF" }
@@ -7199,7 +7356,7 @@ function Show-ProgramHelpDialog {
 
     $availableHeight = [Math]::Max(420, [int][Windows.SystemParameters]::WorkArea.Height - 40)
     $dialog = New-Object Windows.Window
-    $dialog.Title = "帮助"
+    $dialog.Title = Get-LiteLocalizedText "帮助"
     $dialog.Width = 650
     $dialog.Height = [Math]::Min(680, $availableHeight)
     $dialog.MinHeight = 420
@@ -7249,12 +7406,14 @@ function Show-ProgramHelpDialog {
     [Windows.Controls.DockPanel]::SetDock($closeButton, "Right")
     $header.Children.Add($closeButton) | Out-Null
     $headerText = New-Object Windows.Controls.TextBlock
-    $headerText.Text = "NIKKE C ARENA Tool 轻量版帮助"
+    $headerText.Text = Get-LiteLocalizedText "NIKKE C ARENA Tool 轻量版帮助"
+    $headerText.Name = "LiteHelpHeader"
     $headerText.FontFamily = "Microsoft YaHei UI"
     $headerText.FontSize = 19
     $headerText.FontWeight = "Bold"
     $headerText.Foreground = New-WpfBrush $titleColor
     $headerText.VerticalAlignment = "Center"
+    $headerText.TextWrapping = "Wrap"
     $header.Children.Add($headerText) | Out-Null
 
     $scrollViewer = New-Object Windows.Controls.ScrollViewer
@@ -7269,7 +7428,8 @@ function Show-ProgramHelpDialog {
     $addSection = {
         param([string]$Heading, [string]$Message)
         $headingBlock = New-Object Windows.Controls.TextBlock
-        $headingBlock.Text = $Heading
+        $headingBlock.Text = Get-LiteLocalizedText $Heading
+        $headingBlock.Tag = "LiteHelpSection"
         $headingBlock.FontFamily = "Microsoft YaHei UI"
         $headingBlock.FontSize = 14
         $headingBlock.FontWeight = "Bold"
@@ -7278,7 +7438,8 @@ function Show-ProgramHelpDialog {
         $content.Children.Add($headingBlock) | Out-Null
 
         $bodyBlock = New-Object Windows.Controls.TextBlock
-        $bodyBlock.Text = $Message
+        $bodyBlock.Text = Get-LiteLocalizedText ($Message.TrimEnd([char[]]"`r`n"))
+        $bodyBlock.Tag = "LiteHelpBody"
         $bodyBlock.FontFamily = "Microsoft YaHei UI"
         $bodyBlock.FontSize = 12
         $bodyBlock.LineHeight = 20
@@ -7317,7 +7478,7 @@ function Show-ProgramHelpDialog {
     $releaseLinkBlock.Foreground = New-WpfBrush $bodyColor
     $releaseLinkBlock.TextWrapping = "Wrap"
     $releaseLinkBlock.Margin = [Windows.Thickness]::new(0, 0, 0, 4)
-    $releaseLinkBlock.Inlines.Add("GitHub 发布页：") | Out-Null
+    $releaseLinkBlock.Inlines.Add((Get-LiteLocalizedText "GitHub 发布页：")) | Out-Null
     $releaseLink = New-Object Windows.Documents.Hyperlink
     $releaseLink.NavigateUri = [Uri]"https://github.com/iiwm5458/iiwm/releases"
     $releaseLink.Foreground = New-WpfBrush $sectionColor
@@ -7338,8 +7499,10 @@ function Show-ProgramHelpDialog {
     [Windows.Controls.Grid]::SetRow($buttonPanel, 2)
     $layout.Children.Add($buttonPanel) | Out-Null
     $doneButton = New-Object Windows.Controls.Button
-    $doneButton.Content = "我已了解"
-    $doneButton.Width = 112
+    $doneButton.Content = Get-LiteLocalizedText "我已了解"
+    $doneButton.Name = "LiteHelpDoneButton"
+    $doneButton.MinWidth = 112
+    $doneButton.Padding = [Windows.Thickness]::new(16, 0, 16, 0)
     $doneButton.Height = 36
     $doneButton.FontFamily = "Microsoft YaHei UI"
     $doneButton.FontWeight = "Bold"
@@ -7356,6 +7519,11 @@ function Show-ProgramHelpDialog {
     }
     $closeButton.Add_Click($closeDialog)
     $doneButton.Add_Click($closeDialog)
+    return $dialog
+}
+
+function Show-ProgramHelpDialog {
+    $dialog = New-ProgramHelpDialog
     $dialog.ShowDialog() | Out-Null
 }
 
@@ -7401,7 +7569,7 @@ function Complete-ImageToolProcess {
             $payload = $message | ConvertFrom-Json
             if ($payload.error) { $message = [string]$payload.error }
         } catch {}
-        Append-Log ("Image tool failed: " + $message)
+        Append-Log (Get-LiteLocalizedFormat "Image tool failed: {0}" @($message))
         Show-ImageToolMessage $message "图像工具" "Error"
         return
     }
@@ -7416,17 +7584,18 @@ function Complete-ImageToolProcess {
             "annotate-direct" { "玩家战果标记" }
             default { "图像处理" }
         }
-        Append-Log ("Image tool {0} completed: {1} file(s) -> {2}" -f $actionText, $outputCount, $outputFolder)
+        $actionText = Get-LiteLocalizedText $actionText
+        Append-Log (Get-LiteLocalizedFormat "Image tool {0} completed: {1} file(s) -> {2}" @($actionText, $outputCount, $outputFolder))
         $summary = ""
         if ($operation -eq "annotate-direct") {
-            $winnerText = if ($result.winner -eq "attacker") { "左侧玩家" } else { "右侧玩家" }
-            $summary = ("{0}已从中间详细战果页判断胜负：{1}获胜，已标记 2 位玩家。" -f [Environment]::NewLine, $winnerText)
+            $winnerText = Get-LiteLocalizedText $(if ($result.winner -eq "attacker") { "左侧玩家" } else { "右侧玩家" })
+            $summary = (Get-LiteLocalizedFormat "{0}已从中间详细战果页判断胜负：{1}获胜，已标记 2 位玩家。" @([Environment]::NewLine, $winnerText))
         }
-        $message = ("图像{0}完成，指挥官，已生成 {1} 个文件。{2}{3}{2}{4}" -f $actionText, $outputCount, [Environment]::NewLine, $summary, $outputFolder)
+        $message = (Get-LiteLocalizedFormat "图像{0}完成，指挥官，已生成 {1} 个文件。{2}{3}{2}{4}" @($actionText, $outputCount, [Environment]::NewLine, $summary, $outputFolder))
         $title = if ($operation -eq "annotate-direct") { "玩家战果标记" } else { "图像工具" }
         Show-ImageToolMessage $message $title "Information"
     } catch {
-        Append-Log ("Image tool result parsing failed: " + $_.Exception.Message)
+        Append-Log (Get-LiteLocalizedFormat "Image tool result parsing failed: {0}" @($_.Exception.Message))
         Show-ImageToolMessage "图像已处理完成，但无法读取输出信息。请打开截图文件夹查看结果。" "图像工具" "Warning"
     }
 }
@@ -7478,7 +7647,7 @@ function Start-ImageToolOperation(
             Show-ImageToolMessage "图像间距需为 0 到 5000 的整数像素。" "小组循环赛" "Warning"
             return
         }
-        Append-Log ("小组循环赛拼接背景：{0}" -f $RoundRobinBackground)
+        Append-Log (Get-LiteLocalizedFormat "小组循环赛拼接背景：{0}" @($RoundRobinBackground))
         $arguments += @("--input-dir", ($quote + $InputFolder + $quote), "--layout", $RoundRobinLayout, "--gap", $RoundRobinGap, "--background", $RoundRobinBackground)
         if ($RoundRobinGroupLabels) { $arguments += "--group-labels" }
         $message = "正在拼接小组循环赛图像，请稍候"
@@ -7490,7 +7659,7 @@ function Start-ImageToolOperation(
             "extreme" { "极限压缩（约 10 MiB）"; break }
             default { "高清压缩" }
         }
-        $message = ("正在进行{0}，请稍候" -f $compressionLabel)
+        $message = Get-LiteLocalizedFormat "正在进行{0}，请稍候" @((Get-LiteLocalizedText $compressionLabel))
     } elseif ($Operation -eq "stitch") {
         if ($paths.Count -lt 2) {
             Show-ImageToolMessage "拼接图像至少需要选择 2 张图像。" "图像工具" "Warning"
@@ -7501,14 +7670,14 @@ function Start-ImageToolOperation(
         $direction = if ([bool]$ImageToolHorizontalCheck.IsChecked) { "horizontal" } else { "vertical" }
         $stitchBackground = Get-ImageToolStitchBackground
         Set-ImageToolStitchBackground $stitchBackground
-        Append-Log ("图像拼接背景：{0}" -f $stitchBackground)
+        Append-Log (Get-LiteLocalizedFormat "图像拼接背景：{0}" @($stitchBackground))
         if ($stitchBackground -eq "custom") {
             $customBackground = Get-ImageToolCustomBackgroundPath
             if (-not $customBackground) {
                 Show-ImageToolMessage "未找到自定义背景图。请将 JPG 或 PNG 图片放入 custom_backgrounds 后重试。" "图像工具" "Warning"
                 return
             }
-            Append-Log ("图像拼接自定义背景：{0}" -f $customBackground)
+            Append-Log (Get-LiteLocalizedFormat "图像拼接自定义背景：{0}" @($customBackground))
             $arguments += @("--background-image", ($quote + $customBackground + $quote))
         }
         $arguments += @("--direction", $direction, "--gap", $gap, "--background", $stitchBackground)
@@ -7572,8 +7741,8 @@ function Start-ImageToolOperation(
         Close-ImageToolProgressWindow
         Set-Running $false
         $script:ImageToolProcess = $null
-        Append-Log ("Image tool launch failed: " + $_.Exception.Message)
-        Show-ImageToolMessage ("无法启动图像处理：" + $_.Exception.Message) "图像工具" "Error"
+        Append-Log (Get-LiteLocalizedFormat "Image tool launch failed: {0}" @($_.Exception.Message))
+        Show-ImageToolMessage (Get-LiteLocalizedFormat "无法启动图像处理：{0}" @($_.Exception.Message)) "图像工具" "Error"
     }
 }
 
@@ -8239,7 +8408,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         if ($roundRobinAllGroups) {
             $roundRobinOutputFolder = Get-RoundRobinAllOutputFolder $dateFolder $resolutionLabel $serverFileSuffix $roundRobinStartGroup
             $output = Join-Path $roundRobinOutputFolder ("{0}.jpg" -f $fileStem)
-            Append-Log ("Round-robin all GROUP capture: Group{0:00}-Group64 -> {1}" -f $roundRobinStartGroup, $roundRobinOutputFolder)
+            Append-Log (Get-LiteLocalizedFormat "Round-robin all GROUP capture: Group{0:00}-Group64 -> {1}" @($roundRobinStartGroup, $roundRobinOutputFolder))
         } else {
             $output = Get-UniqueOutputPath $dateFolder ("{0}.png" -f $fileStem)
         }
@@ -8257,7 +8426,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         $roundRobinBackground = Get-RoundRobinBackground
         if ($CurrentCaptureMode -eq "round-robin") {
             Set-RoundRobinBackground $roundRobinBackground
-            Append-Log ("小组循环赛拼图背景：{0}" -f $roundRobinBackground)
+            Append-Log (Get-LiteLocalizedFormat "小组循环赛拼图背景：{0}" @($roundRobinBackground))
             if ($roundRobinPostResult) {
                 Append-Log "小组循环赛：将在四人资料页前截取战斗结果。"
             }
@@ -8295,7 +8464,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         if ($isWindowedCapture) {
             $arguments += " --window-handle $($captureWindowInfo.Handle.ToInt64())"
         }
-        Append-Log ("Worker: " + $psi.FileName)
+        Append-Log (Get-LiteLocalizedFormat "Worker: {0}" @($psi.FileName))
         if ($CurrentCaptureMode -eq "round-robin") {
             $arguments += " --round-robin --round-robin-gap $roundRobinCaptureGap --round-robin-background $roundRobinBackground"
             if ($roundRobinPostResult) {
@@ -8394,7 +8563,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
             if ($script:CaptureWindowRestoreTriggered) {
                 Append-Log "Capture was terminated after the launcher window was restored."
             } else {
-                Append-Log "Capture timed out after $timeoutSeconds seconds."
+                Append-Log (Get-LiteLocalizedFormat "Capture timed out after {0} seconds." @($timeoutSeconds))
             }
             return
         }
@@ -8415,17 +8584,17 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
                     $output = $annotationResult.OutputPath
                     Append-Log "胜负标记完成，原始截图已删除。"
                 } else {
-                    $automaticBattleAnnotationWarning = "截图已完成，但胜负标记失败，原始截图已保留。`n`n原因：" + $annotationResult.Error
+                    $automaticBattleAnnotationWarning = Get-LiteLocalizedFormat "截图已完成，但胜负标记失败，原始截图已保留。`n`n原因：{0}" @((Get-LiteLocalizedText ([string]$annotationResult.Error)))
                     Append-Log $automaticBattleAnnotationWarning
                 }
             }
             $name = Split-Path -Leaf $output
             if ($CurrentCaptureMode -eq "round-robin" -and $roundRobinAllGroups) {
-                Append-Log ("Done: GROUP{0:00}-GROUP64 saved to {1}" -f $roundRobinStartGroup, (Split-Path -Parent $output))
+                Append-Log (Get-LiteLocalizedFormat "Done: GROUP{0:00}-GROUP64 saved to {1}" @($roundRobinStartGroup, (Split-Path -Parent $output)))
             } elseif ($CurrentCaptureMode -eq "season") {
-                Append-Log "Done: $name`nAlso saved: 32进16全部战斗数据（详）, 16进8全部战斗数据（详）, TOP8-决赛战斗数据（详）"
+                Append-Log (Get-LiteLocalizedFormat "Done: {0}`nAlso saved: {1}" @($name, "32进16全部战斗数据（详）, 16进8全部战斗数据（详）, TOP8-决赛战斗数据（详）"))
             } else {
-                Append-Log "Done: $name"
+                Append-Log (Get-LiteLocalizedFormat "Done: {0}" @($name))
             }
             # NIKKE_DISABLED_AUTO_OCR_EXPORT_20260630: Capture-time JSON/Excel export is parked; keep this block for future restoration.
             <#
@@ -8475,11 +8644,11 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
             }
         } else {
             $text = (($stdout + "`n" + $stderr) -split "`r?`n" | Where-Object { $_ }) | Select-Object -Last 4
-            Append-Log ("Capture failed:`n" + ($text -join "`n"))
+            Append-Log (Get-LiteLocalizedFormat "Capture failed:`n{0}" @(($text -join "`n")))
             Show-TopMessage ($TextCaptureFailureMessage + "`n" + $captureLogPath) $TextCaptureFailureTitle ([System.Windows.MessageBoxImage]::Error)
         }
     } catch {
-        Append-Log ("Failed: " + $_.Exception.Message)
+        Append-Log (Get-LiteLocalizedFormat "Failed: {0}" @($_.Exception.Message))
         Add-CaptureDiagnosticsLog $captureLogPath ("launcher_exception: " + $_.Exception.ToString())
     } finally {
         Add-CaptureDiagnosticsLog $captureLogPath ("capture_finished; completed={0}; stopped={1}" -f $completed, $script:StopRequested)
@@ -8496,7 +8665,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
             if ($automaticBattleAnnotationWarning) {
                 Show-ImageToolMessage $automaticBattleAnnotationWarning "胜负标记" "Warning"
             } elseif ($automaticBattleAnnotationRequested) {
-                Show-TopMessage ($TextDoneMessage + "`n`n胜负标记完成，原始截图已删除。") $TextDoneTitle ([System.Windows.MessageBoxImage]::Information)
+                Show-TopMessage ($TextDoneMessage + "`n`n" + (Get-LiteLocalizedText "胜负标记完成，原始截图已删除。")) $TextDoneTitle ([System.Windows.MessageBoxImage]::Information)
             } else {
                 Show-TopMessage $TextDoneMessage $TextDoneTitle ([System.Windows.MessageBoxImage]::Information)
             }

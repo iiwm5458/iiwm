@@ -15,8 +15,19 @@ battle-image OCR exports. The repository contains both supported products:
 Installers are built under `dist` and distributed through GitHub Releases,
 rather than committed to the Git repository:
 
-- Full edition: `NIKKE_Arena_Tool_Setup_0.1.24.exe`
-- Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.14.exe`
+- Full edition: `NIKKE_Arena_Tool_Setup_0.1.25.exe`
+- Lite edition: `NIKKE_Arena_Capture_Lite_Setup_0.1.15.exe`
+
+Both installers default to their existing product folders under
+`C:\NIKKE_C_ARENA_Tool` and always allow choosing another directory. Previous
+installation records no longer replace this default. To install over an
+existing copy, select its directory manually; choosing a new directory does
+not migrate or delete the old copy.
+
+Each edition also has a cumulative update patch for all its released versions
+from 0.1.0 onward. Patches update the selected existing directory and preserve
+user data and installed runtimes. See the [full 0.1.25 release notes](RELEASE_NOTES_0.1.25.md)
+and [Lite 0.1.15 release notes](RELEASE_NOTES_LITE_0.1.15.md) for changes and reasons.
 
 ## Repository Scope
 
@@ -24,7 +35,8 @@ This repository keeps the application source, installer and update-patch
 scripts, required visual resources, OCR parsing logic, and the small offline
 model/template files needed to reproduce a release. It deliberately excludes
 personal screenshots, OCR results, diagnostics, recovery copies, local Python
-runtimes, built installers, and GPU/CUDA runtime components.
+runtimes, built installers, private Logitech MOD/assistant source, standalone
+Logitech test builds, and GPU/CUDA runtime components.
 
 The full edition provides optional GPU setup scripts and documentation only.
 Users configure any NVIDIA/CUDA/Paddle GPU environment themselves.
@@ -38,13 +50,14 @@ capture mode still uses the existing mouse behavior. The separate Logitech
 click MOD is distributed as its own archive and is not included in official
 installers or update patches. The host accepts only the project-approved MOD
 payload with pinned file hashes. Capture Lite has no input-extension host.
-Installed MOD files live outside the program directory under
-`%LOCALAPPDATA%\NIKKE C ARENA Tool\mods`; official updates preserve that
-directory and the user's selection. A replacement MOD payload requires a
+Installed MOD files live under the selected full-edition tool directory's
+`mods\logitech_click` folder; official updates preserve that directory and
+the user's selection. Old AppData MOD copies are not automatically migrated
+or loaded. A replacement MOD payload requires a
 matching host update and review before it can be loaded.
 Maintainers should follow [the input MOD release policy](docs/INPUT_MOD_POLICY.md).
-To install the separate MOD, extract its ZIP and double-click `Install_MOD.bat`;
-choose the full-edition directory containing `run_gui.bat` when prompted.
+To install the separately distributed MOD, follow its archive's instructions
+and choose the full-edition directory containing `run_gui.bat` when prompted.
 
 Do not bundle NVIDIA CUDA, cuDNN, GPU Paddle runtimes, or other NVIDIA
 redistributables into an installer or update patch without an independent,
@@ -90,13 +103,20 @@ licenses and rightsholders' terms.
 - **完整版 `NIKKE C ARENA Tool`：** 自动截图、拼图、图像工具、本地 CPU OCR、可选的用户自行配置 GPU OCR、Excel/JSON 导出与妮姬名单维护。
 - **轻量版 `NIKKE C ARENA 截图工具 轻量版`：** 自动截图、拼图与图像工具；战斗图像识别页仅用于展示完整版能力。
 
-当前版本：完整版 `0.1.24`，轻量版 `0.1.14`。安装包与升级补丁通过 GitHub Releases 提供，不直接提交到 Git 仓库。
+当前版本：完整版 `0.1.25`，轻量版 `0.1.15`。安装包与升级补丁由项目所有者通过 GitHub Releases 提供，不直接提交到 Git 仓库。
 
-完整版 `0.1.24` 修复固定方向截图中的战力漏识别，并提供从全部历史完整版直接升级的补丁。改动和原因见[发布说明](RELEASE_NOTES_0.1.24.md)。本次未重新封装轻量版。
+两版安装器每次默认显示以下目录，保留目录选择页，不再使用历史安装记录替换默认路径：
 
-完整版内置受限的输入扩展入口，但默认仍按原有方式点击。可选的“借用罗技驱动”MOD 单独封装，不进入正式版安装包或升级补丁。入口只接受本项目核准并固定文件哈希的该 MOD；轻量版不提供扩展入口。MOD 安装在 `%LOCALAPPDATA%\NIKKE C ARENA Tool\mods`，与程序安装目录分开；正式版覆盖更新会保留该目录和用户设置。若将来修改 MOD 文件，需要先审核并更新宿主校验值。
+- 完整版：`C:\NIKKE_C_ARENA_Tool\NIKKE C ARENA Tool`。
+- 轻量版：`C:\NIKKE_C_ARENA_Tool\NIKKE C ARENA 截图工具 轻量版`。
+
+如需原地覆盖安装，请手动选择原工具目录；选择新位置不会自动搬移旧数据或删除旧文件夹。两版各自提供覆盖全部已发布历史版本（0.1.0 及以后）的累计补丁，补丁只更新用户选择的已有目录并保留配置、截图和已安装运行环境。
+
+本次调整安装目录策略和目录检查，补齐轻量版音量、帮助及动态消息的英语、日语、韩语翻译，并修复语言栏“中”被误译为中等字号的问题。完整版同时兼容根目录受限输入宿主。改动、更新原因和升级说明见[完整版 0.1.25 发布说明](RELEASE_NOTES_0.1.25.md)及[轻量版 0.1.15 发布说明](RELEASE_NOTES_LITE_0.1.15.md)。
+
+完整版内置受限的输入扩展入口，但默认仍按原有方式点击。可选的“借用罗技驱动”MOD 单独封装，不进入正式版安装包、升级补丁或本源码仓库。入口只接受本项目核准并固定文件哈希的该 MOD；轻量版不提供扩展入口。MOD 安装在用户选择的完整版根目录 `mods\logitech_click` 下，正式版覆盖更新会保留该目录和用户设置。旧 AppData MOD 不自动迁移或加载；需要重新安装到实际使用的工具目录。若将来修改 MOD 文件，需要先审核并更新宿主校验值。
 后续封装和兼容性要求见 [输入 MOD 发布约定](docs/INPUT_MOD_POLICY.md)。
-安装独立 MOD 时，应解压 ZIP 后双击 `Install_MOD.bat`，在弹窗中选择直接包含 `run_gui.bat` 的完整版目录。
+安装独立 MOD 时，按独立压缩包内的说明操作，选择直接包含 `run_gui.bat` 的完整版目录。
 
 ## 开发与封装
 
@@ -105,7 +125,7 @@ licenses and rightsholders' terms.
 1. [PROJECT_HANDOFF_20260727.md](PROJECT_HANDOFF_20260727.md)
 2. [PROJECT_DEVELOPER_HANDOFF_20260711.md](PROJECT_DEVELOPER_HANDOFF_20260711.md)
 
-仓库不会提交用户截图、OCR 输出、日志、备份、安装包、Python/Paddle 运行时、CUDA/cuDNN 或 NVIDIA GPU 运行库。完整版的 GPU 配置脚本与文档仅供用户自行配置环境，不随项目分发 GPU 运行时。
+仓库不会提交用户截图、OCR 输出、日志、备份、安装包、Python/Paddle 运行时、私有罗技 MOD 与助手、独立罗技测试项目、CUDA/cuDNN 或 NVIDIA GPU 运行库。正式功能的回归测试源码保留在 `tools`，不包含实际驱动点击实现。完整版的 GPU 配置脚本与文档仅供用户自行配置环境，不随项目分发 GPU 运行时。
 
 完整版 OCR 按固定正向截图识别，关闭 180° 方向分类，保留五位战力不能补空及不能覆盖六位数的原有规则。修复原因、导出空位与异常日志说明见[固定方向 OCR 修复记录](docs/OCR_FIXED_ORIENTATION_20261003.md)。
 

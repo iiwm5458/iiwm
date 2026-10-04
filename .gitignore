@@ -26,6 +26,7 @@ preview_regions.png
 debug_*/
 *_debug*/
 tests/tmp_mod_gui_localappdata_*/
+tests/
 dataanalysis/1920_*_crops/
 dataanalysis/1920_remaining_name_errors/
 dataanalysis/ocr_region_annotations.disabled_*/
@@ -76,6 +77,11 @@ mods/
 tools/build_logitech_mod.ps1
 tools/test_logitech_mod_package.ps1
 tools/test_input_mod_update_compatibility.ps1
+tools/build_logi_mod_assistant.ps1
+tools/test_logi_mod_assistant.ps1
+tools/test_logi_mod_assistant_diagnostics.py
+tools/test_logitech_mod_repair.ps1
+deliveries/
 dist/
 build/
 *.spec

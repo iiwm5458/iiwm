@@ -1,13 +1,12 @@
 """Versioned, pinned mouse-button plugin interface for the full edition.
 
-Plugins live in the user's application data rather than the installation tree,
-so replacing application files does not replace installed plugins. The host only
-handles discovery and connection; it has no knowledge of any particular device.
+Plugins live under the host's installation directory. Official updates preserve
+that directory, and separate installations manage their own plugins. The host
+only handles discovery and connection; it knows no particular device.
 """
 
 import hashlib
 import json
-import os
 import re
 import sys
 import types
@@ -16,16 +15,37 @@ from pathlib import Path
 
 API_MAJOR = 1
 PLUGIN_KIND = "mouse-buttons"
+PLUGIN_STORAGE = "install-root-v1"
 _PLUGIN_ID = re.compile(r"[a-z][a-z0-9_]{0,63}\Z")
 _ENTRY_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*\.py\Z")
-# Only this reviewed distribution may execute. Keep these digests in future
-# official updates so already-installed copies remain compatible with API v1.
+# Only reviewed distributions may execute. Keep the original literal table in
+# future official updates: older read-only MOD tools parse it without executing
+# the host. New versions are separate complete manifest/backend hash pairs.
 _APPROVED_PAYLOADS = {
     "logitech_click": {
         "manifest.json": "d4a216bce7f368f62210883ee817b3a324c88afa011e35cf874f92575cc1ffcf",
         "backend.py": "6813289379baec329a9f636d06deaefe9ded2d4a51a1f811cf0ecf72fb45a829",
     },
 }
+_APPROVED_PAYLOAD_VERSIONS = {
+    "logitech_click": [
+        {
+            "manifest.json": "99224faf95c3331fe39c2c0c7b8779252c8dcff81b9435e04a9358525e98828d",
+            "backend.py": "7e7cb4567628d399cdf95fea649f74c73a865aeb8c6ca54724fd6eb7f7ed108d",
+        },
+        {
+            "manifest.json": "0644a658a93db7daec69fb5d4260f4a6a4e42af5e8dacd3e70d97c59f4f25677",
+            "backend.py": "7312dabea06bc588d5bbf1086eaa6615e8e9feda46ec8b917c4c5225ff790a44",
+        },
+    ],
+}
+
+
+def _approved_payloads(plugin_id):
+    """Return complete reviewed pairs, never independent per-file allowlists."""
+    return (_APPROVED_PAYLOADS[plugin_id],) + tuple(
+        _APPROVED_PAYLOAD_VERSIONS.get(plugin_id, ())
+    )
 
 
 class InputPluginError(RuntimeError):
@@ -33,10 +53,11 @@ class InputPluginError(RuntimeError):
 
 
 def plugin_root():
-    local_app_data = os.environ.get("LOCALAPPDATA")
-    if not local_app_data:
-        raise InputPluginError("LOCALAPPDATA is unavailable; cannot locate input plugins")
-    return Path(local_app_data).resolve() / "NIKKE C ARENA Tool" / "mods"
+    install_root = Path(__file__).resolve().parent
+    root = (install_root / "mods").resolve()
+    if not _within(root, install_root):
+        raise InputPluginError("Input plugin root is outside the installation directory")
+    return root
 
 
 def _validate_id(plugin_id):
@@ -69,7 +90,12 @@ def read_manifest(plugin_id):
         raise InputPluginError(f"Unapproved Python file in input plugin: {plugin_id}")
     try:
         manifest_bytes = manifest_path.read_bytes()
-        if hashlib.sha256(manifest_bytes).hexdigest() != _APPROVED_PAYLOADS[plugin_id]["manifest.json"]:
+        manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
+        matching_payloads = tuple(
+            payload for payload in _approved_payloads(plugin_id)
+            if manifest_digest == payload["manifest.json"]
+        )
+        if not matching_payloads:
             raise InputPluginError(f"Input plugin manifest integrity check failed: {plugin_id}")
         manifest = json.loads(manifest_bytes.decode("utf-8-sig"))
     except InputPluginError:
@@ -98,7 +124,8 @@ def read_manifest(plugin_id):
         backend_bytes = entry_path.read_bytes()
     except OSError as exc:
         raise InputPluginError(f"Could not read input plugin backend {plugin_id}: {exc}") from exc
-    if hashlib.sha256(backend_bytes).hexdigest() != _APPROVED_PAYLOADS[plugin_id][entry]:
+    backend_digest = hashlib.sha256(backend_bytes).hexdigest()
+    if not any(backend_digest == payload[entry] for payload in matching_payloads):
         raise InputPluginError(f"Input plugin backend integrity check failed: {plugin_id}")
     return manifest, entry_path, backend_bytes
 
