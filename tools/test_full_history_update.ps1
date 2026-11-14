@@ -1,6 +1,6 @@
 ﻿param(
     [string]$PatchRoot = "",
-    [string]$ExpectedVersion = "0.1.24"
+    [string]$ExpectedVersion = "0.1.26"
 )
 
 $ErrorActionPreference = "Stop"

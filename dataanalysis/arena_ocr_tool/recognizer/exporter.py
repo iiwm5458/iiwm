@@ -240,11 +240,18 @@ def _export_roster_json(
     include_power: bool = True,
     include_collection: bool = True,
     include_stat_levels: bool = True,
+    suffix: str = "roster",
 ) -> Path | None:
+    """Export one lineup snapshot without changing the legacy roster name.
+
+    ``*_roster.json`` is a published compatibility surface, so callers keep
+    its existing suffix for the promotion-stage snapshot and use the explicit
+    TOP8/final suffixes for the additional snapshots.
+    """
     entries = _roster_entries(roster)
     if not entries:
         return None
-    path = output_dir / f"{stem}_roster.json"
+    path = output_dir / f"{stem}_{suffix}.json"
     payload = [
         _roster_json_entry(
             entry,
@@ -266,6 +273,8 @@ def export_json(
     include_collection: bool = True,
     include_stat_levels: bool = True,
     roster=None,
+    top8_roster=None,
+    final_roster=None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"{stem}_result.json"
@@ -307,6 +316,24 @@ def export_json(
         include_power=include_power,
         include_collection=include_collection,
         include_stat_levels=include_stat_levels,
+    )
+    _export_roster_json(
+        top8_roster,
+        output_dir,
+        stem,
+        include_power=include_power,
+        include_collection=include_collection,
+        include_stat_levels=include_stat_levels,
+        suffix="top8_roster",
+    )
+    _export_roster_json(
+        final_roster,
+        output_dir,
+        stem,
+        include_power=include_power,
+        include_collection=include_collection,
+        include_stat_levels=include_stat_levels,
+        suffix="final_roster",
     )
     return path
 
@@ -409,6 +436,78 @@ def _format_header_row(ws, header_fill, header_font, alignment_cls) -> None:
     ws.row_dimensions[1].height = 34
 
 
+def _write_roster_sheet(
+    wb,
+    title: str,
+    roster,
+    roster_headers: list[str],
+    header_fill,
+    header_font,
+    alignment_cls,
+    get_column_letter,
+    include_power: bool = True,
+    include_collection: bool = True,
+    include_stat_levels: bool = True,
+    note: str = "",
+) -> None:
+    """Write one roster snapshot using the shared legacy roster formatting."""
+    roster_ws = wb.create_sheet(title)
+    roster_ws.append(roster_headers)
+    roster_rows = _roster_entries(roster)
+    if note:
+        roster_ws.append([note])
+        if len(roster_headers) > 1:
+            roster_ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(roster_headers))
+        roster_ws.cell(2, 1).alignment = alignment_cls(vertical="top", wrap_text=True)
+        roster_ws.row_dimensions[2].height = 32
+    for entry in roster_rows:
+        roster_ws.append(
+            _roster_row(
+                entry,
+                include_power=include_power,
+                include_collection=include_collection,
+                include_stat_levels=include_stat_levels,
+            )
+        )
+    _format_header_row(roster_ws, header_fill, header_font, alignment_cls)
+    roster_ws.freeze_panes = "A2"
+    roster_ws.auto_filter.ref = roster_ws.dimensions
+    data_start_row = 3 if note else 2
+    for row in roster_ws.iter_rows(min_row=data_start_row, min_col=2, max_col=2):
+        row[0].value = str(row[0].value or "")
+        row[0].number_format = "@"
+    for idx in range(1, len(roster_headers) + 1):
+        letter = get_column_letter(idx)
+        header = roster_headers[idx - 1]
+        if idx == 1:
+            width = 22
+        elif idx == 2:
+            width = 16
+        elif header in ROSTER_STAT_HEADERS:
+            width = 12
+        elif re.match(r"^\u9635\u5bb9\d+$", header):
+            width = 40
+        elif header.endswith("\u6218\u529b"):
+            width = 28
+        else:
+            width = 18
+        roster_ws.column_dimensions[letter].width = width
+    if include_stat_levels:
+        stat_start = len(roster_headers) - len(ROSTER_STAT_HEADERS) + 1
+        for row in roster_ws.iter_rows(
+            min_row=data_start_row,
+            min_col=stat_start,
+            max_col=len(roster_headers),
+        ):
+            for cell in row:
+                cell.number_format = "#,##0"
+                cell.alignment = alignment_cls(horizontal="right", vertical="top")
+    for row in roster_ws.iter_rows(min_row=data_start_row):
+        for cell in row:
+            if cell.column <= len(roster_headers) - (len(ROSTER_STAT_HEADERS) if include_stat_levels else 0):
+                cell.alignment = alignment_cls(vertical="top", wrap_text=True)
+
+
 def export_excel(
     records: list[dict],
     output_dir: Path,
@@ -417,6 +516,9 @@ def export_excel(
     include_power: bool = True,
     include_collection: bool = True,
     include_stat_levels: bool = True,
+    top8_roster=None,
+    final_roster=None,
+    roster_note: str = "",
 ) -> Path:
     try:
         from openpyxl import Workbook
@@ -452,9 +554,15 @@ def export_excel(
         for column, header in enumerate(headers, 1):
             if not header.endswith("\u6218\u529b"):
                 continue
-            for cell in ws.iter_cols(min_col=column, max_col=column, min_row=2, max_row=ws.max_row):
-                cell[0].number_format = "#,##0"
-                cell[0].alignment = Alignment(horizontal="right")
+            for column_cells in ws.iter_cols(
+                min_col=column,
+                max_col=column,
+                min_row=2,
+                max_row=ws.max_row,
+            ):
+                for cell in column_cells:
+                    cell.number_format = "#,##0"
+                    cell.alignment = Alignment(horizontal="right")
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     for idx in range(1, len(headers) + 1):
@@ -475,55 +583,52 @@ def export_excel(
         else:
             width = 13
         ws.column_dimensions[letter].width = width
-    roster_rows = _roster_entries(roster)
-    if roster_rows:
-        roster_ws = wb.create_sheet("\u53c2\u8d5b\u9635\u5bb9")
-        roster_ws.append(roster_headers)
-        for entry in roster_rows:
-            roster_ws.append(
-                _roster_row(
-                    entry,
-                    include_power=include_power,
-                    include_collection=include_collection,
-                    include_stat_levels=include_stat_levels,
-                )
-            )
-        _format_header_row(roster_ws, header_fill, header_font, Alignment)
-        roster_ws.freeze_panes = "A2"
-        roster_ws.auto_filter.ref = roster_ws.dimensions
-        for row in roster_ws.iter_rows(min_row=2, min_col=2, max_col=2):
-            row[0].value = str(row[0].value or "")
-            row[0].number_format = "@"
-        for idx in range(1, len(roster_headers) + 1):
-            letter = get_column_letter(idx)
-            header = roster_headers[idx - 1]
-            if idx == 1:
-                width = 22
-            elif idx == 2:
-                width = 16
-            elif header in ROSTER_STAT_HEADERS:
-                width = 12
-            elif re.match(r"^\u9635\u5bb9\d+$", header):
-                width = 40
-            elif header.endswith("\u6218\u529b"):
-                width = 28
-            else:
-                width = 18
-            roster_ws.column_dimensions[letter].width = width
-        if include_stat_levels:
-            stat_start = len(roster_headers) - len(ROSTER_STAT_HEADERS) + 1
-            for row in roster_ws.iter_rows(
-                min_row=2,
-                min_col=stat_start,
-                max_col=len(roster_headers),
-            ):
-                for cell in row:
-                    cell.number_format = "#,##0"
-                    cell.alignment = Alignment(horizontal="right", vertical="top")
-        for row in roster_ws.iter_rows(min_row=2):
-            for cell in row:
-                if cell.column <= len(roster_headers) - (len(ROSTER_STAT_HEADERS) if include_stat_levels else 0):
-                    cell.alignment = Alignment(vertical="top", wrap_text=True)
+    promotion_rows = _roster_entries(roster)
+    top8_rows = _roster_entries(top8_roster)
+    final_rows = _roster_entries(final_roster)
+    if promotion_rows or top8_rows or final_rows or roster_note:
+        _write_roster_sheet(
+            wb,
+            "\u664b\u7ea7\u8d5b\u9635\u5bb9",
+            roster,
+            roster_headers,
+            header_fill,
+            header_font,
+            Alignment,
+            get_column_letter,
+            include_power=include_power,
+            include_collection=include_collection,
+            include_stat_levels=include_stat_levels,
+            note=roster_note,
+        )
+    if top8_rows:
+        _write_roster_sheet(
+            wb,
+            "8\u5f3a\u9635\u5bb9",
+            top8_roster,
+            roster_headers,
+            header_fill,
+            header_font,
+            Alignment,
+            get_column_letter,
+            include_power=include_power,
+            include_collection=include_collection,
+            include_stat_levels=include_stat_levels,
+        )
+    if final_rows:
+        _write_roster_sheet(
+            wb,
+            "\u51b3\u8d5b\u9635\u5bb9",
+            final_roster,
+            roster_headers,
+            header_fill,
+            header_font,
+            Alignment,
+            get_column_letter,
+            include_power=include_power,
+            include_collection=include_collection,
+            include_stat_levels=include_stat_levels,
+        )
     wb.save(path)
     return path
 

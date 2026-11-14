@@ -43,6 +43,8 @@ PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
 PLAYER_LINEUP_PAGE_CAPTURE_SETTLE_SECONDS = 0.15
 PLAYER_LINEUP_PAGE_DEFAULT_TIMEOUT_SECONDS = 10.0
 PLAYER_LINEUP_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
+SUPPORT_DUO_GLOBAL_HMT_PAGE_DEFAULT_TIMEOUT_SECONDS = 10.0
+SUPPORT_DUO_GLOBAL_HMT_PAGE_DEFAULT_POLL_INTERVAL_SECONDS = 0.35
 # Season capture always uses these fixed transition waits; they are intentionally
 # independent from the user-configurable capture timing controls.
 SEASON_TRANSITION_BACK_WAIT_SECONDS = 3.0
@@ -82,6 +84,18 @@ PLAYER_LINEUP_PAGE_READY_THRESHOLDS = {
     "lineup_bright": 0.35,
     "lineup_edges": 0.24,
 }
+SUPPORT_DUO_GLOBAL_HMT_READY_THRESHOLDS = {
+    # The paired overseas support view contains two independently rendered
+    # five-card rows.  Keep the checks structural and language-neutral so the
+    # same detector works on Global and HMT clients.
+    "top_bright": 0.10,
+    "bottom_bright": 0.10,
+    "top_edges": 0.15,
+    "bottom_edges": 0.15,
+    "tabs_bright": 0.50,
+    "tabs_cyan": 0.02,
+    "target_tab_cyan": 0.05,
+}
 
 MANUAL_CLICK_NEON_FREQUENCIES = (
     392, 466, 523, 587, 523, 466,
@@ -92,6 +106,13 @@ MANUAL_CLICK_TONE_SAMPLE_RATE = 11025
 MANUAL_CLICK_TONE_FADE_MS = 5
 DEFAULT_MANUAL_PROMPT_VOLUME_PERCENT = 25
 MANUAL_PROMPT_TIMBRES = ("8bit", "musicbox_chime")
+ROUND_ROBIN_OUTPUT_FORMATS = ("png", "jpg78")
+DEFAULT_ROUND_ROBIN_OUTPUT_FORMAT = "jpg78"
+# Purple advancement markers occupy a large portion of their reference probe.
+# Keep the confidence test relative to probe area so it scales with the active
+# full-screen or client-window capture size.
+GROUP_WINNER_PURPLE_MIN_RATIO = 0.020
+GROUP_WINNER_PURPLE_MIN_MARGIN_RATIO = 0.010
 MANUAL_PROMPT_SOUND_DIRECTORY = Path(__file__).resolve().parent / "assets" / "manual_prompt_sounds"
 MANUAL_PROMPT_SOUND_FILES = {
     "musicbox_chime": "prompt_musicbox.wav",
@@ -116,11 +137,19 @@ DEFAULT_CONFIG = {
     "group_grid_gap": 18,
     "round_robin_grid_gap": 13,
     "round_robin_background": "#FFFFFF",
+    "round_robin_output_format": DEFAULT_ROUND_ROBIN_OUTPUT_FORMAT,
     "group_data_gap": 18,
     "group_data_column_gap": 42,
     "all_groups_grid_gap": 56,
     "top8_pyramid_layer_gap": 72,
     "support_status_background": "#f7f8fa",
+    # Global/HMT's November 2026 paired support view exposes one compact
+    # total-power label per player.  It is kept at natural proportions inside
+    # a fixed header slot, rather than being stretched by the normal stitcher.
+    "support_duo_power_output_width": 238,
+    "support_duo_power_output_height": 48,
+    "support_duo_lineup_output_height": 255,
+    "support_duo_lineup_background": "#f7f8fa",
     "framed_output": False,
     "framed_background": "assets/pixiewall-xlesjh-5120x2880.jpg",
     "framed_margin_x": 80,
@@ -140,8 +169,16 @@ DEFAULT_CONFIG = {
         "player_lineup_poll_timeout_seconds": PLAYER_LINEUP_PAGE_DEFAULT_TIMEOUT_SECONDS,
         "player_lineup_poll_interval_seconds": PLAYER_LINEUP_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
         "after_support_avatar_click_seconds": 1.0,
+        "after_support_duo_round_click_seconds": 0.45,
+        "support_duo_poll_timeout_seconds": SUPPORT_DUO_GLOBAL_HMT_PAGE_DEFAULT_TIMEOUT_SECONDS,
+        "support_duo_poll_interval_seconds": SUPPORT_DUO_GLOBAL_HMT_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
         "after_group_avatar_click_seconds": 1.0,
         "after_group_tab_click_seconds": 0.8,
+        # A Group tab can finish rendering after its tab click animation.  The
+        # dedicated Group-winner capture waits for a stable purple advancement
+        # marker before it ever opens a player profile.
+        "group_winner_marker_timeout_seconds": 10.0,
+        "group_winner_marker_poll_interval_seconds": 0.35,
         "after_round_robin_group_switch_seconds": 1.3,
         "after_group_result_click_seconds": 0.9,
         "after_bracket_result_click_seconds": 1.0,
@@ -157,6 +194,9 @@ DEFAULT_CONFIG = {
     },
     "clicks": {
         "avatar": [1477, 579],
+        # Global/HMT added a 60 px lineup-information row in the November
+        # 2026 client layout. The centered popup moves this identity card up.
+        "avatar_global_hmt": [1477, 549],
         "profile_close": [2049, 138],
         # Outside the central modal at the 3440x1440 reference size.  These
         # points are transformed together with every other capture coordinate.
@@ -164,11 +204,25 @@ DEFAULT_CONFIG = {
         "outpost_tab": [1899, 1333],
         "support_left_avatar": [1548, 430],
         "support_right_avatar": [1875, 430],
+        # Global/HMT November 2026 support UI shows the two contenders in one
+        # tall dialog.  These do not fall back to the old horizontal CN points.
+        "support_duo_avatars_global_hmt": [[1474, 352], [1474, 1103]],
+        "support_duo_round_tabs_global_hmt": {
+            "1": [1447, 1228],
+            "2": [1585, 1228],
+            "3": [1722, 1228],
+            "4": [1855, 1228],
+            "5": [1997, 1228],
+        },
         # Player avatars inside the already-open two-player result popup.
         # Keep the tab and no-tab variants separate so either layout can be
         # calibrated independently if a future client revision shifts it.
         "support_result_avatars_without_stage_tabs": [[1455, 727], [1899, 727]],
         "support_result_avatars_with_stage_tabs": [[1455, 727], [1899, 727]],
+        # The November 2026 Global/HMT result dialog inserts two explanation
+        # lines above the player row. The avatars move down 51 reference px.
+        "support_result_avatars_without_stage_tabs_global_hmt": [[1455, 778], [1899, 778]],
+        "support_result_avatars_with_stage_tabs_global_hmt": [[1455, 778], [1899, 778]],
         # The four avatar centers on the round-robin overview at 3440x1440.
         # They are passed through the same transform as every other capture point.
         "round_robin_avatars": [
@@ -200,6 +254,14 @@ DEFAULT_CONFIG = {
             [1945, 1122],
         ],
         "group_16_avatars": [
+            [1627, 761],
+            [1808, 937],
+        ],
+        # These are deliberately paired by index with
+        # group_16_winner_result_button_probes.  They are the two avatars
+        # immediately adjacent to the two possible purple advancement paths;
+        # they are not simply an arbitrary left/right finalist ordering.
+        "group_16_winner_avatars": [
             [1627, 761],
             [1808, 937],
         ],
@@ -280,12 +342,26 @@ DEFAULT_CONFIG = {
         ],
         "group_16_result_stage_tab": [1533, 1158],
         "group_32_result_stage_tab": [1903, 1158],
+        # Global/HMT's newer result dialog is taller by 51 px below the
+        # header. Keep CN on the legacy tabs and choose these by server.
+        "group_16_result_stage_tab_global_hmt": [1533, 1209],
+        "group_32_result_stage_tab_global_hmt": [1903, 1209],
         "group_detail_buttons": [
             [1891, 826],
             [1891, 887],
             [1891, 948],
             [1891, 1008],
             [1891, 1070],
+        ],
+        # Global/HMT added a right-side document-button column. These remain
+        # deliberately on the left bar-chart column, which opens the battle
+        # record used by the detailed-result capture flow.
+        "group_detail_buttons_global_hmt": [
+            [1848, 877],
+            [1848, 938],
+            [1848, 999],
+            [1848, 1059],
+            [1848, 1121],
         ],
         "group_32_detail_buttons": [
             [1891, 826],
@@ -294,12 +370,26 @@ DEFAULT_CONFIG = {
             [1891, 1008],
             [1891, 1070],
         ],
+        "group_32_detail_buttons_global_hmt": [
+            [1848, 877],
+            [1848, 938],
+            [1848, 999],
+            [1848, 1059],
+            [1848, 1121],
+        ],
         "support_result_detail_buttons_without_stage_tabs": [
             [1891, 826],
             [1891, 887],
             [1891, 948],
             [1891, 1008],
             [1891, 1070],
+        ],
+        "support_result_detail_buttons_without_stage_tabs_global_hmt": [
+            [1848, 877],
+            [1848, 938],
+            [1848, 999],
+            [1848, 1059],
+            [1848, 1121],
         ],
         "support_result_detail_buttons_with_stage_tabs": [
             [1891, 826],
@@ -308,22 +398,42 @@ DEFAULT_CONFIG = {
             [1891, 1008],
             [1891, 1070],
         ],
+        "support_result_detail_buttons_with_stage_tabs_global_hmt": [
+            [1848, 877],
+            [1848, 938],
+            [1848, 999],
+            [1848, 1059],
+            [1848, 1121],
+        ],
         "round_tabs": {
             "1": [1462, 707],
             "2": [1604, 707],
             "3": [1754, 707],
-            "4": [1900, 707],
+            "4": [1848, 707],
             "5": [2001, 707],
+        },
+        "round_tabs_global_hmt": {
+            "1": [1462, 737],
+            "2": [1604, 737],
+            "3": [1754, 737],
+            "4": [1848, 737],
+            "5": [2001, 737],
         },
     },
     "crops": {
         "round_lineup": [1393, 756, 660, 274],
+        # Keep the historical output size while shifting past Global/HMT's
+        # added information row, so downstream image tools and OCR align.
+        "round_lineup_global_hmt": [1393, 786, 660, 274],
         # Player lineup dialog probes at the 3440x1440 reference size. These
         # are transformed through get_transform for all fullscreen and window
         # modes, exactly like the capture crops below.
         "player_lineup_header_probe": [1380, 405, 680, 105],
         "player_lineup_tabs_probe": [1395, 670, 665, 74],
         "player_lineup_cards_probe": [1393, 756, 660, 274],
+        "player_lineup_header_probe_global_hmt": [1380, 375, 680, 105],
+        "player_lineup_tabs_probe_global_hmt": [1395, 700, 665, 74],
+        "player_lineup_cards_probe_global_hmt": [1393, 786, 660, 274],
         "profile_basic": [1378, 0, 684, 514],
         "team_summary": [1380, 908, 656, 122],
         "sync_level": [1402, 1174, 638, 64],
@@ -351,7 +461,26 @@ DEFAULT_CONFIG = {
         ],
         "outpost_research": [1403, 976, 634, 255],
         "support_status": [1396, 636, 676, 58],
+        # Paired Global/HMT support screen: upper/lower cards and their total
+        # combat-power labels are captured directly from the same settled
+        # frame.  Their intentionally different source heights are normalized
+        # only after crop, never by distorting in-game text.
+        "support_duo_top_lineup_global_hmt": [1390, 411, 656, 228],
+        "support_duo_bottom_lineup_global_hmt": [1387, 803, 666, 236],
+        "support_duo_top_power_global_hmt": [1394, 640, 225, 45],
+        "support_duo_bottom_power_global_hmt": [1826, 758, 226, 41],
+        "support_duo_tabs_probe_global_hmt": [1384, 1203, 675, 50],
+        "support_duo_round_active_probes_global_hmt": [
+            [1384, 1203, 126, 50],
+            [1522, 1203, 125, 50],
+            [1659, 1203, 125, 50],
+            [1787, 1203, 135, 50],
+            [1934, 1203, 125, 50],
+        ],
         "group_simple_result": [1555, 793, 243, 301],
+        # Preserve the historical 243x301 output after Global/HMT's result
+        # rows move down by 51 px, so stitching and OCR keep their geometry.
+        "group_simple_result_global_hmt": [1555, 844, 243, 301],
         "group_detailed_result": [1380, 289, 681, 873],
         "group_detailed_result_global_hmt": [1380, 356, 681, 788],
         # The round-robin post-match overview: GROUP header plus all four
@@ -368,6 +497,7 @@ DEFAULT_CONFIG = {
         "season_profile_name_probe": [1458, 315, 430, 95],
         "season_result_name_probe": [1368, 300, 704, 420],
         "group_result_stage_tabs_probe": [1450, 1110, 650, 120],
+        "group_result_stage_tabs_probe_global_hmt": [1450, 1161, 650, 120],
         "group_16_winner_result_button_probes": [
             [1668, 718, 224, 92],
             [1544, 900, 224, 92],
@@ -576,6 +706,11 @@ def load_config(path):
         else:
             merged[key] = value
     return merged
+
+
+def normalize_round_robin_output_format(value):
+    """Return a supported batch GROUP image format with a stable legacy default."""
+    return value if value in ROUND_ROBIN_OUTPUT_FORMATS else DEFAULT_ROUND_ROBIN_OUTPUT_FORMAT
 
 
 def screenshot():
@@ -899,9 +1034,122 @@ def countdown(seconds):
         time.sleep(1)
 
 
+def is_global_hmt_server(config):
+    return str(config.get("runtime_server", "cn")).strip().lower() in {"global", "hmt"}
+
+
+def get_server_layout_value(config, section, base_name):
+    """Resolve one server-specific layout value with a legacy-safe fallback.
+
+    Global and HMT share the current overseas UI. A user's old configuration
+    file may not yet contain the regional override, so retain the base value
+    in that case. CN intentionally never uses the Global/HMT values.
+    """
+    values = config.get(section, {})
+    if is_global_hmt_server(config):
+        regional_value = values.get(f"{base_name}_global_hmt")
+        if regional_value is not None:
+            return regional_value
+    return values.get(base_name)
+
+
+def get_player_lineup_layout(config):
+    """Resolve the current server's five-ROUND dialog layout."""
+    return {
+        "round_tabs": get_server_layout_value(config, "clicks", "round_tabs"),
+        "avatar": get_server_layout_value(config, "clicks", "avatar"),
+        "round_lineup": get_server_layout_value(config, "crops", "round_lineup"),
+        "header_probe": get_server_layout_value(
+            config, "crops", "player_lineup_header_probe"
+        ),
+        "tabs_probe": get_server_layout_value(config, "crops", "player_lineup_tabs_probe"),
+        "cards_probe": get_server_layout_value(
+            config, "crops", "player_lineup_cards_probe"
+        ),
+    }
+
+
+def get_support_duo_global_hmt_layout(config):
+    """Return the dedicated November-2026 overseas paired-support layout.
+
+    The old CN support screen opened two separate player dialogs.  Global/HMT
+    now keeps both players, their five-card rows, powers, and ROUND tabs in a
+    single tall dialog, so this deliberately has no legacy-coordinate fallback.
+    A configuration missing one of these keys must stop safely instead of
+    clicking the old horizontal support coordinates.
+    """
+    if not is_global_hmt_server(config):
+        raise ValueError("paired support layout is only valid for Global/HMT")
+
+    layout = {
+        "avatars": get_server_layout_value(config, "clicks", "support_duo_avatars"),
+        "round_tabs": get_server_layout_value(config, "clicks", "support_duo_round_tabs"),
+        "top_lineup": get_server_layout_value(config, "crops", "support_duo_top_lineup"),
+        "bottom_lineup": get_server_layout_value(config, "crops", "support_duo_bottom_lineup"),
+        "top_power": get_server_layout_value(config, "crops", "support_duo_top_power"),
+        "bottom_power": get_server_layout_value(config, "crops", "support_duo_bottom_power"),
+        "tabs_probe": get_server_layout_value(config, "crops", "support_duo_tabs_probe"),
+        "round_active_probes": get_server_layout_value(
+            config, "crops", "support_duo_round_active_probes"
+        ),
+    }
+
+    points_are_valid = lambda values, expected: (
+        isinstance(values, (list, tuple))
+        and len(values) == expected
+        and all(
+            isinstance(point, (list, tuple))
+            and len(point) == 2
+            and all(isinstance(value, (int, float)) for value in point)
+            for point in values
+        )
+    )
+    rect_is_valid = lambda rect: (
+        isinstance(rect, (list, tuple))
+        and len(rect) == 4
+        and all(isinstance(value, (int, float)) for value in rect)
+        and rect[2] > 0
+        and rect[3] > 0
+    )
+    if not points_are_valid(layout["avatars"], 2):
+        raise SystemExit("support_duo_avatars_global_hmt must contain exactly two avatar points")
+    round_tabs = layout["round_tabs"]
+    if not isinstance(round_tabs, dict) or not all(
+        isinstance(round_tabs.get(str(round_no)), (list, tuple))
+        and len(round_tabs[str(round_no)]) == 2
+        for round_no in range(1, 6)
+    ):
+        raise SystemExit("support_duo_round_tabs_global_hmt must contain Round 01 through Round 05")
+    for key in ("top_lineup", "bottom_lineup", "top_power", "bottom_power", "tabs_probe"):
+        if not rect_is_valid(layout[key]):
+            raise SystemExit(f"support_duo_{key}_global_hmt must be a valid crop rectangle")
+    if not isinstance(layout["round_active_probes"], (list, tuple)) or len(
+        layout["round_active_probes"]
+    ) != 5 or not all(rect_is_valid(rect) for rect in layout["round_active_probes"]):
+        raise SystemExit(
+            "support_duo_round_active_probes_global_hmt must contain five crop rectangles"
+        )
+    return layout
+
+
+def crop_support_duo_global_hmt_part(config, img, part_name):
+    """Crop one new overseas paired-support element from a supplied frame."""
+    layout = get_support_duo_global_hmt_layout(config)
+    rect = layout.get(part_name)
+    if rect is None:
+        raise KeyError(f"unknown paired support crop: {part_name}")
+    transform = get_transform(config, img.size)
+    return img.crop(scale_rect(rect, transform, img.size))
+
+
 def crop_from_image(config, img, crop_name):
     transform = get_transform(config, img.size)
-    box = scale_rect(config["crops"][crop_name], transform, img.size)
+    rect = (
+        get_player_lineup_layout(config)["round_lineup"]
+        if crop_name == "round_lineup"
+        else get_server_layout_value(config, "crops", crop_name)
+    )
+    box = scale_rect(rect, transform, img.size)
     return img.crop(box)
 
 
@@ -953,14 +1201,9 @@ def _ratio_matching(img, predicate):
 
 def inspect_detailed_result_page(config, img):
     """Return whether the post-click screen is the fully loaded battle record page."""
-    crops = config.get("crops", {})
-    title_rect = crops.get("group_detailed_title_probe")
-    server = str(config.get("runtime_server", "cn")).strip().lower()
-    detail_rect = (
-        crops.get("group_detailed_result_global_hmt")
-        if server in {"global", "hmt"}
-        else crops.get("group_detailed_result")
-    )
+    regional_layout = is_global_hmt_server(config)
+    title_rect = get_server_layout_value(config, "crops", "group_detailed_title_probe")
+    detail_rect = get_server_layout_value(config, "crops", "group_detailed_result")
     if not title_rect or not detail_rect:
         return False, None, {"reason": "detail probes are not configured"}
 
@@ -1007,14 +1250,14 @@ def inspect_detailed_result_page(config, img):
         metrics[name] >= threshold for name, threshold in DETAIL_PAGE_STRICT_THRESHOLDS.items()
     )
     regional_fallback_ready = (
-        server in {"global", "hmt"}
+        regional_layout
         and all(
             metrics[name] >= threshold
             for name, threshold in GLOBAL_HMT_DETAIL_PAGE_FALLBACK_THRESHOLDS.items()
         )
     )
     regional_layout_ready = (
-        server in {"global", "hmt"}
+        regional_layout
         and all(
             metrics[name] >= threshold
             for name, threshold in GLOBAL_HMT_DETAIL_PAGE_LAYOUT_THRESHOLDS.items()
@@ -1088,19 +1331,19 @@ def inspect_player_lineup_page(config, img):
     differently across clients, while its blue header, ROUND-tab row, and five
     card lineup retain the same scaled layout.
     """
-    crops = config.get("crops", {})
-    probe_names = {
-        "header": "player_lineup_header_probe",
-        "tabs": "player_lineup_tabs_probe",
-        "lineup": "player_lineup_cards_probe",
+    layout = get_player_lineup_layout(config)
+    probe_rects = {
+        "header": layout["header_probe"],
+        "tabs": layout["tabs_probe"],
+        "lineup": layout["cards_probe"],
     }
-    if any(not crops.get(name) for name in probe_names.values()):
+    if any(not rect for rect in probe_rects.values()):
         return False, {"reason": "player lineup probes are not configured"}
 
     transform = get_transform(config, img.size)
     probes = {
-        label: _probe_image(img.crop(scale_rect(crops[crop_name], transform, img.size)))
-        for label, crop_name in probe_names.items()
+        label: _probe_image(img.crop(scale_rect(rect, transform, img.size)))
+        for label, rect in probe_rects.items()
     }
     lineup_edges = probes["lineup"].convert("L").filter(ImageFilter.FIND_EDGES)
     metrics = {
@@ -1253,13 +1496,209 @@ def wait_for_profile_basic_page(config, context):
         time.sleep(min(poll_seconds, remaining))
 
 
+def wait_for_support_duo_profile_basic_page(config, context):
+    """Require a real profile page before collecting Global/HMT support data.
+
+    The generic profile helper intentionally falls back to the current screen
+    on a timeout so old one-click captures can remain permissive.  That is not
+    safe here: a missed manual click would otherwise make the later outpost
+    click land on the paired-support dialog.  This overseas-only flow therefore
+    treats an unrecognised profile page as a stop condition.
+    """
+    timings = config["timing"]
+    minimum_wait = max(0.45, min(5.0, float(timings.get("after_support_avatar_click_seconds", 1.0))))
+    timeout_seconds = max(
+        1.0,
+        min(
+            15.0,
+            float(timings.get("profile_page_timeout_seconds", PROFILE_PAGE_DEFAULT_TIMEOUT_SECONDS)),
+        ),
+    )
+    poll_seconds = max(
+        0.2,
+        min(
+            1.0,
+            float(
+                timings.get(
+                    "profile_page_poll_interval_seconds",
+                    PROFILE_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
+                )
+            ),
+        ),
+    )
+    started_at = time.monotonic()
+    deadline = started_at + timeout_seconds
+    stable_hits = 0
+    latest_metrics = None
+
+    while True:
+        current_img = screenshot()
+        ready, latest_metrics = inspect_profile_basic_page(config, current_img)
+        elapsed = time.monotonic() - started_at
+        if ready and elapsed >= minimum_wait:
+            stable_hits += 1
+            if stable_hits >= 2:
+                time.sleep(PROFILE_PAGE_CAPTURE_SETTLE_SECONDS)
+                final_img = screenshot()
+                final_ready, final_metrics = inspect_profile_basic_page(config, final_img)
+                if final_ready:
+                    print(
+                        f"{context}: basic profile page ready "
+                        f"(header_bright={final_metrics['header_bright']:.3f}, "
+                        f"lower_bright={final_metrics['lower_bright']:.3f}, "
+                        f"bottom_bright={final_metrics['bottom_bright']:.3f}, "
+                        f"basic_tab_blue={final_metrics['basic_tab_blue']:.3f})"
+                    )
+                    return final_img
+                latest_metrics = final_metrics
+                stable_hits = 0
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise SystemExit(
+                f"{context}: did not reach the player basic-information page; "
+                f"stopping paired support capture safely; metrics={latest_metrics}"
+            )
+        time.sleep(min(poll_seconds, remaining))
+
+
+def _support_duo_probe_metrics(config, img, expected_round=None):
+    """Inspect the structure of the new overseas paired-support dialog."""
+    layout = get_support_duo_global_hmt_layout(config)
+    transform = get_transform(config, img.size)
+    top = _probe_image(img.crop(scale_rect(layout["top_lineup"], transform, img.size)))
+    bottom = _probe_image(img.crop(scale_rect(layout["bottom_lineup"], transform, img.size)))
+    tabs = _probe_image(img.crop(scale_rect(layout["tabs_probe"], transform, img.size)))
+
+    bright = lambda probe: _ratio_matching(
+        probe, lambda r, g, b: r >= 175 and g >= 175 and b >= 175
+    )
+    edges = lambda probe: sum(
+        value >= 70 for value in probe.convert("L").filter(ImageFilter.FIND_EDGES).getdata()
+    ) / max(1, probe.width * probe.height)
+    cyan = lambda probe: _ratio_matching(
+        probe, lambda r, g, b: b >= 155 and g >= 120 and r <= 105 and (b - r) >= 65
+    )
+    metrics = {
+        "top_bright": bright(top),
+        "bottom_bright": bright(bottom),
+        "top_edges": edges(top),
+        "bottom_edges": edges(bottom),
+        "tabs_bright": bright(tabs),
+        "tabs_cyan": cyan(tabs),
+    }
+    if expected_round is not None:
+        index = int(expected_round) - 1
+        if not 0 <= index < len(layout["round_active_probes"]):
+            raise ValueError(f"invalid paired support Round: {expected_round}")
+        active_probe = _probe_image(
+            img.crop(scale_rect(layout["round_active_probes"][index], transform, img.size))
+        )
+        metrics["target_tab_cyan"] = cyan(active_probe)
+
+    required = (
+        "top_bright",
+        "bottom_bright",
+        "top_edges",
+        "bottom_edges",
+        "tabs_bright",
+        "tabs_cyan",
+    )
+    ready = all(
+        metrics[name] >= SUPPORT_DUO_GLOBAL_HMT_READY_THRESHOLDS[name] for name in required
+    )
+    if expected_round is not None:
+        ready = ready and (
+            metrics["target_tab_cyan"]
+            >= SUPPORT_DUO_GLOBAL_HMT_READY_THRESHOLDS["target_tab_cyan"]
+        )
+    return ready, metrics
+
+
+def wait_for_support_duo_global_hmt_page(config, context, expected_round=None):
+    """Wait for a stable Global/HMT paired-support page and return one frame.
+
+    A timeout is fatal by design.  Continuing after a missed ROUND selection
+    would silently assign the previous round to the wrong output slot.
+    """
+    timings = config["timing"]
+    minimum_wait = 0.0
+    if expected_round is not None:
+        minimum_wait = max(
+            0.2,
+            min(5.0, float(timings.get("after_support_duo_round_click_seconds", 0.45))),
+        )
+    timeout_seconds = max(
+        1.0,
+        min(
+            20.0,
+            float(
+                timings.get(
+                    "support_duo_poll_timeout_seconds",
+                    SUPPORT_DUO_GLOBAL_HMT_PAGE_DEFAULT_TIMEOUT_SECONDS,
+                )
+            ),
+        ),
+    )
+    poll_seconds = max(
+        0.2,
+        min(
+            1.0,
+            float(
+                timings.get(
+                    "support_duo_poll_interval_seconds",
+                    SUPPORT_DUO_GLOBAL_HMT_PAGE_DEFAULT_POLL_INTERVAL_SECONDS,
+                )
+            ),
+        ),
+    )
+    started_at = time.monotonic()
+    deadline = started_at + timeout_seconds
+    stable_hits = 0
+    latest_metrics = None
+
+    while True:
+        current_img = screenshot()
+        ready, latest_metrics = _support_duo_probe_metrics(config, current_img, expected_round)
+        elapsed = time.monotonic() - started_at
+        if ready and elapsed >= minimum_wait:
+            stable_hits += 1
+            if stable_hits >= 2:
+                # Keep both player crops from one final settled frame, not two
+                # screenshots that could straddle a client refresh.
+                time.sleep(PLAYER_LINEUP_PAGE_CAPTURE_SETTLE_SECONDS)
+                final_img = screenshot()
+                final_ready, final_metrics = _support_duo_probe_metrics(
+                    config, final_img, expected_round
+                )
+                if final_ready:
+                    round_note = "" if expected_round is None else f", Round {int(expected_round):02d}"
+                    print(
+                        f"{context}: paired support page ready{round_note} "
+                        f"(top_edges={final_metrics['top_edges']:.3f}, "
+                        f"bottom_edges={final_metrics['bottom_edges']:.3f}, "
+                        f"tabs_cyan={final_metrics['tabs_cyan']:.3f})"
+                    )
+                    return final_img
+                latest_metrics = final_metrics
+                stable_hits = 0
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            round_note = "" if expected_round is None else f" for Round {int(expected_round):02d}"
+            raise SystemExit(
+                f"{context}: paired Global/HMT support page did not become ready{round_note}; "
+                f"stopping safely; metrics={latest_metrics}"
+            )
+        time.sleep(min(poll_seconds, remaining))
+
+
 def get_detailed_result_capture_rect(config):
-    server = str(config.get("runtime_server", "cn")).strip().lower()
-    if server in {"global", "hmt"}:
-        regional_rect = config.get("crops", {}).get("group_detailed_result_global_hmt")
-        if regional_rect:
-            return regional_rect
-    return config["crops"]["group_detailed_result"]
+    return get_server_layout_value(config, "crops", "group_detailed_result")
 
 
 def wait_for_detailed_result_page(config, context):
@@ -1413,9 +1852,15 @@ def make_soft_mask(size, blur_radius):
     return mask.filter(ImageFilter.GaussianBlur(blur_radius))
 
 
-def save_framed_output(final_img, config, output_path):
+def build_framed_output(final_img, config):
+    """Render the optional group-page frame and return it without saving.
+
+    Most historical capture paths save this image through Pillow's default
+    encoder.  The Group-winner path needs to keep the user's selected PNG or
+    JPEG-78 codec, so it uses this renderer before its format-aware save.
+    """
     if not config.get("framed_output", True):
-        return
+        return None
 
     bg_path = Path(config.get("framed_background", ""))
     if not bg_path.is_absolute():
@@ -1429,14 +1874,15 @@ def save_framed_output(final_img, config, output_path):
                 break
     if not bg_path.exists():
         print(f"framed background not found: {bg_path}")
-        return
+        return None
 
     margin_x = int(config.get("framed_margin_x", 86))
     margin_y = int(config.get("framed_margin_y", 96))
     frame_size = (final_img.width + margin_x * 2, final_img.height + margin_y * 2)
     center = config.get("framed_bg_center", [0.62, 0.5])
 
-    bg = Image.open(bg_path).convert("RGB")
+    with Image.open(bg_path) as opened_bg:
+        bg = opened_bg.convert("RGB")
     frame = cover_crop(bg, frame_size, center).convert("RGBA")
 
     opacity = max(0.0, min(1.0, float(config.get("framed_opacity", 0.9))))
@@ -1448,10 +1894,17 @@ def save_framed_output(final_img, config, output_path):
     alpha = ImageChops.multiply(original_alpha, opacity_mask)
     content.putalpha(alpha)
     frame.alpha_composite(content, (margin_x, margin_y))
+    return frame.convert("RGB")
 
-    framed_path = output_path
-    frame.convert("RGB").save(framed_path)
-    print(f"framed: {framed_path}")
+
+def save_framed_output(final_img, config, output_path):
+    framed = build_framed_output(final_img, config)
+    if framed is None:
+        return False
+
+    framed.save(output_path)
+    print(f"framed: {output_path}")
+    return True
 
 
 def save_part(img, output_dir, name):
@@ -1830,7 +2283,8 @@ def player_image(player):
 
 def capture_player_image(config, parts_dir, label="player", close_profile=None, return_metadata=False, ocr=None):
     timings = config["timing"]
-    round_tabs = config["clicks"]["round_tabs"]
+    lineup_layout = get_player_lineup_layout(config)
+    round_tabs = lineup_layout["round_tabs"]
     if close_profile is None:
         close_profile = bool(config.get("close_profile_after_capture"))
 
@@ -1847,7 +2301,7 @@ def capture_player_image(config, parts_dir, label="player", close_profile=None, 
 
     print(f"{label}: opening profile")
     transform = get_transform(config, screenshot().size)
-    click(config["clicks"]["avatar"], transform)
+    click(lineup_layout["avatar"], transform)
     profile_part = wait_for_profile_basic_page(config, label)
     aliases = []
     if return_metadata:
@@ -2043,6 +2497,173 @@ def make_support_status_part(img, config, target_width):
     return canvas
 
 
+def make_support_duo_power_header(profile_part, power_part, config):
+    """Place the overseas support total-power crop above, not over, profile data."""
+    output_width = int(config["output_width"])
+    profile = resize_to_width(profile_part, output_width).convert("RGB")
+    power_width = max(
+        1,
+        min(output_width, int(config.get("support_duo_power_output_width", 238))),
+    )
+    power_slot_height = max(
+        1, int(config.get("support_duo_power_output_height", 48))
+    )
+    power = resize_to_width(power_part, power_width).convert("RGB")
+    if power.height > power_slot_height:
+        power = resize_to_height(power, power_slot_height).convert("RGB")
+
+    background = config.get(
+        "support_duo_lineup_background", config.get("team_summary_background", "#f7f8fa")
+    )
+    canvas = Image.new("RGB", (output_width, power_slot_height + profile.height), background)
+    # The chip remains in the final player's literal upper-left corner while
+    # the reserved strip prevents it from covering the avatar or nickname.
+    canvas.paste(power, (0, max(0, (power_slot_height - power.height) // 2)))
+    canvas.paste(profile, (0, power_slot_height))
+    return canvas
+
+
+def make_support_duo_lineup_part(lineup_part, config):
+    """Normalise top/bottom paired-support card crops without distorting them."""
+    output_width = int(config["output_width"])
+    fitted = resize_to_width(lineup_part, output_width).convert("RGB")
+    target_height = max(
+        fitted.height,
+        int(config.get("support_duo_lineup_output_height", fitted.height)),
+    )
+    canvas = Image.new(
+        "RGB",
+        (output_width, target_height),
+        config.get("support_duo_lineup_background", "#f7f8fa"),
+    )
+    canvas.paste(fitted, ((output_width - fitted.width) // 2, 0))
+    return canvas
+
+
+def capture_support_duo_global_hmt_profile(config, parts_dir, label, avatar_point):
+    """Collect the complete normal player-information set for one support side.
+
+    Only the five ROUND cards differ in the new paired screen.  Basic profile,
+    team summary, synchronizer level, and outpost research rows deliberately
+    reuse the same crops and composition data as a normal single-player image.
+    """
+    timings = config["timing"]
+    print(f"support Global/HMT: opening {label} player profile")
+    transform = get_transform(config, screenshot().size)
+    click(avatar_point, transform)
+    profile_img = wait_for_support_duo_profile_basic_page(config, f"support {label} player")
+
+    profile_part = crop_from_image(config, profile_img, "profile_basic")
+    team_summary_part = place_on_output_canvas(
+        crop_from_image(config, profile_img, "team_summary"),
+        config,
+        "team_summary_output_width",
+        "team_summary_x_offset",
+    )
+    if config.get("save_parts"):
+        save_part(profile_part, parts_dir, f"support_{label}_profile_basic")
+        save_part(team_summary_part, parts_dir, f"support_{label}_team_summary")
+
+    print(f"support Global/HMT: opening {label} player outpost")
+    transform = get_transform(config, screenshot().size)
+    click(config["clicks"]["outpost_tab"], transform)
+    time.sleep(float(timings["after_outpost_click_seconds"]))
+    outpost_img = screenshot()
+    sync_level_part = crop_rects_from_image(config, outpost_img, [config["crops"]["sync_level"]])[0]
+    research_cards = crop_rects_from_image(config, outpost_img, get_research_card_rects(config))
+    research_row_part = make_research_row(research_cards, config)
+    if config.get("save_parts"):
+        save_part(sync_level_part, parts_dir, f"support_{label}_sync_level")
+        save_part(research_row_part, parts_dir, f"support_{label}_research_row")
+        for index, card in enumerate(research_cards, 1):
+            save_part(card, parts_dir, f"support_{label}_research_card_{index:02d}")
+
+    # This closes only the profile/outpost pane.  The following strict paired
+    # support wait proves that we returned to the original two-player dialog.
+    print(f"support Global/HMT: returning from {label} player profile")
+    transform = get_transform(config, screenshot().size)
+    click(config["clicks"]["profile_close"], transform)
+    time.sleep(float(timings["after_profile_close_seconds"]))
+    support_img = wait_for_support_duo_global_hmt_page(
+        config, f"support {label} player return"
+    )
+    return {
+        "profile": profile_part,
+        "team_summary": team_summary_part,
+        "sync_level": sync_level_part,
+        "research_row": research_row_part,
+    }, support_img
+
+
+def compose_support_duo_global_hmt_player(player_parts, power_part, round_parts, config):
+    """Build one overseas support player image with the normal full metadata."""
+    if len(round_parts) != 5:
+        raise ValueError("paired Global/HMT support capture requires five Round parts")
+    header = make_support_duo_power_header(player_parts["profile"], power_part, config)
+    normalised_rounds = [make_support_duo_lineup_part(part, config) for part in round_parts]
+    return stitch(
+        [header, player_parts["sync_level"]]
+        + normalised_rounds
+        + [player_parts["team_summary"], player_parts["research_row"]],
+        config,
+    )
+
+
+def run_support_duo_global_hmt_capture(config, output_path, parts_dir):
+    """Capture the new Global/HMT support view that presents both players at once."""
+    print_screen_context(config)
+    layout = get_support_duo_global_hmt_layout(config)
+    # Validate the starting screen before moving the cursor/clicking anything.
+    wait_for_support_duo_global_hmt_page(config, "support Global/HMT initial screen")
+
+    top_player, _ = capture_support_duo_global_hmt_profile(
+        config, parts_dir, "top", layout["avatars"][0]
+    )
+    bottom_player, support_img = capture_support_duo_global_hmt_profile(
+        config, parts_dir, "bottom", layout["avatars"][1]
+    )
+
+    # Both fixed total-power labels are read once from the same settled paired
+    # screen.  Individual NIKKE power values are deliberately absent because
+    # the overseas support screen does not display them.
+    top_power = crop_support_duo_global_hmt_part(config, support_img, "top_power")
+    bottom_power = crop_support_duo_global_hmt_part(config, support_img, "bottom_power")
+    if config.get("save_parts"):
+        save_part(top_power, parts_dir, "support_top_total_power")
+        save_part(bottom_power, parts_dir, "support_bottom_total_power")
+
+    top_round_parts = []
+    bottom_round_parts = []
+    for round_no in range(1, 6):
+        print(f"support Global/HMT: capturing Round {round_no:02d} for both players")
+        transform = get_transform(config, support_img.size)
+        click(layout["round_tabs"][str(round_no)], transform)
+        support_img = wait_for_support_duo_global_hmt_page(
+            config, "support Global/HMT round switch", expected_round=round_no
+        )
+        # The two cards come from this one frame, preventing an asynchronous
+        # UI refresh from pairing one player's Round N with the other's Round M.
+        top_part = crop_support_duo_global_hmt_part(config, support_img, "top_lineup")
+        bottom_part = crop_support_duo_global_hmt_part(config, support_img, "bottom_lineup")
+        top_round_parts.append(top_part)
+        bottom_round_parts.append(bottom_part)
+        if config.get("save_parts"):
+            save_part(top_part, parts_dir, f"support_top_round_{round_no:02d}")
+            save_part(bottom_part, parts_dir, f"support_bottom_round_{round_no:02d}")
+
+    top_img = compose_support_duo_global_hmt_player(
+        top_player, top_power, top_round_parts, config
+    )
+    bottom_img = compose_support_duo_global_hmt_player(
+        bottom_player, bottom_power, bottom_round_parts, config
+    )
+    final_img = stitch_columns([top_img, bottom_img], config)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    final_img.save(output_path)
+    save_framed_output(final_img, config, output_path)
+    print(f"done: {output_path}")
+
+
 def should_click_modal_backdrop(config):
     return str(config.get("runtime_server", "cn")).strip().lower() in {"cn", "global", "hmt"}
 
@@ -2077,6 +2698,14 @@ def run_capture(config, output_path, parts_dir):
 
 
 def run_support_duo_capture(config, output_path, parts_dir, include_support_status=False):
+    if is_global_hmt_server(config):
+        # The current overseas paired-support dialog has no legacy support
+        # status strip.  Ignore this even for direct CLI callers carrying an
+        # old saved flag, rather than cropping a stale CN rectangle.
+        if include_support_status:
+            print("support Global/HMT: --include-support-status is ignored for the new paired layout")
+        return run_support_duo_global_hmt_capture(config, output_path, parts_dir)
+
     transform = print_screen_context(config)
     timings = config["timing"]
     support_screen_img = screenshot()
@@ -2106,31 +2735,30 @@ def run_support_duo_capture(config, output_path, parts_dir, include_support_stat
 
 
 def get_support_result_avatar_points(config, with_stage_tabs):
-    clicks = config["clicks"]
     key = (
         "support_result_avatars_with_stage_tabs"
         if with_stage_tabs
         else "support_result_avatars_without_stage_tabs"
     )
-    points = clicks.get(key, [])
+    points = get_server_layout_value(config, "clicks", key) or []
     if len(points) != 2:
         raise SystemExit(f"{key} must contain exactly two player avatar points")
     return points
 
 
 def get_support_result_detail_buttons(config, with_stage_tabs):
-    clicks = config["clicks"]
     key = (
         "support_result_detail_buttons_with_stage_tabs"
         if with_stage_tabs
         else "support_result_detail_buttons_without_stage_tabs"
     )
     fallback = (
-        clicks.get("group_32_detail_buttons", clicks.get("group_detail_buttons", []))
+        get_server_layout_value(config, "clicks", "group_32_detail_buttons")
         if with_stage_tabs
-        else clicks.get("group_detail_buttons", [])
+        else get_server_layout_value(config, "clicks", "group_detail_buttons")
     )
-    return clicks.get(key, fallback)
+    buttons = get_server_layout_value(config, "clicks", key)
+    return fallback if buttons is None else buttons
 
 
 def capture_support_result_data(config, parts_dir, detailed, with_stage_tabs):
@@ -2200,17 +2828,16 @@ def press_escape(config, count=1):
 
 
 def get_group_result_buttons(config, group_size, bracket_mode="group"):
-    clicks = config["clicks"]
     group_size = int(group_size)
     if bracket_mode == "top8":
         if group_size == 4:
-            return clicks.get("top8_4_result_buttons", [])
-        return clicks.get("top8_result_buttons", [])
+            return get_server_layout_value(config, "clicks", "top8_4_result_buttons") or []
+        return get_server_layout_value(config, "clicks", "top8_result_buttons") or []
     if group_size == 4:
-        return clicks.get("group_32_result_buttons", [])
+        return get_server_layout_value(config, "clicks", "group_32_result_buttons") or []
     if group_size == 2:
-        return clicks.get("group_16_result_buttons", [])
-    return clicks.get("group_result_buttons", [])
+        return get_server_layout_value(config, "clicks", "group_16_result_buttons") or []
+    return get_server_layout_value(config, "clicks", "group_result_buttons") or []
 
 
 def purple_pixel_score(img):
@@ -2229,9 +2856,17 @@ def pink_pixel_score(img):
     return score
 
 
-def select_colored_result_button(config, button_key, probe_key, score_fn, label):
-    buttons = config["clicks"].get(button_key, [])
-    probes = config.get("crops", {}).get(probe_key, [])
+def select_colored_result_choice(config, button_key, probe_key, score_fn):
+    """Read colour probes and retain the selected branch index.
+
+    Legacy callers need only a result-button point.  The Group-winner capture
+    also needs the matching branch index because its adjacent player-avatar
+    coordinate is paired with that same probe.  Keeping both values together
+    prevents a later left/right ordering assumption from selecting the wrong
+    player.
+    """
+    buttons = get_server_layout_value(config, "clicks", button_key) or []
+    probes = get_server_layout_value(config, "crops", probe_key) or []
     if not buttons:
         return None
     if len(probes) < len(buttons):
@@ -2239,24 +2874,111 @@ def select_colored_result_button(config, button_key, probe_key, score_fn, label)
 
     img = screenshot()
     transform = get_transform(config, img.size)
-    scored = []
+    scores = []
+    probe_areas = []
     for index, rect in enumerate(probes[:len(buttons)]):
         box = scale_rect(rect, transform, img.size)
-        scored.append((score_fn(img.crop(box)), index))
-    scored.sort(reverse=True)
-    best_score, best_index = scored[0]
-    print(f"{label}: result button {best_index + 1}/{len(buttons)}, color_score={best_score}")
-    return buttons[best_index]
+        crop = img.crop(box)
+        scores.append(score_fn(crop))
+        probe_areas.append(max(1, crop.width * crop.height))
+    # Match the legacy ``scored.sort(reverse=True)`` tie behaviour: if both
+    # probes genuinely have the same score, retain the later candidate rather
+    # than changing an existing 16-strong result-button selection silently.
+    best_index = max(range(len(scores)), key=lambda index: (scores[index], index))
+    best_score = scores[best_index]
+    return {
+        "point": buttons[best_index],
+        "index": best_index,
+        "score": best_score,
+        "scores": scores,
+        "score_ratios": [
+            score / area for score, area in zip(scores, probe_areas)
+        ],
+    }
 
 
-def get_group_16_winner_result_button(config):
-    return select_colored_result_button(
+def select_colored_result_button(config, button_key, probe_key, score_fn, label):
+    """Legacy point-only wrapper around :func:`select_colored_result_choice`."""
+    choice = select_colored_result_choice(
+        config,
+        button_key,
+        probe_key,
+        score_fn,
+    )
+    if choice is None:
+        return None
+    best_index = choice["index"]
+    best_score = choice["score"]
+    button_count = len(choice["scores"])
+    print(f"{label}: result button {best_index + 1}/{button_count}, color_score={best_score}")
+    return choice["point"]
+
+
+def get_group_16_winner_marker(config):
+    """Return the purple Group advancement branch and its paired index.
+
+    This intentionally *does not* click the result button.  The index points
+    directly at the corresponding outgoing player's avatar on the bracket.
+    """
+    return select_colored_result_choice(
         config,
         "group_16_winner_result_buttons",
         "group_16_winner_result_button_probes",
         purple_pixel_score,
-        "group 16",
     )
+
+
+def is_confident_group_16_winner_marker(choice):
+    """Whether a purple marker unambiguously identifies one Group winner."""
+    if not choice:
+        return False
+    ratios = list(choice.get("score_ratios") or [])
+    index = choice.get("index")
+    if not ratios or not isinstance(index, int) or not 0 <= index < len(ratios):
+        return False
+    best_ratio = ratios[index]
+    runner_up_ratio = max(
+        (ratio for candidate_index, ratio in enumerate(ratios) if candidate_index != index),
+        default=0.0,
+    )
+    return (
+        best_ratio >= GROUP_WINNER_PURPLE_MIN_RATIO
+        and (best_ratio - runner_up_ratio) >= GROUP_WINNER_PURPLE_MIN_MARGIN_RATIO
+    )
+
+
+def format_group_16_winner_marker_scores(choice):
+    if not choice:
+        return "no probe result"
+    scores = ", ".join(str(int(score)) for score in choice.get("scores", []))
+    ratios = ", ".join(f"{ratio:.3f}" for ratio in choice.get("score_ratios", []))
+    return f"scores=[{scores}], ratios=[{ratios}]"
+
+
+def get_group_16_winner_avatar(config, winner_index):
+    """Resolve the avatar paired with one purple Group advancement branch."""
+    avatars = get_server_layout_value(config, "clicks", "group_16_winner_avatars")
+    if not avatars:
+        # Configurations written before this dedicated key existed retain the
+        # same index pairing in their established group_16_avatars list.
+        avatars = get_server_layout_value(config, "clicks", "group_16_avatars")
+    if not isinstance(winner_index, int) or not 0 <= winner_index < len(avatars or []):
+        raise SystemExit(
+            "group_16_winner_avatars must contain one avatar point for each "
+            "group_16_winner_result_button probe"
+        )
+    return avatars[winner_index]
+
+
+def get_group_16_winner_result_button(config):
+    choice = get_group_16_winner_marker(config)
+    if choice is None:
+        return None
+    print(
+        "group 16: result button "
+        f"{choice['index'] + 1}/{len(choice['scores'])}, color_score={choice['score']}"
+    )
+    return choice["point"]
 
 
 def get_top8_final_result_button(config):
@@ -2284,7 +3006,7 @@ def get_group_result_sequence(config, group_size, bracket_mode="group"):
 
 def has_group_stage_tabs(config):
     crop_name = "group_result_stage_tabs_probe"
-    if crop_name not in config.get("crops", {}):
+    if not get_server_layout_value(config, "crops", crop_name):
         return False
     probe = crop_current(config, crop_name).convert("RGB")
     blue_pixels = 0
@@ -2306,7 +3028,7 @@ def prepare_group_result_page(config, group_size, select_stage_tab=True):
         return True
 
     target = "group_32_result_stage_tab" if group_size == 4 else "group_16_result_stage_tab"
-    point = config["clicks"].get(target)
+    point = get_server_layout_value(config, "clicks", target)
     if not point:
         return has_tabs
     print(f"group post: selecting {group_size * 8}-strong stage tab")
@@ -2317,10 +3039,11 @@ def prepare_group_result_page(config, group_size, select_stage_tab=True):
 
 
 def get_group_detail_buttons(config, group_size, with_stage_tabs):
-    clicks = config["clicks"]
     if int(group_size) in (2, 4) and with_stage_tabs:
-        return clicks.get("group_32_detail_buttons", clicks.get("group_detail_buttons", []))
-    return clicks.get("group_detail_buttons", [])
+        buttons = get_server_layout_value(config, "clicks", "group_32_detail_buttons")
+        if buttons is not None:
+            return buttons
+    return get_server_layout_value(config, "clicks", "group_detail_buttons") or []
 
 
 def collect_group_simple_results(config, parts_dir, group_size, bracket_mode="group"):
@@ -2477,30 +3200,41 @@ def run_round_robin_capture(config, output_path, parts_dir, include_post_result=
     print(f"done: {output_path}")
 
 
-def round_robin_group_output_path(output_path, group_index):
-    """Build a non-destructive deep-compressed JPEG output path for one GROUP."""
+def round_robin_group_output_path(output_path, group_index, output_format):
+    """Build a non-destructive path for one GROUP in the selected image format."""
+    output_format = normalize_round_robin_output_format(output_format)
+    extension = ".png" if output_format == "png" else ".jpg"
     stem = f"Group{int(group_index):02d}-{output_path.stem}"
-    candidate = output_path.with_name(f"{stem}.jpg")
+    candidate = output_path.with_name(f"{stem}{extension}")
     if not candidate.exists():
         return candidate
-    for suffix in range(2, 1000):
-        candidate = output_path.with_name(f"{stem}-{suffix}.jpg")
+    for duplicate_index in range(2, 1000):
+        candidate = output_path.with_name(f"{stem}-{duplicate_index}{extension}")
         if not candidate.exists():
             return candidate
     stamp = datetime.now().strftime("%H%M%S")
-    return output_path.with_name(f"{stem}-{stamp}.jpg")
+    return output_path.with_name(f"{stem}-{stamp}{extension}")
 
 
-def save_round_robin_deep_jpeg(image, output_path, config):
-    """Match the image tool's deep-compression preset without launching it 64 times."""
+def save_output_in_selected_format(image, output_path, output_format):
+    """Save an image as lossless PNG or the legacy JPEG quality-78 preset."""
+    output_format = normalize_round_robin_output_format(output_format)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    image.convert("RGB").save(
-        output_path,
-        format="JPEG",
-        quality=78,
-        subsampling=2,
-        optimize=True,
-    )
+    if output_format == "png":
+        image.save(output_path, format="PNG")
+    else:
+        image.convert("RGB").save(
+            output_path,
+            format="JPEG",
+            quality=78,
+            subsampling=2,
+            optimize=True,
+        )
+
+
+def save_round_robin_group_output(image, output_path, output_format, config):
+    """Save one batch GROUP image as lossless PNG or the legacy JPEG-78 preset."""
+    save_output_in_selected_format(image, output_path, output_format)
     maybe_collect_garbage(config)
 
 
@@ -2583,11 +3317,13 @@ def run_all_round_robin_groups_capture(
     parts_dir,
     start_group=1,
     include_post_result=False,
+    output_format=DEFAULT_ROUND_ROBIN_OUTPUT_FORMAT,
 ):
-    """Select and export each requested round-robin GROUP as an individual JPEG."""
+    """Select and export each requested round-robin GROUP in the selected format."""
     start_group = int(start_group)
     if not 1 <= start_group <= 64:
         raise SystemExit("round-robin start GROUP must be between 1 and 64")
+    output_format = normalize_round_robin_output_format(output_format)
 
     print(f"round-robin-all: starting from GROUP{start_group:02d}/64")
     for group_index in range(start_group, 65):
@@ -2599,8 +3335,8 @@ def run_all_round_robin_groups_capture(
             group_index,
             include_post_result,
         )
-        group_output = round_robin_group_output_path(output_path, group_index)
-        save_round_robin_deep_jpeg(final_img, group_output, config)
+        group_output = round_robin_group_output_path(output_path, group_index, output_format)
+        save_round_robin_group_output(final_img, group_output, output_format, config)
         print(f"round-robin-all: GROUP{group_index:02d}/64 saved: {group_output}")
 
 
@@ -2692,6 +3428,150 @@ def run_all_groups_capture(config, output_path, parts_dir, group_size, post_data
     final_img.save(output_path)
     save_framed_output(final_img, config, output_path)
     print(f"done: {output_path}")
+
+
+def wait_for_group_16_winner_marker(config, group_index):
+    """Wait until one Group's purple advancement marker is stable and clear.
+
+    A tab transition can briefly leave the previous Group's bracket on screen.
+    Requiring the same confident marker twice prevents the next avatar click
+    from being issued against that stale page.  Unlike the season flow, this
+    specialised capture must never silently choose the left branch.
+    """
+    timing = config.get("timing", {})
+    timeout = max(
+        1.0,
+        min(30.0, float(timing.get("group_winner_marker_timeout_seconds", 10.0))),
+    )
+    interval = max(
+        0.15,
+        min(1.0, float(timing.get("group_winner_marker_poll_interval_seconds", 0.35))),
+    )
+    deadline = time.monotonic() + timeout
+    stable_index = None
+    stable_hits = 0
+    latest = None
+
+    while True:
+        latest = get_group_16_winner_marker(config)
+        if is_confident_group_16_winner_marker(latest):
+            marker_index = latest["index"]
+            if marker_index == stable_index:
+                stable_hits += 1
+            else:
+                stable_index = marker_index
+                stable_hits = 1
+            if stable_hits >= 2:
+                print(
+                    f"GROUP{int(group_index):02d}: purple winner branch "
+                    f"{marker_index + 1}/{len(latest['scores'])}; "
+                    f"{format_group_16_winner_marker_scores(latest)}"
+                )
+                return latest
+        else:
+            stable_index = None
+            stable_hits = 0
+
+        if time.monotonic() >= deadline:
+            detail = format_group_16_winner_marker_scores(latest)
+            raise SystemExit(
+                f"GROUP{int(group_index):02d}: unable to determine the purple "
+                "advancement branch. Confirm this Group has a final winner and "
+                f"its bracket is fully visible; {detail}"
+            )
+        time.sleep(interval)
+
+
+def group_winners_output_path(output_path, output_format):
+    """Ensure the Group-winner output suffix always matches its actual codec."""
+    output_format = normalize_round_robin_output_format(output_format)
+    extension = ".png" if output_format == "png" else ".jpg"
+    if output_path.suffix.lower() == extension:
+        return output_path
+    return output_path.with_suffix(extension)
+
+
+def save_group_winners_output(image, output_path, output_format, config):
+    """Save Group winners while preserving the group-page frame option.
+
+    The frame renderer runs before the selected-codec writer, so a framed JPG
+    remains quality 78 and a framed PNG remains lossless instead of falling
+    back to Pillow's default JPEG behaviour.
+    """
+    rendered = build_framed_output(image, config)
+    if rendered is not None:
+        print(f"framed: {output_path}")
+        image = rendered
+    save_output_in_selected_format(image, output_path, output_format)
+    maybe_collect_garbage(config)
+
+
+def run_group_winners_capture(
+    config,
+    output_path,
+    parts_dir,
+    output_format=DEFAULT_ROUND_ROBIN_OUTPUT_FORMAT,
+):
+    """Capture the eight Group winners directly from their purple branches.
+
+    The target avatar is selected by the same probe index as the existing
+    Group-16 purple-result logic.  No battle-result popup is opened and no
+    result data option is consulted, so exactly one full player capture is
+    produced for each of GROUP01 through GROUP08.
+    """
+    transform = print_screen_context(config)
+    timings = config["timing"]
+    tabs = config["clicks"].get("group_tabs", [])
+    ratios = config["clicks"].get("group_tab_ratios", [])
+    if len(tabs) < 8 and len(ratios) < 8:
+        raise SystemExit("group_tabs must contain GROUP01-GROUP08 click points")
+
+    output_format = normalize_round_robin_output_format(output_format)
+    player_config = round_robin_player_capture_config(config)
+    player_images = []
+    for group_index in range(1, 9):
+        print(f"group winners: switching to GROUP{group_index:02d}/08")
+        click_group_tab(config, group_index, transform)
+        time.sleep(float(timings.get("after_group_tab_click_seconds", 0.8)))
+
+        marker = wait_for_group_16_winner_marker(config, group_index)
+        avatar_point = get_group_16_winner_avatar(config, marker["index"])
+        transform = get_transform(config, screenshot().size)
+        print(
+            f"group winners: GROUP{group_index:02d} opening outgoing player "
+            f"from purple branch {marker['index'] + 1}"
+        )
+        click(avatar_point, transform)
+        wait_for_player_lineup_page(
+            player_config,
+            f"group winners GROUP{group_index:02d}",
+        )
+        player_images.append(
+            capture_player_image(
+                player_config,
+                parts_dir / f"group{group_index:02d}",
+                f"group_winner_{group_index:02d}",
+                close_profile=False,
+            )
+        )
+
+        # This follows the established Group-player hierarchy: profile ->
+        # lineup card -> Group bracket. For all supported servers the helper
+        # clicks the two safe blank-side points rather than pressing Esc.
+        print(f"group winners: returning to GROUP{group_index:02d} bracket")
+        press_escape_twice(config)
+        transform = get_transform(config, screenshot().size)
+
+    final_img = stitch_grid_with_gap(
+        player_images,
+        8,
+        int(config.get("round_robin_grid_gap", 13)),
+        config.get("round_robin_background", "#FFFFFF"),
+    )
+    final_output = group_winners_output_path(output_path, output_format)
+    save_group_winners_output(final_img, final_output, output_format, config)
+    print(f"done: {final_output}")
+    return final_output
 
 
 def output_with_suffix(output_path, suffix):
@@ -2803,6 +3683,100 @@ def capture_seed_players_for_group(config, group_index, parts_dir, ocr):
         press_escape_twice(config)
         transform = get_transform(config, screenshot().size)
     return players
+
+
+def replace_cached_player_image(config, player, image, cache_dir):
+    """Replace only the visual cache for one already-identified player.
+
+    A season player object carries the identity found while collecting the
+    GROUP64 seeds (key, aliases, nickname and profile metadata).  Overseas
+    players can now change their five-team lineup before TOP8 and before the
+    final, so those later captures must refresh the picture without creating a
+    second identity record.  Keep the previous on-disk cache untouched: the
+    GROUP images may already have been composed from it and saved.
+    """
+    previous_image = player.get("image")
+
+    if config.get("low_memory"):
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        player_key = str(player.get("key") or "player")
+        cached_path = cache_dir / f"{player_key}.png"
+        image.save(cached_path)
+        try:
+            image.close()
+        except Exception:
+            pass
+        player.pop("image", None)
+        player["image_path"] = str(cached_path)
+        maybe_collect_garbage(config)
+    else:
+        player["image"] = image
+        # The old low-memory path, if any, deliberately remains on disk but
+        # must not become a fallback for the refreshed in-memory snapshot.
+        player.pop("image_path", None)
+
+    if previous_image is not None and previous_image is not image:
+        try:
+            previous_image.close()
+        except Exception:
+            pass
+
+
+def refresh_cached_players_from_bracket(
+    config,
+    parts_dir,
+    players,
+    avatar_key,
+    stage_label,
+):
+    """Refresh player pictures from a fixed TOP8-bracket avatar sequence.
+
+    This is intentionally separate from ``capture_group_image``: that helper
+    returns one stitched image, while the seasonal flow needs to replace the
+    picture on existing cached player objects so later result matching keeps
+    their GROUP64 identities.  The caller supplies the exact bracket order;
+    a count mismatch is fatal rather than risking an invisible slot shift.
+    """
+    points = get_server_layout_value(config, "clicks", avatar_key) or []
+    if len(players) != len(points):
+        raise SystemExit(
+            f"{stage_label}: cached player count {len(players)} does not match "
+            f"{avatar_key} point count {len(points)}"
+        )
+    if not players:
+        raise SystemExit(f"{stage_label}: no players are available to refresh")
+
+    transform = get_transform(config, screenshot().size)
+    cache_dir = parts_dir / "cached_players"
+    for slot_index, (player, point) in enumerate(zip(players, points), 1):
+        player_key = str(player.get("key") or f"slot{slot_index:02d}")
+        player_name = describe_player(player)
+        label = f"season_{stage_label}_{slot_index:02d}_{player_key}"
+        print(
+            f"season {stage_label}: refreshing slot {slot_index}/{len(points)} "
+            f"key={player_key} nickname={player_name}"
+        )
+        click(point, transform)
+        wait_for_player_lineup_page(
+            config,
+            f"season {stage_label} player {slot_index} ({player_name})",
+        )
+        refreshed_image = capture_player_image(
+            config,
+            parts_dir,
+            label,
+            close_profile=False,
+            return_metadata=False,
+        )
+        replace_cached_player_image(config, player, refreshed_image, cache_dir)
+
+        # The profile pane and player lineup pane are both modal.  This uses
+        # the established backdrop-close routine on every supported client,
+        # including Global/HMT (and therefore preserves manual/Logitech input
+        # plugin behaviour through the shared click entry point).
+        print(f"season {stage_label}: returning to championship bracket")
+        press_escape_twice(config)
+        transform = get_transform(config, screenshot().size)
 
 
 def default_stage_fallback_pairs(players, group_size):
@@ -3139,6 +4113,18 @@ def run_season_capture(config, output_path, parts_dir, post_data_mode="none"):
 
     if len(top8_players) < 8:
         raise SystemExit(f"season: expected 8 TOP8 players, got {len(top8_players)}")
+    if is_global_hmt_server(config):
+        # Overseas players may revise their lineup after the GROUP stage but
+        # before TOP8 starts.  Refresh all eight cached visual snapshots
+        # before opening any TOP8 result; the same objects then flow through
+        # both the TOP8 and TOP4 output layers.
+        refresh_cached_players_from_bracket(
+            config,
+            parts_dir / "top8" / "lineup_snapshots",
+            top8_players,
+            "top8_avatars",
+            "top8_lineup",
+        )
     print("season: collecting TOP8 championship data from cached group winners")
     top8_pairs = default_stage_fallback_pairs(top8_players, 8)
     top8_stage8, top4_players = collect_cached_top8_stage(
@@ -3158,6 +4144,18 @@ def run_season_capture(config, output_path, parts_dir, post_data_mode="none"):
         top4_pairs,
         "top4",
     )
+    if is_global_hmt_server(config):
+        # A second lineup revision is available only before the final.  Do
+        # not use top8_4_avatars here: TOP4 must retain the TOP8 snapshot.
+        # The two finalist objects are refreshed only after the TOP4 image is
+        # already composed, so prior layers remain unchanged.
+        refresh_cached_players_from_bracket(
+            config,
+            parts_dir / "top8" / "final_lineup_snapshots",
+            final_players,
+            "top8_final_avatars",
+            "final_lineup",
+        )
     final_pairs = default_stage_fallback_pairs(final_players, 2)
     top8_stage2, _champion = collect_cached_top8_stage(
         config,
@@ -3191,6 +4189,7 @@ def preview_regions(config, output_path):
     img = screenshot()
     transform = get_transform(config, img.size)
     draw = ImageDraw.Draw(img)
+    lineup_layout = get_player_lineup_layout(config)
 
     colors = {
         "round_lineup": "cyan",
@@ -3200,20 +4199,26 @@ def preview_regions(config, output_path):
         "research_cards": "lime",
     }
     for name, color in colors.items():
-        crop = get_research_card_rects(config) if name == "research_cards" else config["crops"][name]
+        if name == "research_cards":
+            crop = get_research_card_rects(config)
+        elif name == "round_lineup":
+            crop = lineup_layout["round_lineup"]
+        else:
+            crop = config["crops"][name]
         rects = crop if name == "research_cards" else [crop]
         for rect in rects:
             box = scale_rect(rect, transform, img.size)
             draw.rectangle(box, outline=color, width=4)
             draw.text((box[0] + 8, box[1] + 8), name, fill=color)
 
-    for name, point in config["clicks"]["round_tabs"].items():
+    for name, point in lineup_layout["round_tabs"].items():
         x, y = scale_point(point, transform)
         draw.ellipse((x - 8, y - 8, x + 8, y + 8), outline="yellow", width=3)
         draw.text((x + 10, y - 10), f"R{name}", fill="yellow")
 
     for name in ["avatar", "profile_close", "outpost_tab"]:
-        x, y = scale_point(config["clicks"][name], transform)
+        point = lineup_layout["avatar"] if name == "avatar" else config["clicks"][name]
+        x, y = scale_point(point, transform)
         draw.ellipse((x - 10, y - 10, x + 10, y + 10), outline="lime", width=3)
         draw.text((x + 12, y - 12), name, fill="lime")
 
@@ -3327,6 +4332,12 @@ def parse_args():
         help="Background colour used only for round-robin player-image stitching.",
     )
     parser.add_argument(
+        "--round-robin-output-format",
+        choices=ROUND_ROBIN_OUTPUT_FORMATS,
+        default=None,
+        help="Batch GROUP output: lossless PNG or the legacy JPEG quality-78 preset.",
+    )
+    parser.add_argument(
         "--include-support-status",
         action="store_true",
         help="Append the support status comparison bar to the support duo output.",
@@ -3337,6 +4348,14 @@ def parse_args():
         choices=[2, 4, 8],
         default=None,
         help="Capture a C ARENA group bracket: 8 players, 4 players, or reserved 2-player mode.",
+    )
+    parser.add_argument(
+        "--group-winners",
+        action="store_true",
+        help=(
+            "Capture the purple-branch winner of GROUP01 through GROUP08, "
+            "then stitch the eight single-player lineups horizontally."
+        ),
     )
     parser.add_argument(
         "--top8-size",
@@ -3542,6 +4561,11 @@ def main():
 
     config = load_config(args.config)
     config["runtime_server"] = args.server
+    config["round_robin_output_format"] = normalize_round_robin_output_format(
+        args.round_robin_output_format
+        if args.round_robin_output_format is not None
+        else config.get("round_robin_output_format")
+    )
     if args.input_plugin and not args.preview:
         ACTIVE_INPUT_PLUGIN = connect_input_plugin(args.input_plugin)
         atexit.register(release_active_input_plugin_on_exit)
@@ -3619,7 +4643,14 @@ def main():
     print("put the game on the arena popup screen now")
     countdown(seconds)
     parts_dir = args.output.with_suffix("")
-    if args.round_robin_all:
+    if args.group_winners:
+        run_group_winners_capture(
+            config,
+            args.output,
+            parts_dir,
+            config["round_robin_output_format"],
+        )
+    elif args.round_robin_all:
         if not args.round_robin:
             raise SystemExit("--round-robin-all requires --round-robin")
         run_all_round_robin_groups_capture(
@@ -3628,6 +4659,7 @@ def main():
             parts_dir,
             args.round_robin_start_group,
             args.round_robin_post_result,
+            config["round_robin_output_format"],
         )
     elif args.round_robin:
         run_round_robin_capture(

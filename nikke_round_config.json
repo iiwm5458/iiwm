@@ -24,6 +24,10 @@
     "all_groups_grid_gap":  56,
     "top8_pyramid_layer_gap":  72,
     "support_status_background":  "#f7f8fa",
+    "support_duo_power_output_width":  238,
+    "support_duo_power_output_height":  48,
+    "support_duo_lineup_output_height":  255,
+    "support_duo_lineup_background":  "#f7f8fa",
     "framed_output":  false,
     "framed_background":  "assets/pixiewall-xlesjh-5120x2880.jpg",
     "framed_margin_x":  80,
@@ -64,7 +68,8 @@
                               "direct_battle_annotation_label_size":  "small",
                               "image_tool_stitch_background":  "custom",
                               "manual_click_prompt_volume":  45,
-                              "manual_click_prompt_timbre":  "musicbox_chime"
+                              "manual_click_prompt_timbre":  "musicbox_chime",
+                              "input_plugin_id":  ""
                           },
     "timing":  {
                    "countdown_seconds":  0,
@@ -76,6 +81,9 @@
                    "player_lineup_poll_timeout_seconds":  10,
                    "player_lineup_poll_interval_seconds":  0.35,
                    "after_support_avatar_click_seconds":  0.83,
+                   "after_support_duo_round_click_seconds":  0.45,
+                   "support_duo_poll_timeout_seconds":  10,
+                   "support_duo_poll_interval_seconds":  0.35,
                    "after_group_avatar_click_seconds":  0.83,
                    "after_group_tab_click_seconds":  0.83,
                    "after_group_result_click_seconds":  0.83,
@@ -97,6 +105,10 @@
                                   1477,
                                   579
                               ],
+                   "avatar_global_hmt":  [
+                                             1477,
+                                             549
+                                         ],
                    "profile_close":  [
                                          2049,
                                          138
@@ -123,6 +135,38 @@
                                                 1875,
                                                 430
                                             ],
+                   "support_duo_avatars_global_hmt":  [
+                                                            [
+                                                                1474,
+                                                                352
+                                                            ],
+                                                            [
+                                                                1474,
+                                                                1103
+                                                            ]
+                                                        ],
+                   "support_duo_round_tabs_global_hmt":  {
+                                                                "1":  [
+                                                                          1447,
+                                                                          1228
+                                                                      ],
+                                                                "2":  [
+                                                                          1585,
+                                                                          1228
+                                                                      ],
+                                                                "3":  [
+                                                                          1722,
+                                                                          1228
+                                                                      ],
+                                                                "4":  [
+                                                                          1855,
+                                                                          1228
+                                                                      ],
+                                                                "5":  [
+                                                                          1997,
+                                                                          1228
+                                                                      ]
+                                                            },
                    "support_result_avatars_without_stage_tabs":  [
                                                                      [
                                                                          1455,
@@ -143,6 +187,26 @@
                                                                       727
                                                                   ]
                                                               ],
+                   "support_result_avatars_without_stage_tabs_global_hmt":  [
+                                                                                [
+                                                                                    1455,
+                                                                                    778
+                                                                                ],
+                                                                                [
+                                                                                    1899,
+                                                                                    778
+                                                                                ]
+                                                                            ],
+                   "support_result_avatars_with_stage_tabs_global_hmt":  [
+                                                                             [
+                                                                                 1455,
+                                                                                 778
+                                                                             ],
+                                                                             [
+                                                                                 1899,
+                                                                                 778
+                                                                             ]
+                                                                         ],
                    "group_64_avatars":  [
                                             [
                                                 1390,
@@ -441,6 +505,14 @@
                                                      1903,
                                                      1158
                                                  ],
+                   "group_16_result_stage_tab_global_hmt":  [
+                                                                1533,
+                                                                1209
+                                                            ],
+                   "group_32_result_stage_tab_global_hmt":  [
+                                                                1903,
+                                                                1209
+                                                            ],
                    "group_detail_buttons":  [
                                                 [
                                                     1891,
@@ -463,6 +535,28 @@
                                                     1070
                                                 ]
                                             ],
+                   "group_detail_buttons_global_hmt":  [
+                                                           [
+                                                               1848,
+                                                               877
+                                                           ],
+                                                           [
+                                                               1848,
+                                                               938
+                                                           ],
+                                                           [
+                                                               1848,
+                                                               999
+                                                           ],
+                                                           [
+                                                               1848,
+                                                               1059
+                                                           ],
+                                                           [
+                                                               1848,
+                                                               1121
+                                                           ]
+                                                       ],
                    "group_32_detail_buttons":  [
                                                    [
                                                        1891,
@@ -485,6 +579,72 @@
                                                        1070
                                                    ]
                                                ],
+                   "group_32_detail_buttons_global_hmt":  [
+                                                              [
+                                                                  1848,
+                                                                  877
+                                                              ],
+                                                              [
+                                                                  1848,
+                                                                  938
+                                                              ],
+                                                              [
+                                                                  1848,
+                                                                  999
+                                                              ],
+                                                              [
+                                                                  1848,
+                                                                  1059
+                                                              ],
+                                                              [
+                                                                  1848,
+                                                                  1121
+                                                              ]
+                                                          ],
+                   "support_result_detail_buttons_without_stage_tabs_global_hmt":  [
+                                                                                       [
+                                                                                           1848,
+                                                                                           877
+                                                                                       ],
+                                                                                       [
+                                                                                           1848,
+                                                                                           938
+                                                                                       ],
+                                                                                       [
+                                                                                           1848,
+                                                                                           999
+                                                                                       ],
+                                                                                       [
+                                                                                           1848,
+                                                                                           1059
+                                                                                       ],
+                                                                                       [
+                                                                                           1848,
+                                                                                           1121
+                                                                                       ]
+                                                                                   ],
+                   "support_result_detail_buttons_with_stage_tabs_global_hmt":  [
+                                                                                    [
+                                                                                        1848,
+                                                                                        877
+                                                                                    ],
+                                                                                    [
+                                                                                        1848,
+                                                                                        938
+                                                                                    ],
+                                                                                    [
+                                                                                        1848,
+                                                                                        999
+                                                                                    ],
+                                                                                    [
+                                                                                        1848,
+                                                                                        1059
+                                                                                    ],
+                                                                                    [
+                                                                                        1848,
+                                                                                        1121
+                                                                                    ]
+                                                                                ],
                    "round_tabs":  {
                                       "1":  [
                                                 1462,
@@ -499,14 +659,36 @@
                                                 707
                                             ],
                                       "4":  [
-                                                1900,
+                                                1848,
                                                 707
                                             ],
                                       "5":  [
                                                 2001,
                                                 707
                                             ]
-                                  }
+                                  },
+                   "round_tabs_global_hmt":  {
+                                                 "1":  [
+                                                           1462,
+                                                           737
+                                                       ],
+                                                 "2":  [
+                                                           1604,
+                                                           737
+                                                       ],
+                                                 "3":  [
+                                                           1754,
+                                                           737
+                                                       ],
+                                                 "4":  [
+                                                           1848,
+                                                           737
+                                                       ],
+                                                 "5":  [
+                                                           2001,
+                                                           737
+                                                       ]
+                                             }
                },
     "crops":  {
                   "round_lineup":  [
@@ -515,6 +697,30 @@
                                        660,
                                        274
                                    ],
+                  "round_lineup_global_hmt":  [
+                                                  1393,
+                                                  786,
+                                                  660,
+                                                  274
+                                              ],
+                  "player_lineup_header_probe_global_hmt":  [
+                                                                1380,
+                                                                375,
+                                                                680,
+                                                                105
+                                                            ],
+                  "player_lineup_tabs_probe_global_hmt":  [
+                                                              1395,
+                                                              700,
+                                                              665,
+                                                              74
+                                                          ],
+                  "player_lineup_cards_probe_global_hmt":  [
+                                                               1393,
+                                                               786,
+                                                               660,
+                                                               274
+                                                           ],
                   "profile_basic":  [
                                         1378,
                                         0,
@@ -645,12 +851,80 @@
                                          676,
                                          58
                                      ],
+                  "support_duo_top_lineup_global_hmt":  [
+                                                             1390,
+                                                             411,
+                                                             656,
+                                                             228
+                                                         ],
+                  "support_duo_bottom_lineup_global_hmt":  [
+                                                                1387,
+                                                                803,
+                                                                666,
+                                                                236
+                                                            ],
+                  "support_duo_top_power_global_hmt":  [
+                                                            1394,
+                                                            640,
+                                                            225,
+                                                            45
+                                                        ],
+                  "support_duo_bottom_power_global_hmt":  [
+                                                               1826,
+                                                               758,
+                                                               226,
+                                                               41
+                                                           ],
+                  "support_duo_tabs_probe_global_hmt":  [
+                                                             1384,
+                                                             1203,
+                                                             675,
+                                                             50
+                                                         ],
+                  "support_duo_round_active_probes_global_hmt":  [
+                                                                     [
+                                                                         1384,
+                                                                         1203,
+                                                                         126,
+                                                                         50
+                                                                     ],
+                                                                     [
+                                                                         1522,
+                                                                         1203,
+                                                                         125,
+                                                                         50
+                                                                     ],
+                                                                     [
+                                                                         1659,
+                                                                         1203,
+                                                                         125,
+                                                                         50
+                                                                     ],
+                                                                     [
+                                                                         1787,
+                                                                         1203,
+                                                                         135,
+                                                                         50
+                                                                     ],
+                                                                     [
+                                                                         1934,
+                                                                         1203,
+                                                                         125,
+                                                                         50
+                                                                     ]
+                                                                 ],
                   "group_simple_result":  [
                                               1555,
                                               793,
                                               243,
                                               301
                                           ],
+                  "group_simple_result_global_hmt":  [
+                                                         1555,
+                                                         844,
+                                                         243,
+                                                         301
+                                                     ],
                   "group_detailed_result":  [
                                                 1380,
                                                 289,
@@ -675,6 +949,12 @@
                                                         650,
                                                         120
                                                     ],
+                  "group_result_stage_tabs_probe_global_hmt":  [
+                                                                   1450,
+                                                                   1161,
+                                                                   650,
+                                                                   120
+                                                               ],
                   "group_16_winner_result_button_probes":  [
                                                                [
                                                                    1668,
@@ -703,5 +983,6 @@
                                                               38
                                                           ]
                                                       ]
-              }
+              },
+    "round_robin_output_format":  "jpg78"
 }

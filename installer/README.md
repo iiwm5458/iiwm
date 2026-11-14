@@ -70,7 +70,7 @@ the official `[Files]` list, release-directory copy list, or update-patch
 payload. The lite installer does not include the host.
 
 After building both installers, build the cross-history patches with
-`powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build_update_patches.ps1 -FullVersion 0.1.25 -LiteVersion 0.1.15`.
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build_update_patches.ps1 -FullVersion 0.1.26 -LiteVersion 0.1.16`.
 The build script refuses to overwrite an existing patch. Run
 `tools/test_full_history_update.ps1 -PatchRoot <generated-patch-directory>`
 before distribution, and run `tools/test_lite_history_update.ps1` for the Lite

@@ -21,6 +21,7 @@ $GroupCustomFrameDir = Join-Path $ScriptDir "group_custom_backgrounds"
 $OutputRoot = Join-Path $ScriptDir "screenshots"
 $ExamplePath = Join-Path $AssetsDir "arena_info_example.png"
 $SupportExamplePath = Join-Path $AssetsDir "support_info_example.png"
+$SupportGlobalExamplePath = Join-Path $AssetsDir "support_info_example_global_hmt.png"
 $SupportResultExamplePath = Join-Path $AssetsDir "support_result_example.png"
 $GroupExamplePath = Join-Path $AssetsDir "group_info_example.png"
 $Top8ExamplePath = Join-Path $AssetsDir "top8_info_example.png"
@@ -350,6 +351,7 @@ $ConfiguredCaptureStartupDelaySeconds = $null
 $ConfiguredRoundRobinGroupSwitchDelaySeconds = $null
 $ConfiguredRoundRobinCaptureGap = $null
 $ConfiguredRoundRobinBackground = "white"
+$ConfiguredRoundRobinOutputFormat = "jpg78"
 $ConfiguredImageToolStitchBackground = "white"
 $ConfiguredManualClickPromptVolume = 25
 $ConfiguredManualClickPromptTimbre = "8bit"
@@ -402,6 +404,9 @@ try {
                 "#FFF6E5" { "ivory"; break }
                 default { "white" }
             }
+        }
+        if ($configJson.PSObject.Properties["round_robin_output_format"] -and $null -ne $configJson.round_robin_output_format) {
+            $ConfiguredRoundRobinOutputFormat = [string]$configJson.round_robin_output_format
         }
         if ($configJson.PSObject.Properties["launcher_settings"] -and $null -ne $configJson.launcher_settings) {
             if ($configJson.launcher_settings.PSObject.Properties["ocr_performance_mode"] -and $null -ne $configJson.launcher_settings.ocr_performance_mode) {
@@ -481,6 +486,11 @@ $script:RoundRobinBackground = if ($ConfiguredRoundRobinBackground -in @("white"
     $ConfiguredRoundRobinBackground
 } else {
     "white"
+}
+$script:RoundRobinOutputFormat = if ($ConfiguredRoundRobinOutputFormat -in @("png", "jpg78")) {
+    $ConfiguredRoundRobinOutputFormat
+} else {
+    "jpg78"
 }
 $script:ImageToolStitchBackground = if ($ConfiguredImageToolStitchBackground -in @("white", "pink", "blue", "black", "ivory", "transparent", "custom")) {
     $ConfiguredImageToolStitchBackground
@@ -1355,6 +1365,28 @@ try {
         <Border x:Name="ExampleBorder" Grid.Row="2" CornerRadius="18" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="10">
           <Image x:Name="ExampleImage" Stretch="Uniform"/>
         </Border>
+        <Border x:Name="SupportExamplesBorder" Grid.Row="2" CornerRadius="18" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="10" Visibility="Collapsed">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                <TextBlock Text="&#20013;&#22269;&#26381;" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                <Border CornerRadius="10" BorderBrush="#365875" BorderThickness="1" Background="#44101A2A" Padding="4">
+                  <Image x:Name="SupportCnExampleImage" Stretch="Uniform" MaxHeight="330"/>
+                </Border>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                <TextBlock Text="&#22269;&#38469;&#26381;" FontFamily="Microsoft YaHei UI" FontSize="13" FontWeight="Bold" Foreground="#D7E8F6" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                <Border CornerRadius="10" BorderBrush="#365875" BorderThickness="1" Background="#44101A2A" Padding="4">
+                  <Image x:Name="SupportGlobalExampleImage" Stretch="Uniform" MaxHeight="330"/>
+                </Border>
+              </StackPanel>
+            </Grid>
+          </ScrollViewer>
+        </Border>
         <Border x:Name="SettingsPanel" Grid.Row="2" CornerRadius="16" BorderBrush="#5EDCFF" BorderThickness="1" Background="#66040A14" Padding="14,6" Visibility="Collapsed">
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True">
           <StackPanel>
@@ -1504,10 +1536,12 @@ try {
             <CheckBox x:Name="RoundRobinAllGroupsCheck" Content="&#25105;&#35201;&#25152;&#26377;Group&#30340;&#25968;&#25454;" Style="{StaticResource DarkOptionCheck}" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" Margin="2,6,0,0">
               <TextBlock x:Name="RoundRobinCaptureGapLabel" Text="&#22270;&#20687;&#38388;&#36317;" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" VerticalAlignment="Center" Margin="0,0,4,0"/>
-              <TextBox x:Name="RoundRobinCaptureGapBox" Width="42" Height="27" Text="13" TextAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" FontFamily="Microsoft YaHei UI" FontSize="11" Background="#44101A2A" Foreground="#F7FBFF" BorderBrush="#5EDCFF" BorderThickness="1" ToolTip="控制小组循环赛四名玩家资料页横向拼接时的间距。"/>
+              <TextBox x:Name="RoundRobinCaptureGapBox" Width="42" Height="27" Text="13" TextAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" FontFamily="Microsoft YaHei UI" FontSize="11" Background="#44101A2A" Foreground="#F7FBFF" BorderBrush="#5EDCFF" BorderThickness="1" ToolTip="控制小组循环赛与 8 强晋级阵容横向拼接时的图像间距。"/>
               <TextBlock x:Name="RoundRobinCaptureGapUnitText" Text="&#20687;&#32032;" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" VerticalAlignment="Center" Margin="4,0,14,0"/>
               <TextBlock x:Name="RoundRobinBackgroundLabel" Text="&#25340;&#22270;&#32972;&#26223;" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" VerticalAlignment="Center" Margin="0,0,5,0"/>
-              <ComboBox x:Name="RoundRobinBackgroundComboBox" Width="94" Height="27" VerticalAlignment="Center" Style="{StaticResource DarkServerModeComboBox}" ToolTip="仅控制小组循环赛四人拼图与循环赛图像拼接的背景颜色。"/>
+              <ComboBox x:Name="RoundRobinBackgroundComboBox" Width="94" Height="27" VerticalAlignment="Center" Style="{StaticResource DarkServerModeComboBox}" ToolTip="控制小组循环赛与 8 强晋级阵容拼图的背景颜色。"/>
+              <TextBlock x:Name="RoundRobinOutputFormatLabel" Text="&#22270;&#29255;&#26684;&#24335;" FontFamily="Microsoft YaHei UI" FontSize="11" Foreground="#D7E8F6" VerticalAlignment="Center" Margin="14,0,5,0"/>
+              <ComboBox x:Name="RoundRobinOutputFormatComboBox" Width="118" Height="27" VerticalAlignment="Center" Style="{StaticResource DarkServerModeComboBox}" ToolTip="控制小组循环赛批量截图与 8 强晋级阵容拼图的导出格式；无损 PNG 保留像素，质量 78 的 JPG 保持较小文件输出。"/>
             </StackPanel>
             <StackPanel Margin="2,6,0,0">
               <StackPanel Orientation="Horizontal">
@@ -1553,8 +1587,11 @@ try {
           <Button x:Name="Group32Button" Height="48" Style="{StaticResource DarkButton}" Margin="0,0,0,10">
             <TextBlock Text="&#25191;&#34892;32&#24378;&#35813;&#32452;4&#20154;&#25130;&#22270;" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
           </Button>
-          <Button x:Name="Group16Button" Height="48" Style="{StaticResource DarkButton}">
+          <Button x:Name="Group16Button" Height="48" Style="{StaticResource DarkButton}" Margin="0,0,0,10">
             <TextBlock Text="&#25191;&#34892;16&#24378;&#35813;&#32452;&#21452;&#20154;&#25130;&#22270;" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+          </Button>
+          <Button x:Name="GroupWinnersButton" Height="48" Style="{StaticResource DarkButton}">
+            <TextBlock Text="&#22269;&#38469;&#26381;8&#24378;&#38453;&#23481;" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
           </Button>
         </StackPanel>
         <StackPanel x:Name="Top8ExecutePanel" Grid.Row="3" Margin="0,20,0,0" Visibility="Collapsed">
@@ -2051,6 +2088,8 @@ $Window = [Windows.Markup.XamlReader]::Load($Reader)
 
 $BackgroundImage = $Window.FindName("BackgroundImage")
 $ExampleImage = $Window.FindName("ExampleImage")
+$SupportCnExampleImage = $Window.FindName("SupportCnExampleImage")
+$SupportGlobalExampleImage = $Window.FindName("SupportGlobalExampleImage")
 $DoroImage = $Window.FindName("DoroImage")
 $ArenaButton = $Window.FindName("ArenaButton")
 $SupportButton = $Window.FindName("SupportButton")
@@ -2083,6 +2122,8 @@ $RoundRobinCaptureGapBox = $Window.FindName("RoundRobinCaptureGapBox")
 $RoundRobinCaptureGapUnitText = $Window.FindName("RoundRobinCaptureGapUnitText")
 $RoundRobinBackgroundLabel = $Window.FindName("RoundRobinBackgroundLabel")
 $RoundRobinBackgroundComboBox = $Window.FindName("RoundRobinBackgroundComboBox")
+$RoundRobinOutputFormatLabel = $Window.FindName("RoundRobinOutputFormatLabel")
+$RoundRobinOutputFormatComboBox = $Window.FindName("RoundRobinOutputFormatComboBox")
 $RoundRobinStartGroupLabel = $Window.FindName("RoundRobinStartGroupLabel")
 $RoundRobinStartGroupComboBox = $Window.FindName("RoundRobinStartGroupComboBox")
 $RoundRobinGroupSwitchDelayLabel = $Window.FindName("RoundRobinGroupSwitchDelayLabel")
@@ -2113,10 +2154,23 @@ foreach ($backgroundOption in @(
 }
 $backgroundIndex = @("white", "pink", "blue", "black", "ivory").IndexOf($script:RoundRobinBackground)
 $RoundRobinBackgroundComboBox.SelectedIndex = if ($backgroundIndex -ge 0) { $backgroundIndex } else { 0 }
+$RoundRobinOutputFormatComboBox.Items.Clear()
+foreach ($formatOption in @(
+    [pscustomobject]@{ Label = "无损PNG"; Value = "png" },
+    [pscustomobject]@{ Label = "质量 78 的 JPG"; Value = "jpg78" }
+)) {
+    $item = [Windows.Controls.ComboBoxItem]::new()
+    $item.Content = $formatOption.Label
+    $item.Tag = $formatOption.Value
+    [void]$RoundRobinOutputFormatComboBox.Items.Add($item)
+}
+$outputFormatIndex = @("png", "jpg78").IndexOf($script:RoundRobinOutputFormat)
+$RoundRobinOutputFormatComboBox.SelectedIndex = if ($outputFormatIndex -ge 0) { $outputFormatIndex } else { 1 }
 $GroupExecutePanel = $Window.FindName("GroupExecutePanel")
 $Group64Button = $Window.FindName("Group64Button")
 $Group32Button = $Window.FindName("Group32Button")
 $Group16Button = $Window.FindName("Group16Button")
+$GroupWinnersButton = $Window.FindName("GroupWinnersButton")
 $Top8ExecutePanel = $Window.FindName("Top8ExecutePanel")
 $Top8Button8 = $Window.FindName("Top8Button8")
 $Top8Button4 = $Window.FindName("Top8Button4")
@@ -2249,6 +2303,7 @@ $ReservedButton1 = $Window.FindName("ReservedButton1")
 $ReservedButton2 = $Window.FindName("ReservedButton2")
 $SourceAttributionText = $Window.FindName("SourceAttributionText")
 $ExampleBorder = $Window.FindName("ExampleBorder")
+$SupportExamplesBorder = $Window.FindName("SupportExamplesBorder")
 $SettingsPanel = $Window.FindName("SettingsPanel")
 $InputPluginOptionsPanel = $Window.FindName("InputPluginOptionsPanel")
 $InputPluginOptionsList = $Window.FindName("InputPluginOptionsList")
@@ -3047,6 +3102,7 @@ function Apply-Theme($Theme) {
         Set-Brush $MainPanel BorderBrush "#FFFFA9C8"
         Set-Brush $SubPagePanel BorderBrush "#FFFFA9C8"
         Set-Brush $ExampleBorder BorderBrush "#FFFFBCD5"
+        Set-Brush $SupportExamplesBorder BorderBrush "#FFFFBCD5"
         Set-Brush $SettingsPanel BorderBrush "#FFFFBCD5"
         $MainPanel.Background = New-GradientBrush "#B8FFF8FC" "#AFFFF0F7"
         $SubPagePanel.Background = New-GradientBrush "#C2FFF8FC" "#B6FFF0F7"
@@ -3061,6 +3117,7 @@ function Apply-Theme($Theme) {
         Set-Style $Group64Button "PinkDarkButton"
         Set-Style $Group32Button "PinkDarkButton"
         Set-Style $Group16Button "PinkDarkButton"
+        Set-Style $GroupWinnersButton "PinkDarkButton"
         Set-Style $Top8Button8 "PinkDarkButton"
         Set-Style $Top8Button4 "PinkDarkButton"
         Set-Style $Top8ButtonFinal "PinkDarkButton"
@@ -3126,6 +3183,7 @@ function Apply-Theme($Theme) {
         Set-Style $RoundRobinAllGroupsCheck "PinkOptionCheck"
         Set-Style $RoundRobinStartGroupComboBox "PinkServerModeComboBox"
         Set-Style $RoundRobinBackgroundComboBox "PinkServerModeComboBox"
+        Set-Style $RoundRobinOutputFormatComboBox "PinkServerModeComboBox"
         Set-Style $RoundRobinStitchButton "PinkDarkButton"
         foreach ($option in @($RoundRobinStitchVerticalRadio, $RoundRobinStitchHorizontalRadio)) {
             Set-Style $option "PinkCompressionMode"
@@ -3137,6 +3195,7 @@ function Apply-Theme($Theme) {
         $RoundRobinCaptureGapBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#6D344B")
         Set-Brush $RoundRobinCaptureGapUnitText Foreground "#6D344B"
         Set-Brush $RoundRobinBackgroundLabel Foreground "#6D344B"
+        Set-Brush $RoundRobinOutputFormatLabel Foreground "#6D344B"
         Set-Brush $RoundRobinStitchGapLabel Foreground "#6D344B"
         $RoundRobinStitchGapBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#AAFFF8FC")
         $RoundRobinStitchGapBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFBCD5")
@@ -3219,6 +3278,7 @@ function Apply-Theme($Theme) {
         Set-Brush $MainPanel BorderBrush "#766BDFFF"
         Set-Brush $SubPagePanel BorderBrush "#766BDFFF"
         Set-Brush $ExampleBorder BorderBrush "#5EDCFF"
+        Set-Brush $SupportExamplesBorder BorderBrush "#5EDCFF"
         Set-Brush $SettingsPanel BorderBrush "#5EDCFF"
         $MainPanel.Background = New-GradientBrush "#CC111C2F" "#BA07101E"
         $SubPagePanel.Background = New-GradientBrush "#CC111C2F" "#BA07101E"
@@ -3233,6 +3293,7 @@ function Apply-Theme($Theme) {
         Set-Style $Group64Button "DarkButton"
         Set-Style $Group32Button "DarkButton"
         Set-Style $Group16Button "DarkButton"
+        Set-Style $GroupWinnersButton "DarkButton"
         Set-Style $Top8Button8 "DarkButton"
         Set-Style $Top8Button4 "DarkButton"
         Set-Style $Top8ButtonFinal "DarkButton"
@@ -3298,6 +3359,7 @@ function Apply-Theme($Theme) {
         Set-Style $RoundRobinAllGroupsCheck "DarkOptionCheck"
         Set-Style $RoundRobinStartGroupComboBox "DarkServerModeComboBox"
         Set-Style $RoundRobinBackgroundComboBox "DarkServerModeComboBox"
+        Set-Style $RoundRobinOutputFormatComboBox "DarkServerModeComboBox"
         Set-Style $RoundRobinStitchButton "DarkButton"
         foreach ($option in @($RoundRobinStitchVerticalRadio, $RoundRobinStitchHorizontalRadio)) {
             Set-Style $option "DarkCompressionMode"
@@ -3309,6 +3371,7 @@ function Apply-Theme($Theme) {
         $RoundRobinCaptureGapBox.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#F7FBFF")
         Set-Brush $RoundRobinCaptureGapUnitText Foreground "#D7E8F6"
         Set-Brush $RoundRobinBackgroundLabel Foreground "#D7E8F6"
+        Set-Brush $RoundRobinOutputFormatLabel Foreground "#D7E8F6"
         Set-Brush $RoundRobinStitchGapLabel Foreground "#D7E8F6"
         $RoundRobinStitchGapBox.Background = [Windows.Media.BrushConverter]::new().ConvertFromString("#44101A2A")
         $RoundRobinStitchGapBox.BorderBrush = [Windows.Media.BrushConverter]::new().ConvertFromString("#5EDCFF")
@@ -3454,6 +3517,7 @@ function Set-Running($Running) {
     $Group64Button.IsEnabled = -not $Running
     $Group32Button.IsEnabled = -not $Running
     $Group16Button.IsEnabled = -not $Running
+    $GroupWinnersButton.IsEnabled = -not $Running
     $Top8Button8.IsEnabled = -not $Running
     $Top8Button4.IsEnabled = -not $Running
     $Top8ButtonFinal.IsEnabled = -not $Running
@@ -3503,6 +3567,7 @@ function Set-Running($Running) {
         $RoundRobinGroupSwitchDelayBox,
         $RoundRobinCaptureGapBox,
         $RoundRobinBackgroundComboBox,
+        $RoundRobinOutputFormatComboBox,
         $RoundRobinStitchVerticalRadio,
         $RoundRobinStitchHorizontalRadio,
         $RoundRobinStitchGroupLabelsCheck,
@@ -3516,6 +3581,9 @@ function Set-Running($Running) {
     }
     if ($RoundRobinGroupSwitchDelayBox) {
         $RoundRobinGroupSwitchDelayBox.IsEnabled = (-not $Running) -and [bool]$RoundRobinAllGroupsCheck.IsChecked
+    }
+    if ($RoundRobinOutputFormatComboBox) {
+        $RoundRobinOutputFormatComboBox.IsEnabled = -not $Running
     }
     # NIKKE_DISABLED_LOW_MEMORY_20260630: Low-memory mode is retained in code but hidden until it is worth restoring.
     $LowMemoryCheck.IsEnabled = $false
@@ -3556,6 +3624,28 @@ function Get-EffectiveNikkeServer {
         "hmt" { return "hmt" }
         "global" { return "global" }
         default { return $script:DetectedNikkeServer }
+    }
+}
+
+function Test-OverseasNikkeServer([string]$ServerCode) {
+    return $ServerCode -in @("global", "hmt")
+}
+
+function Update-SupportStatusAvailability {
+    if (-not $SupportStatusCheck) { return }
+
+    $isSupportMode = $script:CurrentCaptureMode -eq "support"
+    $isOverseas = Test-OverseasNikkeServer (Get-EffectiveNikkeServer)
+    if ($isSupportMode -and -not $isOverseas) {
+        $SupportStatusCheck.Visibility = "Visible"
+        return
+    }
+
+    $SupportStatusCheck.Visibility = "Collapsed"
+    # The old status comparison bar does not exist on the new overseas support
+    # layout. Clear a previously selected value whenever it cannot apply.
+    if ($isOverseas -or -not $isSupportMode) {
+        $SupportStatusCheck.IsChecked = $false
     }
 }
 
@@ -3608,6 +3698,7 @@ function Update-Process-Status {
         $ProcessStatusText.Foreground = [Windows.Media.BrushConverter]::new().ConvertFromString("#FFD38A")
     }
     Update-CaptureViewportHint $windowInfo
+    Update-SupportStatusAvailability
 }
 
 function Get-ActiveNikkeServer {
@@ -3617,6 +3708,8 @@ function Get-ActiveNikkeServer {
 }
 
 $ExampleImage.Source = New-Bitmap $ExamplePath
+$SupportCnExampleImage.Source = New-Bitmap $SupportExamplePath
+$SupportGlobalExampleImage.Source = New-Bitmap $SupportGlobalExamplePath
 $DoroImage.Source = New-Bitmap $DoroPath
 $CaptureDelaySlider.Minimum = $DelayMinSeconds
 $CaptureDelaySlider.Maximum = 5
@@ -3724,6 +3817,7 @@ function Save-CaptureTimingSettings {
             default { "#FFFFFF" }
         }
         Set-JsonProperty $configJson "round_robin_background" $roundRobinBackgroundColor
+        Set-JsonProperty $configJson "round_robin_output_format" ([string]$script:RoundRobinOutputFormat)
         Set-JsonProperty $configJson.launcher_settings "ocr_performance_mode" ([string]$script:OcrPerformanceMode)
         Set-JsonProperty $configJson.launcher_settings "ocr_thermal_mode" ([string]$script:OcrThermalMode)
         Set-JsonProperty $configJson.launcher_settings "ocr_roster_preflight_suppressed_month" ([string]$script:OcrRosterPreflightSuppressedMonth)
@@ -4697,6 +4791,43 @@ function Set-RoundRobinBackground([string]$Value, [bool]$Persist = $true) {
     if ($Persist) { Save-CaptureTimingSettings }
 }
 
+function Get-RoundRobinOutputFormat {
+    $validValues = @("png", "jpg78")
+    if ($RoundRobinOutputFormatComboBox -and $RoundRobinOutputFormatComboBox.SelectedIndex -ge 0 -and $RoundRobinOutputFormatComboBox.SelectedIndex -lt $validValues.Count) {
+        return $validValues[$RoundRobinOutputFormatComboBox.SelectedIndex]
+    }
+    $item = $RoundRobinOutputFormatComboBox.SelectedItem
+    if ($item) {
+        $selectedValue = [string]$item.Tag
+        if ($selectedValue -in $validValues) { return $selectedValue }
+    }
+    if ([string]$script:RoundRobinOutputFormat -in $validValues) {
+        return [string]$script:RoundRobinOutputFormat
+    }
+    return "jpg78"
+}
+
+function Set-RoundRobinOutputFormat([string]$Value, [bool]$Persist = $true) {
+    $validValues = @("png", "jpg78")
+    if ($Value -notin $validValues) { $Value = "jpg78" }
+    $script:RoundRobinOutputFormat = $Value
+    $targetIndex = $validValues.IndexOf($Value)
+    if ($targetIndex -ge 0 -and $RoundRobinOutputFormatComboBox.SelectedIndex -ne $targetIndex) {
+        $RoundRobinOutputFormatComboBox.SelectedIndex = $targetIndex
+    }
+    if ($Persist) { Save-CaptureTimingSettings }
+}
+
+function Get-RoundRobinOutputExtension([string]$Format) {
+    if ($Format -eq "png") { return "png" }
+    return "jpg"
+}
+
+function Get-RoundRobinOutputFormatLabel([string]$Format) {
+    if ($Format -eq "png") { return "无损PNG" }
+    return "质量 78 的 JPG"
+}
+
 function Set-RoundRobinGroupSwitchDelay($Value) {
     $valueNumber = [Math]::Round([Math]::Max(0.45, [Math]::Min(10.0, [double]$Value)), 2)
     $script:RoundRobinGroupSwitchDelaySeconds = $valueNumber
@@ -4719,15 +4850,21 @@ function Update-RoundRobinAllGroupsControls {
     $RoundRobinStartGroupComboBox.Opacity = if ($enabled) { 1.0 } else { 0.52 }
     $RoundRobinGroupSwitchDelayBox.IsEnabled = $enabled -and -not $script:IsRunning
     $RoundRobinGroupSwitchDelayBox.Opacity = if ($enabled) { 1.0 } else { 0.52 }
+    # The output format is also used by the Group Winners (Top 8) capture,
+    # so it must remain configurable even when round-robin batch mode is off.
+    $RoundRobinOutputFormatComboBox.IsEnabled = -not $script:IsRunning
+    $RoundRobinOutputFormatComboBox.Opacity = 1.0
+    if ($RoundRobinOutputFormatLabel) { $RoundRobinOutputFormatLabel.Opacity = 1.0 }
     foreach ($label in @($RoundRobinStartGroupLabel, $RoundRobinGroupSwitchDelayLabel, $RoundRobinGroupSwitchDelaySuffix)) {
         $label.Opacity = if ($enabled) { 1.0 } else { 0.52 }
     }
 }
 
-function Test-RoundRobinBatchHasGroups([string]$Folder, [int]$LastRequiredGroup) {
+function Test-RoundRobinBatchHasGroups([string]$Folder, [int]$LastRequiredGroup, [string]$OutputFormat) {
     if ($LastRequiredGroup -lt 1) { return $true }
+    $extension = Get-RoundRobinOutputExtension $OutputFormat
     foreach ($groupIndex in 1..$LastRequiredGroup) {
-        $pattern = "Group{0:00}-*.jpg" -f $groupIndex
+        $pattern = "Group{0:00}-*.{1}" -f $groupIndex, $extension
         if (-not (Get-ChildItem -LiteralPath $Folder -Filter $pattern -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
             return $false
         }
@@ -4735,7 +4872,7 @@ function Test-RoundRobinBatchHasGroups([string]$Folder, [int]$LastRequiredGroup)
     return $true
 }
 
-function Get-RoundRobinAllOutputFolder([string]$DateFolder, [string]$ResolutionLabel, [string]$ServerFileSuffix, [int]$StartGroup) {
+function Get-RoundRobinAllOutputFolder([string]$DateFolder, [string]$ResolutionLabel, [string]$ServerFileSuffix, [int]$StartGroup, [string]$OutputFormat) {
     $prefix = "小组循环赛全部GROUP_"
     if ($StartGroup -gt 1) {
         $candidates = @(
@@ -4743,7 +4880,7 @@ function Get-RoundRobinAllOutputFolder([string]$DateFolder, [string]$ResolutionL
                 Where-Object {
                     $_.Name.StartsWith($prefix) -and
                     $_.Name.EndsWith(("-{0}-{1}" -f $ResolutionLabel, $ServerFileSuffix)) -and
-                    (Test-RoundRobinBatchHasGroups $_.FullName ($StartGroup - 1))
+                    (Test-RoundRobinBatchHasGroups $_.FullName ($StartGroup - 1) $OutputFormat)
                 } |
                 Sort-Object LastWriteTime -Descending
         )
@@ -4855,17 +4992,20 @@ function Set-SubPageMode($Mode) {
     $ImageToolsPanel.Visibility = "Collapsed"
     $Top8BattleAnnotationCheck.Visibility = "Collapsed"
     $SubPageHelpText.Visibility = "Visible"
+    $SupportExamplesBorder.Visibility = "Collapsed"
     Set-FrameBackgroundOptionsVisible $true
     if ($Mode -eq "support") {
         $SubPageHelpText.Text = $TextSupportHelp
-        $ExampleImage.Source = New-Bitmap $SupportExamplePath
-        $ExampleBorder.Visibility = "Visible"
+        $SupportCnExampleImage.Source = New-Bitmap $SupportExamplePath
+        $SupportGlobalExampleImage.Source = New-Bitmap $SupportGlobalExamplePath
+        $ExampleBorder.Visibility = "Collapsed"
+        $SupportExamplesBorder.Visibility = "Visible"
         $SettingsPanel.Visibility = "Collapsed"
         $ExecuteButton.Visibility = "Visible"
         $GroupExecutePanel.Visibility = "Collapsed"
         $Top8ExecutePanel.Visibility = "Collapsed"
         $FrameOptionsPanel.Visibility = "Visible"
-        $SupportStatusCheck.Visibility = "Visible"
+        Update-SupportStatusAvailability
         $GroupPostDataPanel.Visibility = "Collapsed"
         $GroupSimpleDataCheck.IsChecked = $false
         $GroupDetailedDataCheck.IsChecked = $false
@@ -5072,6 +5212,7 @@ $RoundRobinCaptureGapBox.Add_KeyDown({
     }
 })
 $RoundRobinBackgroundComboBox.Add_SelectionChanged({ Set-RoundRobinBackground (Get-RoundRobinBackground) })
+$RoundRobinOutputFormatComboBox.Add_SelectionChanged({ Set-RoundRobinOutputFormat (Get-RoundRobinOutputFormat) })
 $RoundRobinGroupSwitchDelayBox.Add_LostFocus({ Commit-RoundRobinGroupSwitchDelayBox })
 $RoundRobinGroupSwitchDelayBox.Add_KeyDown({
     param($sender, $eventArgs)
@@ -6161,12 +6302,13 @@ function Test-GameReadyForCapture {
     return $false
 }
 
-function Test-WindowedCaptureSupported($GroupSize, [bool]$Top8Pyramid) {
+function Test-WindowedCaptureSupported($GroupSize, [bool]$Top8Pyramid, [string]$SpecialOperation = "") {
+    if ($SpecialOperation -eq "group-winners") { return $true }
     if ($CurrentCaptureMode -in @("single", "support", "support-result", "round-robin")) { return $true }
     return $CurrentCaptureMode -eq "top8" -and -not $Top8Pyramid -and ([int]$GroupSize -eq 2)
 }
 
-function Get-UsableCaptureWindowInfo([string]$ServerCode, $GroupSize, [bool]$Top8Pyramid) {
+function Get-UsableCaptureWindowInfo([string]$ServerCode, $GroupSize, [bool]$Top8Pyramid, [string]$SpecialOperation = "") {
     $windowInfo = [NativeWin]::GetGameWindowInfo($ServerCode)
     if (-not $windowInfo) {
         $message = "无法读取NIKKE游戏窗口，请确认客户端未最小化后重试。"
@@ -6174,8 +6316,8 @@ function Get-UsableCaptureWindowInfo([string]$ServerCode, $GroupSize, [bool]$Top
         Show-TopMessage $message $TextCaptureFailureTitle ([System.Windows.MessageBoxImage]::Warning)
         return $null
     }
-    if ([bool]$windowInfo.IsWindowed -and -not (Test-WindowedCaptureSupported $GroupSize $Top8Pyramid)) {
-        $message = "当前为窗口模式。此功能仅支持全屏模式，请切换至全屏后重试。`n`n窗口模式仅支持单人阵容、应援双方阵容、双方赛果、小组循环赛和冠军争霸赛冠亚军截图。"
+    if ([bool]$windowInfo.IsWindowed -and -not (Test-WindowedCaptureSupported $GroupSize $Top8Pyramid $SpecialOperation)) {
+        $message = "当前为窗口模式。此功能仅支持全屏模式，请切换至全屏后重试。`n`n窗口模式仅支持单人阵容、应援双方阵容、双方赛果、小组循环赛、8强晋级阵容和冠军争霸赛冠亚军截图。"
         Append-Log $message
         Show-TopMessage $message $TextSettingHint ([System.Windows.MessageBoxImage]::Information)
         return $null
@@ -7927,25 +8069,48 @@ function Start-OcrRecognition {
         }
         $seasonImagePaths = @(Get-OcrSeasonSelectedImagePaths)
         $seasonImageSpecs = @(Get-OcrSeasonSelectedImageSpecs)
-        $useSeasonMode = ($seasonImagePaths.Count -eq 4)
         $activeSingleImagePath = $SelectedOcrImagePath
+        $useFullSeasonMode = ($seasonImagePaths.Count -eq 4)
+        $top8SingleSeasonSpec = $null
+        $seasonRunSpecs = @()
         if ($seasonImagePaths.Count -in @(2, 3)) {
             Append-Log "OCR cannot start with only 2 or 3 season images selected."
-            Show-TopMessage "卡槽仅选择 2 张或 3 张图时无法执行识别；请选择 1 张进行单图识别，或选择完整 4 张进行汇总识别。" "战斗图像识别" ([System.Windows.MessageBoxImage]::Warning)
+            Show-TopMessage "卡槽仅选择 2 张或 3 张图时无法执行识别；请选择仅一张 TOP8-决赛图进行单图赛季识别、其它单图进行普通识别，或选择完整 4 张进行汇总识别。" "战斗图像识别" ([System.Windows.MessageBoxImage]::Warning)
             return
         }
         if ($seasonImagePaths.Count -eq 1) {
             $activeSingleImagePath = $seasonImagePaths[0]
             $script:SelectedOcrImagePath = $activeSingleImagePath
         }
+        if ($useFullSeasonMode) {
+            $seasonRunSpecs = @($seasonImageSpecs)
+        } elseif ($seasonImagePaths.Count -eq 1 -and $seasonImageSpecs.Count -eq 1 -and $seasonImageSpecs[0].Key -eq "top8") {
+            # A named TOP8-to-final composite needs the season splitter even
+            # when it is the only selected image.  The generic one-image path
+            # treats it as a single match and cannot recover its pyramid.
+            $top8SingleSeasonSpec = $seasonImageSpecs[0]
+            $seasonRunSpecs = @($top8SingleSeasonSpec)
+        } elseif ($seasonImagePaths.Count -eq 0 -and $activeSingleImagePath -and (Get-OcrSeasonImageKind $activeSingleImagePath) -eq "top8") {
+            # The ordinary file picker is also allowed to start the dedicated
+            # TOP8 single-image route; a card-slot selection is not required.
+            $top8SingleSeasonSpec = [PSCustomObject]@{
+                Key = "top8"
+                Argument = "--season-top8-image"
+                Label = "TOP8-决赛战斗数据（详）"
+                Path = $activeSingleImagePath
+            }
+            $seasonRunSpecs = @($top8SingleSeasonSpec)
+        }
+        $useTop8SingleSeasonMode = ($null -ne $top8SingleSeasonSpec)
+        $useSeasonMode = $useFullSeasonMode -or $useTop8SingleSeasonMode
         if ($useSeasonMode) {
-            $missingSeasonImage = $seasonImageSpecs | Where-Object { -not (Test-Path $_.Path) } | Select-Object -First 1
+            $missingSeasonImage = $seasonRunSpecs | Where-Object { -not (Test-Path $_.Path) } | Select-Object -First 1
             if ($missingSeasonImage) {
                 Append-Log ("Season OCR image not found: " + $missingSeasonImage.Path)
                 Show-TopMessage ("未找到图像文件：" + $missingSeasonImage.Path) "战斗图像识别" ([System.Windows.MessageBoxImage]::Warning)
                 return
             }
-            if ($seasonImageSpecs.Count -ne 4) {
+            if ($useFullSeasonMode -and $seasonRunSpecs.Count -ne 4) {
                 Append-Log "Season OCR requires four recognized season image file names."
                 Show-TopMessage "四图汇总识别会按文件名自动排序，请确认4个文件名分别包含：64进32全部、32进16全部、16进8全部战斗、TOP8-决赛（或TO8-决赛）。" "战斗图像识别" ([System.Windows.MessageBoxImage]::Warning)
                 return
@@ -7954,7 +8119,7 @@ function Start-OcrRecognition {
             Append-Log "Please select an existing post-battle data image."
             return
         }
-        $ocrInputPaths = if ($useSeasonMode) { $seasonImagePaths } else { @($activeSingleImagePath) }
+        $ocrInputPaths = if ($useSeasonMode) { @($seasonRunSpecs | ForEach-Object { $_.Path }) } else { @($activeSingleImagePath) }
         if (-not (Confirm-OcrInputClientProfile $ocrInputPaths)) {
             Append-Log "OCR canceled by client profile confirmation."
             return
@@ -7975,7 +8140,13 @@ function Start-OcrRecognition {
         $ocrOutputFolder = Get-OutputDateFolder
         $ocrStartedAt = Get-Date
         $script:OcrProgressOutputFolder = $ocrOutputFolder
-        $selectedOcrLeaf = if ($useSeasonMode) { "四卡槽战斗图像" } else { Split-Path -Leaf $activeSingleImagePath }
+        $selectedOcrLeaf = if ($useFullSeasonMode) {
+            "四卡槽战斗图像"
+        } elseif ($useTop8SingleSeasonMode) {
+            "TOP8-决赛战斗图像"
+        } else {
+            Split-Path -Leaf $activeSingleImagePath
+        }
         $ocrRunLogPath = New-OcrRunLogFilePath
         $manualOcrMessage = '"\u6b63\u5728\u8bc6\u522b\u6218\u6597\u6570\u636e\u56fe\u50cf\uff0c\u8bf7\u6307\u6325\u5b98\u5148\u73a9\u4f1a\u624b\u673a"' | ConvertFrom-Json
         Show-OcrProgressWindow $manualOcrMessage $ocrRunLogPath $true
@@ -7999,11 +8170,15 @@ function Start-OcrRecognition {
         $selectedManifestPath = $null
         if ($useSeasonMode) {
             $arguments = "`"$OcrToolPath`" --output-dir `"$ocrOutputFolder`""
-            foreach ($spec in $seasonImageSpecs) {
+            foreach ($spec in $seasonRunSpecs) {
                 $arguments += " $($spec.Argument) `"$($spec.Path)`""
                 Append-Log ("Season OCR image: " + $spec.Label + " -> " + (Split-Path -Leaf $spec.Path))
             }
-            Update-OcrProgressWindow "正在识别四卡槽战斗图像"
+            if ($useFullSeasonMode) {
+                Update-OcrProgressWindow "正在识别四卡槽战斗图像"
+            } else {
+                Update-OcrProgressWindow "正在识别单张 TOP8-决赛战斗图像"
+            }
         } else {
             $selectedOcrDir = Split-Path -Parent $activeSingleImagePath
             $selectedOcrStem = [IO.Path]::GetFileNameWithoutExtension($activeSingleImagePath)
@@ -8441,11 +8616,12 @@ function Invoke-AutomaticBattleAnnotation([string]$ImagePath, [string]$ServerCod
     }
 }
 
-function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMinimizedWindow = $false) {
+function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMinimizedWindow = $false, [string]$SpecialOperation = "") {
     if (-not (Confirm-CaptureParametersPreflight)) { return }
+    $isGroupWinnersCapture = $SpecialOperation -eq "group-winners"
     $captureRunId = [Guid]::NewGuid().ToString("N")
     $captureLogPath = New-CaptureDiagnosticsLog $CurrentCaptureMode
-    Add-CaptureDiagnosticsLog $captureLogPath ("capture_run_id={0}; mode={1}; elevated={2}; script_dir={3}" -f $captureRunId, $CurrentCaptureMode, ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator), $ScriptDir)
+    Add-CaptureDiagnosticsLog $captureLogPath ("capture_run_id={0}; mode={1}; special_operation={2}; elevated={3}; script_dir={4}" -f $captureRunId, $CurrentCaptureMode, $SpecialOperation, ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator), $ScriptDir)
     if (-not (Test-GameReadyForCapture)) {
         Add-CaptureDiagnosticsLog $captureLogPath "NIKKE process was not detected before capture."
         return
@@ -8459,7 +8635,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
     $script:ActiveNikkeServer = $serverCode
     Add-CaptureDiagnosticsLog $captureLogPath ("server_mode={0}; effective_server={1}; detected_server={2}" -f $script:ServerSelectionMode, $serverCode, $script:DetectedNikkeServer)
     $groupSizeValue = if ($null -ne $GroupSize) { [int]$GroupSize } else { $null }
-    $captureWindowInfo = Get-UsableCaptureWindowInfo $serverCode $groupSizeValue $Top8Pyramid
+    $captureWindowInfo = Get-UsableCaptureWindowInfo $serverCode $groupSizeValue $Top8Pyramid $SpecialOperation
     if (-not $captureWindowInfo) {
         Add-CaptureDiagnosticsLog $captureLogPath "Capture was blocked because the current game window is unavailable or unsupported in windowed mode."
         return
@@ -8467,7 +8643,9 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
     $isWindowedCapture = [bool]$captureWindowInfo.IsWindowed
     Add-CaptureDiagnosticsLog $captureLogPath ("game_client=({0},{1}) {2}x{3}; windowed={4}; hwnd={5}" -f $captureWindowInfo.ClientLeft, $captureWindowInfo.ClientTop, $captureWindowInfo.ClientWidth, $captureWindowInfo.ClientHeight, $isWindowedCapture, $captureWindowInfo.Handle.ToInt64())
 
-    $autoOcrRequested = Test-AutoOcrExportRequested
+    # Group Winners always captures eight lineups only; it must not inherit
+    # post-result or automatic-OCR choices from the Group page.
+    $autoOcrRequested = (-not $isGroupWinnersCapture) -and (Test-AutoOcrExportRequested)
     if ($autoOcrRequested -and -not [bool]$GroupDetailedDataCheck.IsChecked) {
         Show-TopMessage $TextOcrNeedDetailed $TextSettingHint ([System.Windows.MessageBoxImage]::Information)
         return
@@ -8553,7 +8731,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
             Add-CaptureDiagnosticsLog $captureLogPath ("FocusGame failed for effective server: {0}" -f $serverCode)
             return
         }
-        $captureWindowInfo = Get-UsableCaptureWindowInfo $serverCode $groupSizeValue $Top8Pyramid
+        $captureWindowInfo = Get-UsableCaptureWindowInfo $serverCode $groupSizeValue $Top8Pyramid $SpecialOperation
         if (-not $captureWindowInfo) { return }
         $isWindowedCapture = [bool]$captureWindowInfo.IsWindowed
 
@@ -8563,7 +8741,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         } else {
             Start-Sleep -Milliseconds $startupDelayMilliseconds
         }
-        if ($CurrentCaptureMode -eq "group") {
+        if ($CurrentCaptureMode -eq "group" -and -not $isGroupWinnersCapture) {
             if ($null -eq $groupSizeValue) {
                 Append-Log "Group size was not selected."
                 return
@@ -8574,7 +8752,7 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
                 return
             }
         }
-        $captureTitle = Get-CaptureOutputTitle $groupSizeValue $Top8Pyramid
+        $captureTitle = if ($isGroupWinnersCapture) { "8强晋级阵容" } else { Get-CaptureOutputTitle $groupSizeValue $Top8Pyramid }
         $dateLabel = Get-Date -Format "yyyy年M月d日"
         $frameLabel = Get-SelectedFrameLabel
         $fileStem = "{0}{1}" -f $captureTitle, $dateLabel
@@ -8591,9 +8769,14 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         $roundRobinPostResult = ($CurrentCaptureMode -eq "round-robin") -and [bool]$RoundRobinPostResultCheck.IsChecked
         $roundRobinAllGroups = ($CurrentCaptureMode -eq "round-robin") -and [bool]$RoundRobinAllGroupsCheck.IsChecked
         $roundRobinStartGroup = Get-RoundRobinStartGroup
-        if ($roundRobinAllGroups) {
-            $roundRobinOutputFolder = Get-RoundRobinAllOutputFolder $dateFolder $resolutionLabel $serverFileSuffix $roundRobinStartGroup
-            $output = Join-Path $roundRobinOutputFolder ("{0}.jpg" -f $fileStem)
+        $roundRobinOutputFormat = Get-RoundRobinOutputFormat
+        $roundRobinOutputExtension = Get-RoundRobinOutputExtension $roundRobinOutputFormat
+        if ($isGroupWinnersCapture) {
+            $output = Get-UniqueOutputPath $dateFolder ("{0}.{1}" -f $fileStem, $roundRobinOutputExtension)
+            Append-Log ("8强晋级阵容：按 Group01-Group08 导出，图片格式：{0}" -f (Get-RoundRobinOutputFormatLabel $roundRobinOutputFormat))
+        } elseif ($roundRobinAllGroups) {
+            $roundRobinOutputFolder = Get-RoundRobinAllOutputFolder $dateFolder $resolutionLabel $serverFileSuffix $roundRobinStartGroup $roundRobinOutputFormat
+            $output = Join-Path $roundRobinOutputFolder ("{0}.{1}" -f $fileStem, $roundRobinOutputExtension)
             Append-Log ("Round-robin all GROUP capture: Group{0:00}-Group64 -> {1}" -f $roundRobinStartGroup, $roundRobinOutputFolder)
         } else {
             $output = Get-UniqueOutputPath $dateFolder ("{0}.png" -f $fileStem)
@@ -8607,12 +8790,22 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         $bracketResultDelayArg = $BracketResultDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
         $detailPageTimeoutArg = $DetailPageTimeoutSeconds.ToString("0", [Globalization.CultureInfo]::InvariantCulture)
         $roundRobinGroupSwitchDelayArg = $script:RoundRobinGroupSwitchDelaySeconds.ToString("0.00", [Globalization.CultureInfo]::InvariantCulture)
-        if ($CurrentCaptureMode -eq "round-robin") { Commit-RoundRobinCaptureGapBox }
+        if ($CurrentCaptureMode -eq "round-robin" -or $isGroupWinnersCapture) { Commit-RoundRobinCaptureGapBox }
         $roundRobinCaptureGap = [int]$script:RoundRobinCaptureGap
         $roundRobinBackground = Get-RoundRobinBackground
-        if ($CurrentCaptureMode -eq "round-robin") {
+        if ($CurrentCaptureMode -eq "round-robin" -or $isGroupWinnersCapture) {
             Set-RoundRobinBackground $roundRobinBackground
-            Append-Log ("小组循环赛拼图背景：{0}" -f $roundRobinBackground)
+            if ($isGroupWinnersCapture) {
+                Set-RoundRobinOutputFormat $roundRobinOutputFormat
+                Append-Log ("8强晋级阵容拼图背景：{0}" -f $roundRobinBackground)
+                Append-Log ("8强晋级阵容图片格式：{0}" -f (Get-RoundRobinOutputFormatLabel $roundRobinOutputFormat))
+            } else {
+                Append-Log ("小组循环赛拼图背景：{0}" -f $roundRobinBackground)
+            }
+            if ($roundRobinAllGroups) {
+                Set-RoundRobinOutputFormat $roundRobinOutputFormat
+                Append-Log ("小组循环赛批量图片格式：{0}" -f (Get-RoundRobinOutputFormatLabel $roundRobinOutputFormat))
+            }
             if ($roundRobinPostResult) {
                 Append-Log "小组循环赛：将在四人资料页前截取战斗结果。"
             }
@@ -8655,13 +8848,17 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
             $arguments += " --window-handle $($captureWindowInfo.Handle.ToInt64())"
         }
         Append-Log ("Worker: " + $psi.FileName)
-        if ($CurrentCaptureMode -eq "round-robin") {
+        if ($isGroupWinnersCapture) {
+            # This is deliberately a distinct worker mode: it neither accepts
+            # Group post-data flags nor inherits the all-GROUP checkbox.
+            $arguments += " --group-winners --round-robin-gap $roundRobinCaptureGap --round-robin-background $roundRobinBackground --round-robin-output-format $roundRobinOutputFormat"
+        } elseif ($CurrentCaptureMode -eq "round-robin") {
             $arguments += " --round-robin --round-robin-gap $roundRobinCaptureGap --round-robin-background $roundRobinBackground"
             if ($roundRobinPostResult) {
                 $arguments += " --round-robin-post-result"
             }
             if ($roundRobinAllGroups) {
-                $arguments += " --round-robin-all --round-robin-start-group $roundRobinStartGroup --round-robin-group-switch-delay $roundRobinGroupSwitchDelayArg"
+                $arguments += " --round-robin-all --round-robin-start-group $roundRobinStartGroup --round-robin-group-switch-delay $roundRobinGroupSwitchDelayArg --round-robin-output-format $roundRobinOutputFormat"
             }
         } elseif ($CurrentCaptureMode -eq "group") {
             $arguments += " --group-size $groupSizeValue"
@@ -8691,8 +8888,16 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
             $arguments += " --group-post-data detailed"
         } elseif ($CurrentCaptureMode -eq "support") {
             $arguments += " --support-duo"
-            if ($SupportStatusCheck.IsChecked) {
+            if ($serverCode -eq "cn" -and $SupportStatusCheck.IsChecked) {
                 $arguments += " --include-support-status"
+            } elseif (Test-OverseasNikkeServer $serverCode) {
+                # The current Global/HMT support page has no old comparison
+                # bar.  Keep this guard here as well as in the UI so an
+                # auto-detected overseas client cannot inherit a stale check.
+                $SupportStatusCheck.IsChecked = $false
+                $SupportStatusCheck.Visibility = "Collapsed"
+                Append-Log "海外服新版应援：已忽略“应援现状”选项。"
+                Add-CaptureDiagnosticsLog $captureLogPath "support_status=ignored_for_global_hmt"
             }
         } elseif ($CurrentCaptureMode -eq "support-result") {
             $arguments += " --support-result"
@@ -8722,7 +8927,9 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
         $proc = [System.Diagnostics.Process]::Start($psi)
         $script:ActiveCaptureProcess = $proc
         $script:ActiveCaptureInputPluginId = $selectedInputPluginId
-        if ($CurrentCaptureMode -eq "top8" -and $Top8Pyramid) {
+        if ($isGroupWinnersCapture) {
+            $timeoutSeconds = 1800
+        } elseif ($CurrentCaptureMode -eq "top8" -and $Top8Pyramid) {
             $timeoutSeconds = 1800
         } elseif ($CurrentCaptureMode -eq "season") {
             $timeoutSeconds = 7200
@@ -8871,19 +9078,19 @@ function Start-CaptureInternal($GroupSize, $Top8Pyramid = $false, [bool]$UseMini
     }
 }
 
-function Start-HiddenCapture($GroupSize, $Top8Pyramid = $false) {
-    Start-CaptureInternal $GroupSize $Top8Pyramid $false
+function Start-HiddenCapture($GroupSize, $Top8Pyramid = $false, [string]$SpecialOperation = "") {
+    Start-CaptureInternal $GroupSize $Top8Pyramid $false $SpecialOperation
 }
 
-function Start-MinimizedCapture($GroupSize, $Top8Pyramid = $false) {
-    Start-CaptureInternal $GroupSize $Top8Pyramid $true
+function Start-MinimizedCapture($GroupSize, $Top8Pyramid = $false, [string]$SpecialOperation = "") {
+    Start-CaptureInternal $GroupSize $Top8Pyramid $true $SpecialOperation
 }
 
-function Start-Capture($GroupSize, $Top8Pyramid = $false) {
+function Start-Capture($GroupSize, $Top8Pyramid = $false, [string]$SpecialOperation = "") {
     if ($script:CaptureWindowMode -eq "minimize") {
-        Start-MinimizedCapture $GroupSize $Top8Pyramid
+        Start-MinimizedCapture $GroupSize $Top8Pyramid $SpecialOperation
     } else {
-        Start-HiddenCapture $GroupSize $Top8Pyramid
+        Start-HiddenCapture $GroupSize $Top8Pyramid $SpecialOperation
     }
 }
 
@@ -8894,6 +9101,7 @@ if ($RoundRobinStitchButton) { $RoundRobinStitchButton.Add_Click({ Start-RoundRo
 $Group64Button.Add_Click({ Start-Capture 8 })
 $Group32Button.Add_Click({ Start-Capture 4 })
 $Group16Button.Add_Click({ Start-Capture 2 })
+$GroupWinnersButton.Add_Click({ Start-Capture $null $false "group-winners" })
 $Top8Button8.Add_Click({ Start-Capture 8 })
 $Top8Button4.Add_Click({ Start-Capture 4 })
 $Top8ButtonFinal.Add_Click({ Start-Capture 2 })
@@ -8995,6 +9203,10 @@ if ($Check) {
     if (-not $SourceAttributionText -or $SourceAttributionText.Text -ne "Image source: GPT 5.6Sol") {
         throw "source attribution initialization check failed"
     }
+    if (-not (Test-Path -LiteralPath $SupportGlobalExamplePath) -or
+        -not $SupportCnExampleImage -or -not $SupportGlobalExampleImage -or -not $SupportExamplesBorder) {
+        throw "support dual-example assets or controls check failed"
+    }
     Show-SubPage
     if ($SourceAttributionText.Visibility -ne "Collapsed") {
         throw "source attribution secondary-page visibility check failed"
@@ -9003,6 +9215,20 @@ if ($Check) {
     if ($SourceAttributionText.Visibility -ne "Visible") {
         throw "source attribution main-page visibility check failed"
     }
+    Set-SubPageMode "support"
+    if ($ExampleBorder.Visibility -ne "Collapsed" -or
+        $SupportExamplesBorder.Visibility -ne "Visible") {
+        throw "support dual-example visibility check failed"
+    }
+    Set-ServerSelectionMode "global"
+    if ($SupportStatusCheck.Visibility -ne "Collapsed" -or [bool]$SupportStatusCheck.IsChecked) {
+        throw "global support status suppression check failed"
+    }
+    Set-ServerSelectionMode "cn"
+    if ($SupportStatusCheck.Visibility -ne "Visible") {
+        throw "cn support status availability check failed"
+    }
+    Set-ServerSelectionMode "auto"
     Set-SubPageMode "season"
     if ($SeasonExecutePanel.Visibility -ne "Visible" -or
         $FrameOptionsPanel.Visibility -ne "Visible" -or

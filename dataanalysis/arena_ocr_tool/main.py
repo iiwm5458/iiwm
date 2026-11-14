@@ -552,6 +552,23 @@ def collect_season_image_specs(args: argparse.Namespace) -> list[tuple[str, Path
     return specs
 
 
+def classify_season_image_specs(specs: list[tuple[str, Path, str]]) -> str:
+    """Classify the only two supported season-import combinations.
+
+    Four images form a complete season.  A lone generated TOP8 pyramid is
+    also useful after the overseas lineup update, but arbitrary partial
+    collections would produce an ambiguous roster and remain intentionally
+    rejected.
+    """
+    stage_codes = [stage_code for stage_code, _, _ in specs]
+    full_codes = {stage_code for stage_code, _, _ in SEASON_IMAGE_SPECS}
+    if len(stage_codes) == len(full_codes) and set(stage_codes) == full_codes:
+        return "full"
+    if stage_codes == ["top8_pyramid"]:
+        return "top8_only"
+    return ""
+
+
 def _safe_int(value, default: int = 0) -> int:
     try:
         return int(value)
@@ -684,8 +701,27 @@ def _lookup_roster_entry(
     return None, ""
 
 
-def enrich_records_from_roster(records: list[dict], roster: dict[str, dict], logger: RunLogger) -> None:
+def enrich_records_from_roster(
+    records: list[dict],
+    roster: dict[str, dict],
+    logger: RunLogger,
+    *,
+    include_lineups: bool = True,
+    warning_context: str = "",
+) -> None:
+    """Apply one canonical roster to battle records.
+
+    ``include_lineups=False`` is useful for callers that only want the
+    canonical player identity and stat levels.  Snapshot callers leave it on:
+    their roster deliberately contains a newer lineup, while its identity and
+    stat levels still come from the first authoritative player snapshot.
+
+    A lineup snapshot must never quietly fall back to an unrelated older
+    lineup.  When requested, record unmatched players explicitly in the OCR
+    log and leave their currently recognized fields intact.
+    """
     by_id, by_name = _build_roster_indexes(roster)
+    unmatched: set[tuple[str, str]] = set()
     for record in records:
         round_index = _safe_int(record.get("round_index"))
         for side in ("attacker", "defender"):
@@ -693,6 +729,14 @@ def enrich_records_from_roster(records: list[dict], roster: dict[str, dict], log
             nickname = str(record.get(f"{side}_player_nickname") or "").strip()
             entry, match_kind = _lookup_roster_entry(by_id, by_name, player_id, nickname)
             if not entry:
+                if warning_context and (player_id or nickname):
+                    marker = (player_id, _normalize_nickname(nickname))
+                    if marker not in unmatched:
+                        unmatched.add(marker)
+                        logger.warning(
+                            f"{warning_context}_snapshot_player_unmatched "
+                            f"id={player_id or '-'} nickname={nickname or '-'}"
+                        )
                 continue
             roster_id = _normalize_player_id(entry.get("player_id"))
             roster_name = str(entry.get("nickname") or "").strip()
@@ -703,18 +747,153 @@ def enrich_records_from_roster(records: list[dict], roster: dict[str, dict], log
             if roster_name:
                 record[f"{side}_player_nickname"] = roster_name
 
-            team = (entry.get("teams") or {}).get(round_index)
-            power = (entry.get("powers") or {}).get(round_index)
-            collection = (entry.get("collections") or {}).get(round_index)
             stat_levels = entry.get("stat_levels") or []
-            if team:
-                record[f"{side}_team"] = team
-            if power:
-                record[f"{side}_power"] = power
-            if collection:
-                record[f"{side}_collection"] = collection
             if stat_levels:
                 record[f"{side}_stat_levels"] = stat_levels
+            if include_lineups:
+                team = (entry.get("teams") or {}).get(round_index)
+                power = (entry.get("powers") or {}).get(round_index)
+                collection = (entry.get("collections") or {}).get(round_index)
+                if team:
+                    record[f"{side}_team"] = team
+                if power:
+                    record[f"{side}_power"] = power
+                if collection:
+                    record[f"{side}_collection"] = collection
+
+
+def _copy_round_value_map(values: dict | None) -> dict:
+    return {
+        key: list(value or [])
+        for key, value in (values or {}).items()
+    }
+
+
+def _canonical_roster_key(entry: dict, fallback: str) -> str:
+    player_id = _normalize_player_id(entry.get("player_id"))
+    if player_id:
+        return player_id
+    nickname = _normalize_nickname(entry.get("nickname"))
+    return f"name:{nickname}" if nickname else fallback
+
+
+def _snapshot_entry(raw: dict, canonical: dict | None) -> dict:
+    """Copy a dynamic lineup while retaining canonical identity fields."""
+    identity = canonical or raw
+    player_id = _normalize_player_id(identity.get("player_id"))
+    nickname = str(identity.get("nickname") or "").strip()
+    if not player_id:
+        player_id = _normalize_player_id(raw.get("player_id"))
+    if not nickname:
+        nickname = str(raw.get("nickname") or "").strip()
+    return {
+        # Keep TOP8 display order for the snapshot sheets.  The canonical
+        # group/match location describes the original 64-player bracket, not
+        # this newly captured lineup.
+        "group_index": raw.get("group_index", ""),
+        "match_index": raw.get("match_index", ""),
+        "side": raw.get("side", ""),
+        "player_id": player_id,
+        "nickname": nickname,
+        "teams": _copy_round_value_map(raw.get("teams")),
+        "powers": _copy_round_value_map(raw.get("powers")),
+        "collections": _copy_round_value_map(raw.get("collections")),
+        # Stat levels are a player property, not a new lineup property.  Do
+        # not let a later snapshot overwrite a reliable earlier reading.
+        "stat_levels": list((canonical or raw).get("stat_levels") or [])[:8],
+    }
+
+
+def build_lineup_snapshot(
+    records: list[dict],
+    canonical_roster: dict[str, dict],
+    logger: RunLogger,
+    snapshot_name: str,
+) -> dict[str, dict]:
+    """Build a fresh lineup snapshot and normalize only its identity.
+
+    The dynamic fields (teams, powers and collections) always originate from
+    ``records``.  In particular, an unmatched player is *not* populated from
+    the old 64-player roster; keeping the newly read fields plus an explicit
+    warning is safer than silently exporting a stale lineup.
+    """
+    raw_roster = build_player_roster(records)
+    if not raw_roster:
+        logger.warning(f"{snapshot_name}_snapshot_has_no_players")
+        return {}
+
+    by_id, by_name = _build_roster_indexes(canonical_roster)
+    snapshot: dict[str, dict] = {}
+    unmatched_count = 0
+    for raw_key, raw_entry in raw_roster.items():
+        raw_id = _normalize_player_id(raw_entry.get("player_id"))
+        raw_name = str(raw_entry.get("nickname") or "").strip()
+        canonical, match_kind = _lookup_roster_entry(by_id, by_name, raw_id, raw_name)
+        if canonical is None and canonical_roster:
+            unmatched_count += 1
+            logger.warning(
+                f"{snapshot_name}_snapshot_player_unmatched "
+                f"id={raw_id or '-'} nickname={raw_name or '-'}"
+            )
+        elif canonical is not None and match_kind == "id":
+            canonical_name = str(canonical.get("nickname") or "").strip()
+            if raw_name and canonical_name and _normalize_nickname(raw_name) != _normalize_nickname(canonical_name):
+                logger.warning(
+                    f"{snapshot_name}_snapshot_nickname_corrected_by_player_id: "
+                    f"{raw_name} -> {canonical_name}"
+                )
+
+        key = _canonical_roster_key(canonical or raw_entry, raw_key)
+        entry = _snapshot_entry(raw_entry, canonical)
+        # A player normally appears once in each snapshot.  Keep the fuller
+        # value defensively if malformed source data presents it more than
+        # once, matching the normal roster builder's conservative merge.
+        existing = snapshot.get(key)
+        if existing is None:
+            snapshot[key] = entry
+            continue
+        for round_index, values in entry["teams"].items():
+            _remember_round_values(existing["teams"], _safe_int(round_index), values)
+        for round_index, values in entry["powers"].items():
+            _remember_round_values(existing["powers"], _safe_int(round_index), values)
+        for round_index, values in entry["collections"].items():
+            _remember_collection_values(existing["collections"], _safe_int(round_index), values)
+        if _filled_count(entry["stat_levels"]) >= _filled_count(existing["stat_levels"]):
+            existing["stat_levels"] = entry["stat_levels"]
+
+    logger.info(f"{snapshot_name}_snapshot_players={len(snapshot)}")
+    if unmatched_count:
+        logger.warning(f"{snapshot_name}_snapshot_unmatched_players={unmatched_count}")
+    return snapshot
+
+
+def _top8_pyramid_match_index(value) -> int:
+    return _safe_int(value)
+
+
+def top8_pyramid_records(records: list[dict], layer: str) -> list[dict]:
+    """Return records for one fixed layer of the generated TOP8 pyramid."""
+    if layer == "top8":
+        return [record for record in records if _top8_pyramid_match_index(record.get("match_index")) >= 4]
+    if layer == "top4":
+        return [
+            record for record in records
+            if 2 <= _top8_pyramid_match_index(record.get("match_index")) <= 3
+        ]
+    if layer == "final":
+        return [record for record in records if _top8_pyramid_match_index(record.get("match_index")) == 1]
+    raise ValueError(f"unknown TOP8 pyramid layer: {layer}")
+
+
+def top8_pyramid_needs_lineup(block: ImageBlock) -> bool:
+    """Read lineups only where the game can have introduced a new snapshot."""
+    match_index = _top8_pyramid_match_index(block.match_index)
+    return match_index == 1 or match_index >= 4
+
+
+def top8_pyramid_needs_stat_levels(block: ImageBlock, bootstrap_identity: bool) -> bool:
+    """Only TOP8-only imports need to establish stat levels from the bottom layer."""
+    return bool(bootstrap_identity and _top8_pyramid_match_index(block.match_index) >= 4)
 
 
 def recognize_image_records(
@@ -730,6 +909,8 @@ def recognize_image_records(
     progress_offset: int,
     progress_total: int,
     include_teams: bool = True,
+    lineup_selector=None,
+    stat_level_selector=None,
     control: OcrRunControl | None = None,
     source_profile: str = "",
 ) -> tuple[list[dict], int, bool]:
@@ -772,6 +953,23 @@ def recognize_image_records(
                 break
 
             try:
+                block_include_teams = (
+                    bool(lineup_selector(block))
+                    if lineup_selector is not None
+                    else bool(include_teams)
+                )
+                block_include_stat_levels = (
+                    bool(stat_level_selector(block))
+                    if stat_level_selector is not None
+                    else not args.no_stat_levels
+                )
+                if lineup_selector is not None or stat_level_selector is not None:
+                    print(
+                        f"[image] block={block.match_index} "
+                        f"include_teams={block_include_teams} "
+                        f"include_stat_levels={block_include_stat_levels}",
+                        flush=True,
+                    )
                 block_records = recognize_match_block(
                     block,
                     source_name=source_name,
@@ -779,10 +977,11 @@ def recognize_image_records(
                     matcher=matcher,
                     debug_dir=debug_dir,
                     stage_name=stage_name,
-                    include_teams=include_teams,
+                    stage_code=effective_stage_code,
+                    include_teams=block_include_teams,
                     include_power=not args.no_power,
                     include_collection=not args.no_collection,
-                    include_stat_levels=not args.no_stat_levels,
+                    include_stat_levels=block_include_stat_levels,
                     source_profile=source_profile,
                     force_detailed_results=args.force_detailed_results,
                     client_profile=args.client_profile,
@@ -837,12 +1036,38 @@ def run_season_images(
 
     debug_dir = output_dir / "debug" if args.debug else None
     records: list[dict] = []
-    roster: dict[str, dict] = {}
+    # The old flow used one 64-player roster for every tournament layer.
+    # Overseas clients can now alter lineups before TOP8 and before the final,
+    # so preserve three distinct snapshots instead.
+    promotion_roster: dict[str, dict] = {}
+    top8_roster: dict[str, dict] = {}
+    final_roster: dict[str, dict] = {}
+    stage_codes = [stage_code for stage_code, _, _ in specs]
+    top8_only_input = classify_season_image_specs(specs) == "top8_only"
+    overseas_snapshot_flow = (
+        str(args.client_profile or "").strip().lower() == "overseas"
+        and "top8_pyramid" in stage_codes
+    )
+    roster_note = (
+        "未提供64进32截图，无法生成晋级赛阵容"
+        if top8_only_input
+        else None
+    )
     completed_blocks = 0
     control = build_run_control(args, logger)
     terminated = False
     for stage_code, image_path, label in specs:
         include_teams = stage_code == "group64"
+        lineup_selector = None
+        stat_level_selector = None
+        if stage_code == "top8_pyramid" and overseas_snapshot_flow:
+            # Pyramid blocks are ordered final(1), TOP4(2-3), TOP8(4-7).
+            # The middle layer deliberately reuses the TOP8 snapshot.
+            lineup_selector = top8_pyramid_needs_lineup
+            stat_level_selector = lambda block: top8_pyramid_needs_stat_levels(
+                block,
+                bootstrap_identity=top8_only_input and not args.no_stat_levels,
+            )
         try:
             stage_records, block_count, stage_terminated = recognize_image_records(
                 args,
@@ -857,6 +1082,8 @@ def run_season_images(
                 completed_blocks,
                 progress_total,
                 include_teams=include_teams,
+                lineup_selector=lineup_selector,
+                stat_level_selector=stat_level_selector,
                 control=control,
                 source_profile=source_profile_from_path(image_path) or run_source_profile,
             )
@@ -867,12 +1094,57 @@ def run_season_images(
             return 4
 
         if stage_code == "group64":
-            roster = build_player_roster(stage_records)
-            logger.info(f"season_roster_players={len(roster)}")
-            if len(roster) < 64:
-                logger.warning(f"season_roster_player_count_below_64={len(roster)}")
+            promotion_roster = build_player_roster(stage_records)
+            logger.info(f"season_promotion_roster_players={len(promotion_roster)}")
+            if len(promotion_roster) < 64:
+                logger.warning(
+                    f"season_promotion_roster_player_count_below_64={len(promotion_roster)}"
+                )
+        elif stage_code == "top8_pyramid" and overseas_snapshot_flow:
+            top8_records = top8_pyramid_records(stage_records, "top8")
+            top4_records = top8_pyramid_records(stage_records, "top4")
+            final_records = top8_pyramid_records(stage_records, "final")
+
+            # A full season uses the GROUP64 identity as canonical.  The
+            # standalone TOP8 mode has no earlier source, so its first TOP8
+            # appearances become the one-time bootstrap identity instead.
+            top8_roster = build_lineup_snapshot(
+                top8_records,
+                promotion_roster,
+                logger,
+                "top8",
+            )
+            enrich_records_from_roster(
+                top8_records,
+                top8_roster,
+                logger,
+                warning_context="top8",
+            )
+            enrich_records_from_roster(
+                top4_records,
+                top8_roster,
+                logger,
+                warning_context="top4_from_top8",
+            )
+
+            # The two players in the final can have changed their lineup a
+            # second time.  Identity and stat levels still come from the
+            # TOP8/canonical roster; only the dynamic lineup comes from the
+            # final block itself.
+            final_roster = build_lineup_snapshot(
+                final_records,
+                top8_roster or promotion_roster,
+                logger,
+                "final",
+            )
+            enrich_records_from_roster(
+                final_records,
+                final_roster,
+                logger,
+                warning_context="final",
+            )
         else:
-            enrich_records_from_roster(stage_records, roster, logger)
+            enrich_records_from_roster(stage_records, promotion_roster, logger)
         records.extend(stage_records)
         completed_blocks += block_count
         if stage_terminated:
@@ -893,7 +1165,9 @@ def run_season_images(
         records,
         output_dir,
         stem,
-        roster=roster,
+        roster=promotion_roster,
+        top8_roster=top8_roster,
+        final_roster=final_roster,
         include_power=not args.no_power,
         include_collection=not args.no_collection,
         include_stat_levels=not args.no_stat_levels,
@@ -902,7 +1176,10 @@ def run_season_images(
         records,
         output_dir,
         stem,
-        roster=roster,
+        roster=promotion_roster,
+        top8_roster=top8_roster,
+        final_roster=final_roster,
+        roster_note=roster_note,
         include_power=not args.no_power,
         include_collection=not args.no_collection,
         include_stat_levels=not args.no_stat_levels,
@@ -914,7 +1191,9 @@ def run_season_images(
         progress.update(progress_total, progress_total, "exported: season images")
 
     print(f"records={len(records)}")
-    print(f"roster_players={len(roster)}")
+    print(f"roster_players={len(promotion_roster)}")
+    print(f"top8_roster_players={len(top8_roster)}")
+    print(f"final_roster_players={len(final_roster)}")
     print(f"json={json_path}")
     print(f"excel={excel_path}")
     print(f"log={log_path}")
@@ -987,6 +1266,7 @@ def run_manifest(args: argparse.Namespace, manifest_path: Path, output_dir: Path
                 matcher=matcher,
                 debug_dir=None,
                 stage_name=stage_name,
+                stage_code=stage_code,
                 include_power=not args.no_power,
                 include_collection=not args.no_collection,
                 include_stat_levels=not args.no_stat_levels,
@@ -1079,9 +1359,21 @@ def main() -> int:
     if not image_path and not manifest_path and not season_specs:
         print("Input image, manifest, or season images are required.", file=sys.stderr)
         return 2
-    if season_specs and not any(stage_code == "group64" for stage_code, _, _ in season_specs):
-        print("Season image mode requires --season-group64-image as the roster source.", file=sys.stderr)
-        return 2
+    if season_specs:
+        season_mode = classify_season_image_specs(season_specs)
+        if not season_mode:
+            print(
+                "Season image mode supports either all four season images or "
+                "only --season-top8-image.",
+                file=sys.stderr,
+            )
+            return 2
+        if season_mode == "top8_only" and str(args.client_profile or "").lower() != "overseas":
+            print(
+                "A single TOP8/final season image is available only for the overseas client profile.",
+                file=sys.stderr,
+            )
+            return 2
     if image_path and not image_path.exists():
         print(f"Input image not found: {image_path}", file=sys.stderr)
         return 2
@@ -1173,6 +1465,7 @@ def main() -> int:
                     matcher=matcher,
                     debug_dir=debug_dir,
                     stage_name=stage_name,
+                    stage_code=effective_stage_code,
                     include_power=not args.no_power,
                     include_collection=not args.no_collection,
                     include_stat_levels=not args.no_stat_levels,

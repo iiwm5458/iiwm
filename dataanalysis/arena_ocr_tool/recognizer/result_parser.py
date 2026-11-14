@@ -330,6 +330,78 @@ OVERSEAS_COLLECTION_GRID_BY_SOURCE_PROFILE = {
     SOURCE_PROFILE_3440_1440: OVERSEAS_COLLECTION_GRID_WIDE,
     SOURCE_PROFILE_3840: OVERSEAS_COLLECTION_GRID_WIDE,
 }
+
+# TOP8/final images are a separate pyramid export, not a lower half of the
+# group64 sheet.  The November 2026 UI moved the collection hexes relative to
+# the old group64 anchors.  Keep a dedicated, deterministic geometry table so
+# the crop remains a fixed rectangle for every card in one source profile.
+#
+# The 3440x1440 and 2560x1600 tables were measured against all 7 pyramid
+# blocks (five teams, two sides, five slots).  ``icon_x0`` is local to the
+# existing row crop; ``icon_y0`` remains local to the match block.  Every
+# candidate rectangle is 28x32 px before the normal source-profile scaling.
+OVERSEAS_TOP8_PYRAMID_STAGE_CODE = "top8_pyramid"
+OVERSEAS_TOP8_COLLECTION_GRID_WIDE = {
+    "block_height": 2306,
+    "row_width": {"attacker": 788, "defender": 789},
+    "icon_x0": {
+        "attacker": (1, 144, 285, 428, 570),
+        "defender": (88, 231, 372, 515, 657),
+    },
+    "icon_y0": {
+        "attacker": (716, 1014, 1314, 1612, 1912),
+        "defender": (716, 1015, 1314, 1613, 1912),
+    },
+    "icon_width": 28,
+    "icon_height": 32,
+}
+OVERSEAS_TOP8_COLLECTION_GRID_2560_1600 = {
+    "block_height": 2315,
+    "row_width": {"attacker": 789, "defender": 790},
+    "icon_x0": {
+        "attacker": (3, 144, 285, 429, 569),
+        "defender": (90, 232, 373, 516, 657),
+    },
+    "icon_y0": {
+        "attacker": (717, 1016, 1315, 1614, 1913),
+        "defender": (717, 1016, 1315, 1614, 1913),
+    },
+    "icon_width": 28,
+    "icon_height": 32,
+    "fixed_y": True,
+}
+# Derive the FHD family from the existing FHD-vs-wide stitch phase while
+# retaining the new TOP8 hex geometry.  This keeps every registered source
+# resolution on a fixed, uniform crop rather than falling back to group64.
+OVERSEAS_TOP8_COLLECTION_GRID_FHD = {
+    "block_height": 2296,
+    "row_width": {"attacker": 787, "defender": 788},
+    "icon_x0": {
+        "attacker": (0, 143, 284, 427, 569),
+        "defender": (85, 228, 369, 512, 654),
+    },
+    "icon_y0": {
+        "attacker": (718, 1015, 1314, 1611, 1910),
+        "defender": (718, 1016, 1314, 1612, 1910),
+    },
+    "icon_width": 28,
+    "icon_height": 32,
+}
+OVERSEAS_TOP8_COLLECTION_GRID_BY_SOURCE_PROFILE = {
+    SOURCE_PROFILE_1920_1080: OVERSEAS_TOP8_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_1920_1200: OVERSEAS_TOP8_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_1920_1440: OVERSEAS_TOP8_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_2560_1080: OVERSEAS_TOP8_COLLECTION_GRID_FHD,
+    SOURCE_PROFILE_2560_1440: {
+        **OVERSEAS_TOP8_COLLECTION_GRID_WIDE,
+        "phase_dx": 1.0,
+        "phase_dy": -2.0,
+        "template_profile": "overseas_2560x1440",
+    },
+    SOURCE_PROFILE_2560_1600: OVERSEAS_TOP8_COLLECTION_GRID_2560_1600,
+    SOURCE_PROFILE_3440_1440: OVERSEAS_TOP8_COLLECTION_GRID_WIDE,
+    SOURCE_PROFILE_3840: OVERSEAS_TOP8_COLLECTION_GRID_WIDE,
+}
 # Exact OCR artifacts observed on multiple client layouts. These preserve the
 # colon evidence needed by the existing special-name matcher without lowering
 # any general name-matching threshold.
@@ -2001,7 +2073,31 @@ def _collection_precise_group64_geometry(
     )
 
 
-def _overseas_collection_grid_profile(source_profile: str, block_height: int) -> dict:
+def _is_overseas_top8_pyramid_stage(stage_code: str) -> bool:
+    return str(stage_code or "").strip().lower() == OVERSEAS_TOP8_PYRAMID_STAGE_CODE
+
+
+def _overseas_collection_grid_profile(
+    source_profile: str,
+    block_height: int,
+    stage_code: str = "",
+) -> dict:
+    if _is_overseas_top8_pyramid_stage(stage_code):
+        profile = OVERSEAS_TOP8_COLLECTION_GRID_BY_SOURCE_PROFILE.get(source_profile)
+        # The source-resolution token is authoritative for TOP8.  The pyramid
+        # stitch height legitimately differs from group64 and must not send a
+        # known 3440 source back to an FHD/grid64 profile.
+        if profile is not None:
+            return profile
+        return min(
+            (
+                OVERSEAS_TOP8_COLLECTION_GRID_FHD,
+                OVERSEAS_TOP8_COLLECTION_GRID_WIDE,
+                OVERSEAS_TOP8_COLLECTION_GRID_2560_1600,
+            ),
+            key=lambda candidate: abs(block_height - int(candidate["block_height"])),
+        )
+
     profile = OVERSEAS_COLLECTION_GRID_BY_SOURCE_PROFILE.get(source_profile)
     if source_profile == SOURCE_PROFILE_2560_1600 and profile is not None:
         return profile
@@ -2022,26 +2118,38 @@ def _overseas_collection_slot_box(
     match_index: int | None,
     block_height: int | None,
     source_profile: str = "",
+    stage_code: str = "",
 ) -> tuple[int, int, int, int] | None:
     if block_height is None or not 1 <= team_index <= 5 or not 1 <= slot_index <= 5:
         return None
-    profile = _overseas_collection_grid_profile(source_profile, block_height)
+    profile = _overseas_collection_grid_profile(source_profile, block_height, stage_code)
     reference_row_width = float(profile["row_width"][side])
     scale_x = row_image.width / max(1.0, reference_row_width)
     reference_x0 = float(profile["icon_x0"][side][slot_index - 1])
     phase_dx = float(profile.get("phase_dx", 0.0)) * scale_x
     x0 = round(reference_x0 * scale_x + phase_dx)
-    x1 = round((reference_x0 + float(profile["icon_width"])) * scale_x + phase_dx)
+    # Round the size once, not each edge separately.  That keeps every card
+    # in the same row/source profile at exactly the same crop dimensions even
+    # when a scaled source produces fractional pixel anchors.
+    icon_width = max(1, round(float(profile["icon_width"]) * scale_x))
+    x1 = x0 + icon_width
 
     reference_block_height = float(profile["block_height"])
     scale_y = 1.0 if profile.get("fixed_y") else block_height / max(1.0, reference_block_height)
     row_start = int(block_height * (0.275 + (team_index - 1) * 0.13))
-    reference_y0 = float(profile["icon_y0"][team_index - 1])
-    if match_index in {3, 4}:
+    y_positions = profile["icon_y0"]
+    if isinstance(y_positions, dict):
+        reference_y0 = float(y_positions.get(side, y_positions["attacker"])[team_index - 1])
+    else:
+        reference_y0 = float(y_positions[team_index - 1])
+    # This is a group64-only lower-pair adjustment.  TOP8 pyramid blocks 4-7
+    # are quarterfinals, not the second row of a group64 export.
+    if not _is_overseas_top8_pyramid_stage(stage_code) and match_index in {3, 4}:
         reference_y0 += float(profile["bottom_match_dy"])
     phase_dy = float(profile.get("phase_dy", 0.0)) * scale_y
     y0 = round(reference_y0 * scale_y + phase_dy) - row_start
-    y1 = round((reference_y0 + float(profile["icon_height"])) * scale_y + phase_dy) - row_start
+    icon_height = max(1, round(float(profile["icon_height"]) * scale_y))
+    y1 = y0 + icon_height
     return (
         max(0, min(row_image.width, x0)),
         max(0, min(row_image.height, y0)),
@@ -2168,6 +2276,7 @@ def recognize_collection_slots(
     team_index: int = 1,
     match_index: int | None = None,
     stage_name: str = STAGE_NAME,
+    stage_code: str = "",
     block_height: int | None = None,
     source_profile: str = "",
     client_profile: str = CLIENT_PROFILE_CN,
@@ -2175,7 +2284,7 @@ def recognize_collection_slots(
     levels: list[str] = []
     x_offsets = COLLECTION_ROW_ICON_X_OFFSETS.get(side, COLLECTION_ROW_ICON_X_OFFSETS["attacker"])
     overseas_grid = (
-        _overseas_collection_grid_profile(source_profile, block_height)
+        _overseas_collection_grid_profile(source_profile, block_height, stage_code)
         if _normalize_client_profile(client_profile) == CLIENT_PROFILE_OVERSEAS and block_height is not None
         else None
     )
@@ -2192,6 +2301,7 @@ def recognize_collection_slots(
                 match_index=match_index,
                 block_height=block_height,
                 source_profile=source_profile,
+                stage_code=stage_code,
             )
             if icon_box is None or icon_box[2] <= icon_box[0] or icon_box[3] <= icon_box[1]:
                 levels.append(COLLECTION_NONE)
@@ -3511,6 +3621,7 @@ def recognize_team_rows(
     include_collection: bool = True,
     match_index: int | None = None,
     stage_name: str = STAGE_NAME,
+    stage_code: str = "",
     block_height: int | None = None,
     source_profile: str = "",
     client_profile: str = CLIENT_PROFILE_CN,
@@ -3555,6 +3666,7 @@ def recognize_team_rows(
                 team_index=row + 1,
                 match_index=match_index,
                 stage_name=stage_name,
+                stage_code=stage_code,
                 block_height=block_height,
                 source_profile=source_profile,
                 client_profile=client_profile,
@@ -5023,6 +5135,7 @@ def recognize_match_block(
     matcher: NikkeNameMatcher,
     debug_dir: Path | None = None,
     stage_name: str = STAGE_NAME,
+    stage_code: str = "",
     include_teams: bool = True,
     include_power: bool = True,
     include_collection: bool = True,
@@ -5118,6 +5231,7 @@ def recognize_match_block(
             include_collection=include_collection,
             match_index=block.match_index,
             stage_name=stage_name,
+            stage_code=stage_code,
             block_height=block.image.height,
             source_profile=source_profile,
             client_profile=client_profile,
@@ -5132,6 +5246,7 @@ def recognize_match_block(
             include_collection=include_collection,
             match_index=block.match_index,
             stage_name=stage_name,
+            stage_code=stage_code,
             block_height=block.image.height,
             source_profile=source_profile,
             client_profile=client_profile,

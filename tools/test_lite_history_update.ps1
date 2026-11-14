@@ -1,6 +1,6 @@
 ﻿param(
     [string]$PatchRoot = '',
-    [string]$ExpectedVersion = '0.1.15'
+    [string]$ExpectedVersion = '0.1.16'
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot

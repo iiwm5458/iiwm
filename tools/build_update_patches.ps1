@@ -1,6 +1,6 @@
 ﻿param(
-    [string]$FullVersion = "0.1.25",
-    [string]$LiteVersion = "0.1.15",
+    [string]$FullVersion = "0.1.26",
+    [string]$LiteVersion = "0.1.16",
     [switch]$FullOnly
 )
 
@@ -257,7 +257,7 @@ function Write-PatchDocuments(
     )
     if ($HasRosterMerge) {
         $usageLines += "最早版本若缺少 runtime_python310_base，会补齐配置 GPU 环境所需的纯 Python 基础目录；已有目录完整保留。补丁不含 GPU runtime、CUDA、cuDNN、G HUB 或罗技 MOD。"
-        $usageLines += "完整版会合并最新标准妮姬名单：保留用户手动增加的条目，补齐《森：疾速兔女郎》等新版条目，并同步更新本地恢复备份。"
+        $usageLines += "完整版会合并最新标准妮姬名单：保留用户手动增加的条目，补齐《贝洛塔：南瓜女巫》《玛丽安：女王》《长发公主：圣域》《红莲：弑神》等新版条目，并同步更新本地恢复备份。"
         $usageLines += "完整版的独立输入 MOD 位于所选工具根目录的 mods 文件夹；本补丁不包含也不覆盖 MOD 文件，并保留现有选择设置。新版通用接口继续从工具根目录加载已核准 MOD。"
     }
     $usageLines += "不需要重新运行安装包。"
